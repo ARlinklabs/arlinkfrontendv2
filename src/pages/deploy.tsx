@@ -350,6 +350,7 @@ export default function Deploy() {
                 }
 
                 setDeploymentSuccess(true);
+                //@ts-ignore
                 const result = await index(
                     //@ts-ignore
                     JSON.stringify({
@@ -362,7 +363,7 @@ export default function Deploy() {
                     }),
                     window.arweaveWallet
                   );
-                  console.log(result);
+                
                 // In the deploy function within pages/deploy.tsx, update this line:
                 navigate(`/deployment?repo=${projName}`);
                 window.open("https://arweave.net/" + response.data, "_blank");
@@ -371,7 +372,7 @@ export default function Deploy() {
                     description: "Deployment failed: Unexpected response",
                     variant: "destructive"
                 });
-                navigate(`/deployment?repo=${projName}`);
+                
                 throw new Error("Deployment failed: Unexpected response");
                 
             }
@@ -509,7 +510,7 @@ export default function Deploy() {
 
     const onGitHubSuccess = useCallback(() => {
         setIsAuthenticating(false);
-        setStep("repository");  // This will show the repository selection step
+        setStep("repository");  // Transition to the repository selection step
     }, []);
 
     return (
@@ -526,15 +527,14 @@ export default function Deploy() {
                         <div className="space-y-6">
                             <h2 className="text-xl font-semibold">Select a Git provider to import an existing project</h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <GitHubLoginButton
-                                        onSuccess={onGitHubSuccess}
-                                    
-                                        disabled={isAuthenticating}
-                                        className="flex items-center justify-center space-x-2 h-16 bg-primary/80 hover:bg-primary/90 text-primary-foreground shadow-lg"
-                                    >
-                                        <Github className="w-6 h-6" />
-                                        <span>Import from GitHub</span>
-                                    </GitHubLoginButton>
+                                <GitHubLoginButton
+                                    onSuccess={onGitHubSuccess}
+                                    disabled={isAuthenticating}
+                                    className="flex items-center justify-center space-x-2 h-16 bg-primary/80 hover:bg-primary/90 text-primary-foreground shadow-lg"
+                                >
+                                    <Github className="w-6 h-6" />
+                                    <span>Import from GitHub</span>
+                                </GitHubLoginButton>
                                 <Button 
                                     className="flex items-center justify-center space-x-2 h-16 bg-primary/80 hover:bg-primary/90 text-primary-foreground shadow-lg"
                                     onClick={handleProtocolLandImport}
