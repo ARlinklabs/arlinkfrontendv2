@@ -163,6 +163,10 @@ app.post("/deploy", async (req, res) => {
     console.error("Output Directory is required");
     return res.status(400).send("Output Directory is required");
   }
+
+  console.log("------------------------------------")
+  console.log(outputDir)
+  console.log("------------------------------------")
   const outputDist = outputDir.startsWith("./") ? outputDir.slice(2) : outputDir;
   const subDist= subDirectory.startsWith("./") ? subDirectory.slice(2) : subDirectory;
 

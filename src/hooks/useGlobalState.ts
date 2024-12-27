@@ -1,5 +1,5 @@
 // src/hooks/useGlobalState.ts
-import { TDeployment } from '@/types';
+import type { TDeployment } from '@/types';
 import { create } from 'zustand';
 
 export type Store = {

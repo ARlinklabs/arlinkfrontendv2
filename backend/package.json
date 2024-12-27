@@ -27,6 +27,9 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "kebab-case": "^2.0.1",
+    "loadash": "^1.0.0",
+    "lodash": "^4.17.21",
+    "mime-types": "^2.1.35",
     "nodemon": "^3.1.4"
   },
   "devDependencies": {

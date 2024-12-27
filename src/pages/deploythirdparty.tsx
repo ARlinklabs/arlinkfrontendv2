@@ -304,7 +304,7 @@ export default function DeployThirdParty() {
                     </div>
                 </header>
 
-                <main className="p-6 max-w-4xl mx-auto">
+                <div className="p-6 max-w-4xl mx-auto">
                     {step === "repositories" && (
                         <div className="space-y-6">
                             <div className="relative flex-grow">
@@ -506,7 +506,7 @@ export default function DeployThirdParty() {
                             </Button>
                         )}
                     </div>
-                </main>
+                </div>
 
                 <footer className="mt-8 p-6 border-t border-border text-center text-muted-foreground bg-transparent">
                     <a href="#" className="hover:text-foreground">Learn more about deploying projects →</a>
