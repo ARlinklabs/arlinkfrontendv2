@@ -199,7 +199,6 @@ app.post("/deploy", async (req, res) => {
     }
   }
 
-
   try {
 
     const latestCommit = await getLatestCommitHash(repository, branch);

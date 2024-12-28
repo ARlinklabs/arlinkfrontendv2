@@ -43,6 +43,9 @@ Handlers.add(
 return "OK"
 `
 
+// dummy value
+// deploy -> 200 value, set a dummy value
+
 export default function useDeploymentManager() {
     const globalState = useGlobalState();
     const { connected } = useConnection();

@@ -58,8 +58,8 @@ export async function fetchRepositories({
 	try {
 		const response = await octokit.repos.listForAuthenticatedUser({
 			per_page: 100,
-			page: 1, 
-			sort: "updated", 
+			page: 1,
+			sort: "updated",
 			direction: "desc",
 		});
 
@@ -106,4 +106,20 @@ export async function fetchRepositoryByName({
 		}
 		return null;
 	}
+}
+
+export function extractRepoName(url: string): string {
+	return url
+		.replace(/\.git|\/$/, "")
+		.split("/")
+		.pop() as string;
+}
+
+export function extractOwnerName(url: string): string {
+	return url.split("/").reverse()[1];
+}
+
+export function createTokenizedRepoUrl(repoUrl: string, token: string): string {
+	const [, , , username, repo] = repoUrl.split("/");
+	return `https://${token}@github.com/${username}/${repo}.git`;
 }

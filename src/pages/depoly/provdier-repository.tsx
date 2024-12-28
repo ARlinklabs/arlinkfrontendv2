@@ -96,7 +96,7 @@ const GitAuthRepoSelector = ({
 					</div>
 				</div>
 				<div>
-					<ScrollArea className="h-72 border rounded-md">
+					<ScrollArea className="h-80 border rounded-md">
 						{!isProviderSelected && (
 							<div className="h-[17rem] w-full flex items-center justify-center">
 								<p className="text-center">

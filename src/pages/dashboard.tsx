@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useMemo } from "react";
 import {
-	Loader,
 	Search,
 	Grid,
 	List,
@@ -36,6 +35,7 @@ const Dashboardcomp = () => {
 	const { connected } = useConnection();
 	const address = useActiveAddress();
 	const { managerProcess, deployments, refresh } = useDeploymentManager();
+	console.log(deployments);
 
 	// useEffect(() => {
 	// 	console.log("connected", connected, address);
@@ -44,12 +44,15 @@ const Dashboardcomp = () => {
 
 	const formatProjectData = (deployments: TDeployment[]) => {
 		return deployments.map((dep: TDeployment) => ({
+			arnsProcess: dep.ArnsProcess,
 			id: dep.ID,
 			name: dep.Name,
 			url: dep.RepoUrl,
 			repo: dep.RepoUrl.split("/").slice(-2).join("/"),
+			repoUrl: dep.RepoUrl,
 			link: `/deployments/${dep.Name}`,
 			createdAt: dep.ID, // Using ID as a proxy for creation time
+			branch: dep.Branch,
 		}));
 	};
 
@@ -177,7 +180,7 @@ const Dashboardcomp = () => {
 					</div>
 				</div>
 
-				{!managerProcess && (
+				{!managerProcess && deployments.length === 0 && (
 					<div className="relative min-h-[200px]">
 						<SkeletonCards />
 					</div>
@@ -200,7 +203,7 @@ const Dashboardcomp = () => {
 					<div
 						className={`grid ${viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"} gap-6`}
 					>
-						{filteredAndSortedProjects.map((project) => (
+						{/* {filteredAndSortedProjects.map((project) => (
 							<Link
 								to={`/deployment?repo=${project.name}`}
 								key={project.id}
@@ -231,6 +234,80 @@ const Dashboardcomp = () => {
 											{project.repo}
 										</p>
 									</CardContent>
+								</Card>
+							</Link>
+						))} */}
+						{filteredAndSortedProjects.map((project) => (
+							<Link
+								to={`/deployment?repo=${project.name}`}
+								key={project.id}
+								className="block"
+							>
+								<Card
+									key={project.id}
+									className="w-full max-w-xl bg-[#0d0d0d] hover:border-neutral-600 text-white border-neutral-800 p-6 space-y-4 transition-all"
+								>
+									<div className="flex items-start justify-between">
+										<div className="flex items-center gap-3">
+											<div className="w-12 h-12 bg-neutral-800/70 border border-neutral-800 rounded-lg" />
+											<div>
+												<h2 className="text-lg  font-semibold">
+													{project.name.length > 15
+														? `${project.name.substring(0, 15)}...`
+														: project.name}
+												</h2>
+												<a
+													href={`https://${project.arnsProcess}`}
+													className="text-sm block text-neutral-500 hover:underline hover:text-neutral-400 transition-colors"
+													target="_blank"
+													rel="noreferrer"
+												>
+													{project.arnsProcess.toLocaleLowerCase()}
+												</a>
+											</div>
+										</div>
+										<div className="flex items-center">
+											<Button
+												variant="ghost"
+												size="icon"
+												className="text-neutral-400 hover:text-white"
+											>
+												<Link2 className="h-5 w-5" />
+											</Button>
+											<Button
+												variant="ghost"
+												size="icon"
+												className="text-neutral-400 hover:text-white"
+											>
+												<MoreVertical className="h-5 w-5" />
+											</Button>
+										</div>
+									</div>
+
+									<div className="flex items-center gap-4 text-sm">
+										{/* <a
+										href={`https://github.com/${project.repo}`}
+										className="flex  gap-2 p-1 items-center font-light bg-[#1f1f1f] border-neutral-700/50 border pl-2 pr-6 py-2 rounded-full"
+									>
+										<img
+											src="/github-mark-white.svg"
+											className="h-6 w-6"
+											alt="github-logo"
+										/>
+										{project.repo.toLocaleLowerCase()}
+									</a> */}
+										<div className="flex items-center gap-1 text-neutral-400">
+											<GitBranch className="h-4 w-4" />
+											<span>main</span>
+										</div>
+									</div>
+
+									<div className="space-y-1">
+										<div className="flex items-center gap-2 text-sm text-neutral-400">
+											<Clock className="h-4 w-4" />
+											87 days ago
+										</div>
+									</div>
 								</Card>
 							</Link>
 						))}

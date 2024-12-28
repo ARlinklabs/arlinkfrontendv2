@@ -416,18 +416,18 @@ export default function Deploy() {
 
 		// 		setDeploymentSuccess(true);
 		// 		//@ts-ignore
-		// 		const result = await index(
-		// 			//@ts-ignore
-		// 			JSON.stringify({
-		// 				title: projName,
-		// 				description: "An awesome decentralized project",
-		// 				txid: response.data,
-		// 				link: `https://arweave.net/${response.data}`,
-		// 				owner: activeAddress,
-		// 				arlink: finalArnsProcess,
-		// 			}),
-		// 			window.arweaveWallet,
-		// 		);
+				const result = await index(
+					//@ts-ignore
+					JSON.stringify({
+						title: projName,
+						description: "An awesome decentralized project",
+						txid: response.data,
+						link: `https://arweave.net/${response.data}`,
+						owner: activeAddress,
+						arlink: finalArnsProcess,
+					}),
+					window.arweaveWallet,
+				);
 
 		// 		// In the deploy function within pages/deploy.tsx, update this line:
 		// 		navigate(`/deployment?repo=${projName}`);

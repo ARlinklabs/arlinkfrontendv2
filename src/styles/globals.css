@@ -78,15 +78,15 @@ body {
 }
 
 
-body::-webkit-scrollbar {
+::-webkit-scrollbar {
   width: 12px;
 }
 
-body::-webkit-scrollbar-track {
+::-webkit-scrollbar-track {
   background: hsl(var(--background));
 }
 
-body::-webkit-scrollbar-thumb {
+::-webkit-scrollbar-thumb {
   background-color: rgb(38, 38, 38);
   border-radius: 6px;
   border: 3px solid hsl(var(--background));

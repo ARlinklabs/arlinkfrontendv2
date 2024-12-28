@@ -1,3 +1,9 @@
+import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,7 +30,7 @@ import {
 	Loader2,
 	MoreVertical,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import RootDirectoryDrawer from "./rootdir-drawer";
 import { useActiveAddress } from "arweave-wallet-kit";
 import { toast } from "sonner";
@@ -35,6 +41,10 @@ import { BUILDER_BACKEND } from "@/lib/utils";
 import { runLua, setArnsName as setUpArnsName } from "@/lib/ao-vars";
 import { index } from "arweave-indexer";
 import { useNavigate } from "react-router-dom";
+import AnsiLog from "@agbishop/react-ansi-18";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import DeploymentLogs from "./deployment-logs";
+import { createTokenizedRepoUrl } from "./utilts";
 
 const ConfiguringDeploymentProject = ({
 	repoUrl,
@@ -47,6 +57,7 @@ const ConfiguringDeploymentProject = ({
 	const { githubToken, managerProcess: mgProcess } = useGlobalState();
 	const { managerProcess, refresh, deployments } = useDeploymentManager();
 	const navigate = useNavigate();
+	const [logs, setLogs] = useState<string[]>([]);
 
 	const activeAddress = useActiveAddress();
 
@@ -150,26 +161,6 @@ const ConfiguringDeploymentProject = ({
 
 		handleInit();
 	}, [repoUrl]);
-
-	function validateCustomDomain(name: string) {
-		if (typeof name !== "string" || name.length === 0) {
-			return false;
-		}
-		if (name.length > 100) {
-			return false;
-		}
-		if (name !== name.toLowerCase()) {
-			return false;
-		}
-		const allowedCharacters = /^[a-z0-9._-]+$/;
-		if (!allowedCharacters.test(name)) {
-			return false;
-		}
-		if (name.includes("---")) {
-			return false;
-		}
-		return true;
-	}
 
 	// function to fetch all the branches
 	async function handleFetchBranches() {
@@ -276,13 +267,6 @@ const ConfiguringDeploymentProject = ({
 
 		// this is to check if the user has selected a custom domain or not
 		// if he has not selected a custom domain, then we add the custom name and build the url
-		if (!validateCustomDomain(customArnsName)) {
-			return toast.error("invalid domain/project name", {
-				description: `
-				Project names can be up to 100 characters long and must be lowercase. They can include letters, digits, and the following characters: '.', '_', '-'. However, they cannot contain the sequence '---'`,
-			});
-		}
-
 		if (arnsName?.name && activeTab === "existing") {
 			console.log("Hello from the frist blokc");
 			setCustomArnsName("");
@@ -297,40 +281,14 @@ const ConfiguringDeploymentProject = ({
 
 		const tokenizedRepoUrl = createTokenizedRepoUrl(repoUrl, githubToken);
 
-		console.log({
-			projectName,
-			repoUrl,
-			selectedBranch,
-			installCommand: buildSettings.installCommand.value,
-			outputDir: buildSettings.outPutDir.value,
-			buildCommand: buildSettings.buildCommand.value,
-			managerProcess: mgProcess,
-			deploymentAvailable: deployments.find((dep) => dep.Name === projectName),
-			githubToken,
-			finalArnsProcess,
-			customRepo,
-			tokenizedRepoUrl,
-		});
-
-		console.log({
-			repository: tokenizedRepoUrl,
-			branch: selectedBranch,
-			installCommand: buildSettings.installCommand.value,
-			buildCommand: buildSettings.buildCommand.value,
-			subDirectory: rootDirectory,
-			outputDir: buildSettings.outPutDir.value,
-			repoName: customArnsName,
-			githubToken,
-		});
-
 		try {
 			const response = await axios.post(
 				`${BUILDER_BACKEND}/deploy`,
 				{
 					repository: tokenizedRepoUrl,
 					branch: selectedBranch,
-					installCommand: buildSettings.installCommand.value,
-					buildCommand: buildSettings.buildCommand.value,
+					installCommand: "npm install",
+					buildCommand: "npm run build",
 					subDirectory: rootDirectory,
 					outputDir: buildSettings.outPutDir.value,
 					repoName: customArnsName,
@@ -341,6 +299,7 @@ const ConfiguringDeploymentProject = ({
 					headers: { "Content-Type": "application/json" },
 				},
 			);
+			console.log(response);
 
 			if (response.status === 200 && response.data) {
 				console.log(`https://arweave.net/${response.data}`);
@@ -348,12 +307,14 @@ const ConfiguringDeploymentProject = ({
 				setDeploymentSucceded(true);
 				setDeploymentComplete(true);
 
+				// repsonse.data.arnsProcess
+				
 				// assuming we get the transaction id after this is successful
 				const query = `local res = db:exec[[
 						INSERT INTO Deployments (Name, RepoUrl, Branch, InstallCMD, BuildCMD, OutputDIR, ArnsProcess)
 							VALUES
 						('${projectName}', '${repoUrl}', '${selectedBranch}', '${buildSettings.installCommand}', '${buildSettings.buildCommand}', '${buildSettings.outPutDir}', '${finalArnsProcess}')
-				 ]]`;
+				]]`;
 
 				const res = await runLua(query, mgProcess);
 
@@ -397,12 +358,6 @@ const ConfiguringDeploymentProject = ({
 			setDeploymentComplete(true);
 		}
 	};
-
-	// Add this new function after the existing utility functions
-	function createTokenizedRepoUrl(repoUrl: string, token: string): string {
-		const [, , , username, repo] = repoUrl.split("/");
-		return `https://${token}@github.com/${username}/${repo}.git`;
-	}
 
 	return (
 		<div className="min-h-screen text-white px-8 max-w-3xl mx-auto">
@@ -633,28 +588,22 @@ const ConfiguringDeploymentProject = ({
 				Deploy now
 			</Button>
 
-			<div className="bg-[#0C0C0C] p-6 rounded-lg mt-6 border border-[#383838]">
-				<h2 className="text-xl font-semibold mb-4">Deployment Process</h2>
-				<p className="text-sm text-neutral-400 mb-4">
-					Click on deploy to see the progress logs here
-				</p>
-				<div className="space-y-2">
-					<div className="flex items-center gap-2 text-neutral-300">
-						<ArrowUpDown size={16} />
-						<span>Build logs</span>
-					</div>
-					<div className="flex items-center gap-2 text-neutral-300">
-						<ArrowUpDown size={16} />
-						<span>Deployment logs</span>
-					</div>
-				</div>
-			</div>
+			{deploymentStarted && (
+				<DeploymentLogs
+					logs={logs}
+					setLogs={setLogs}
+					projectName={projectName}
+					repoUrl={repoUrl}
+				/>
+			)}
 
 			<RootDirectoryDrawer
 				isOpen={isRootDirectoryDrawerOpen}
 				onClose={() => setIsRootDirectoryDrawerOpen(false)}
 				onSelect={setRootDirectory}
 			/>
+
+			<div className="pb-[100vh]" />
 		</div>
 	);
 };
