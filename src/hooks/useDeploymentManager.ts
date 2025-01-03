@@ -1,10 +1,9 @@
 import { useEffect } from "react";
-import { useGlobalState } from "@/hooks/useGlobalState";
+import { useGlobalState } from "@/store/useGlobalState";
 import { useActiveAddress, useConnection } from "arweave-wallet-kit";
 import { runLua, spawnProcess } from "@/lib/ao-vars";
 import { connect } from "@permaweb/aoconnect";
 import { gql, GraphQLClient } from "graphql-request";
-
 
 const setupCommands = `json = require "json"
 
@@ -41,7 +40,7 @@ Handlers.add(
 )
     
 return "OK"
-`
+`;
 
 // dummy value
 // deploy -> 200 value, set a dummy value
@@ -51,72 +50,68 @@ export default function useDeploymentManager() {
     const { connected } = useConnection();
     const address = useActiveAddress();
     //@ts-ignore
-    const ao = connect()
+    const ao = connect();
 
     useEffect(() => {
         if (connected && address) {
             getManagerProcessFromAddress(address).then((id) => {
                 if (id) {
-                    console.log("deployment manager id", id);
+                    // console.log("deployment manager id", id);
                     globalState.setManagerProcess(id);
                 } else {
-                    console.log("No manager process found, spawning new one");
-                      //@ts-ignore
+                    // console.log("No manager process found, spawning new one");
+                    //@ts-ignore
                     spawnProcess("ARlink-Manager").then(async (newId) => {
-                        await runLua(setupCommands, newId)
-                        console.log("deployment manager id", newId);
+                        await runLua(setupCommands, newId);
+                        // console.log("deployment manager id", newId);
                         globalState.setManagerProcess(newId);
                     });
                 }
-            })
+            });
         }
-    }, [connected, address])
-   
+    }, [connected, address, globalState.setManagerProcess]);
 
     useEffect(() => {
         refresh();
-    }, [globalState.managerProcess])
+    }, [globalState.managerProcess]);
 
     async function refresh() {
-        if (!globalState.managerProcess) return
+        if (!globalState.managerProcess) return;
 
-        console.log("fetching deployments")
-
+        // console.log("fetching deployments");
         const result = await connect().dryrun({
             process: globalState.managerProcess,
             tags: [{ name: "Action", value: "ARlink.GetDeployments" }],
-            Owner: address
-        })
+            Owner: address,
+        });
 
         try {
-            if (result.Error) return alert(result.Error)
-            console.log("result", result)
-            const { Messages } = result
-            const deployments = JSON.parse(Messages[0].Data)
-            console.log("deployments", deployments)
-            globalState.setDeployments(deployments)
+            if (result.Error) return alert(result.Error);
+            // console.log("result", result);
+            const { Messages } = result;
+            const deployments = JSON.parse(Messages[0].Data);
+            console.log("deployments", deployments);
+            globalState.setDeployments(deployments);
+        } catch {
+            await runLua(setupCommands, globalState.managerProcess);
+            await refresh();
         }
-        catch {
-            await runLua(setupCommands, globalState.managerProcess)
-            await refresh()
-        }
-
     }
 
     return {
         managerProcess: globalState.managerProcess,
         deployments: globalState.deployments,
-        refresh
-    }
+        refresh,
+    };
 }
 // keep it as local host if NODE_ENV is test
 
-
-
 export async function getManagerProcessFromAddress(address: string) {
-  const client = new GraphQLClient("https://arweave-search.goldsky.com/graphql");
+    const client = new GraphQLClient(
+        "https://arweave-search.goldsky.com/graphql"
+    );
 
-  const query = gql`
+    const query = gql`
   query {
   transactions(
     owners: ["${address}"]
@@ -133,18 +128,18 @@ export async function getManagerProcessFromAddress(address: string) {
   }
 }`;
 
-  type response = {
-    transactions: {
-      edges: {
-        node: {
-          id: string;
+    type response = {
+        transactions: {
+            edges: {
+                node: {
+                    id: string;
+                };
+            }[];
         };
-      }[];
     };
-  };
 
-  const data: response = await client.request(query);
-  return data.transactions.edges.length > 0
-    ? data.transactions.edges[0].node.id
-    : null;
+    const data: response = await client.request(query);
+    return data.transactions.edges.length > 0
+        ? data.transactions.edges[0].node.id
+        : null;
 }

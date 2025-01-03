@@ -37,10 +37,15 @@ export const BUILDER_BACKEND =
 		? "http://localhost:3050"
 		: "https://vmi1968527.contaboserver.net/backend");
 
-export const indexInMalik = async () {
-	await index(
-		JSON.stringify({
-						
-		})
-	)
-}
+export const TESTING_FETCH = "https://vmi1968527.contaboserver.net/backend";
+
+// export const indexInMalik = async ({
+// 	title,
+// description,
+// 						txid,
+// 						link,
+// 						owner,
+// 						arlink
+// }) => {
+
+// }

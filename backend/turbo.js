@@ -18,7 +18,7 @@ export default async function deployFolder(folderPath) {
     
     // Load your JWK
     console.log('Attempting to load JWK...');
-    const jwk = JSON.parse(await fsPromises.readFile("Wallet.json", "utf-8"));
+    const jwk = JSON.parse(await fsPromises.readFile("wallet.json", "utf-8"));
     console.log("JWK loaded successfully");
  
     console.log('Initializing Turbo instance...');

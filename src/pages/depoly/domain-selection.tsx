@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { PopoverContent } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import type { DomainSelectionType } from "@/index";
+import type { DomainSelectionType } from "@/types";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverTrigger } from "@radix-ui/react-popover";
 import { Check, ChevronDown, ChevronsUpDown, Loader2 } from "lucide-react";

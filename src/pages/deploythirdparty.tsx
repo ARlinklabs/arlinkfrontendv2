@@ -1,23 +1,23 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { ArrowLeft, ArrowRight, Search, Loader } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { useState, useEffect } from "react";
+import { ArrowLeft, ArrowRight, Search, Loader } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
-import Ansi from '@agbishop/react-ansi-18';
-import Layout from '@/layouts/layout';
-import { useGlobalState } from "@/hooks/useGlobalState";
+import Ansi from "@agbishop/react-ansi-18";
+import Layout from "@/layouts/layout";
+import { useGlobalState } from "@/store/useGlobalState";
 import { runLua } from "@/lib/ao-vars";
 import { toast } from "sonner";
-import axios from 'axios';
+import axios from "axios";
 import { BUILDER_BACKEND } from "@/lib/utils";
 import useDeploymentManager from "@/hooks/useDeploymentManager";
 import { useActiveAddress } from "arweave-wallet-kit";
-import fetchUserRepos from '@/lib/fetchprotolandrepo';
-import { getWalletOwnedNames } from '@/lib/get-arns';
-import { Switch } from "@/components/ui/switch"
+import fetchUserRepos from "@/lib/fetchprotolandrepo";
+import { getWalletOwnedNames } from "@/lib/get-arns";
+import { Switch } from "@/components/ui/switch";
 import { setArnsName } from "@/lib/ao-vars";
 import { useNavigate } from "react-router-dom";
 
@@ -26,26 +26,29 @@ type ProtocolLandRepo = {
     cloneUrl: string;
 };
 
-
-
 // Define a custom type for Axios errors
 type AxiosErrorType = {
     isAxiosError: boolean;
     response?: {
-      status: number;
+        status: number;
     };
 };
 
 // Update the type guard function
 function isAxiosError(error: any): error is AxiosErrorType {
-  return error && error.isAxiosError === true;
+    return error && error.isAxiosError === true;
 }
 
-function Logs({ name, deploying, repoUrl, owner }: { 
-    name: string, 
-    deploying?: boolean, 
-    repoUrl: string,
-    owner: string 
+function Logs({
+    name,
+    deploying,
+    repoUrl,
+    owner,
+}: {
+    name: string;
+    deploying?: boolean;
+    repoUrl: string;
+    owner: string;
 }) {
     const [output, setOutput] = useState("");
     const [error, setError] = useState<string | null>(null);
@@ -56,38 +59,52 @@ function Logs({ name, deploying, repoUrl, owner }: {
         let startTime = Date.now();
         const waitTime = 60000; // 1 minute in milliseconds
 
-        const interval: ReturnType<typeof setInterval> = setInterval(async () => {
-            if (!deploying) return clearInterval(interval);
-            
-            try {
-                const logs = await axios.get(`${BUILDER_BACKEND}/logs/${owner}/${repo}`);
-                console.log(logs.data);
-                //@ts-ignore
-                setOutput((logs.data as string).replaceAll(/\\|\||\-/g, ""));
-                setError(null);
+        const interval: ReturnType<typeof setInterval> = setInterval(
+            async () => {
+                if (!deploying) return clearInterval(interval);
 
-                setTimeout(() => {
-                    const logsDiv = document.getElementById("logs");
-                    logsDiv?.scrollTo({ top: logsDiv.scrollHeight, behavior: "smooth" });
-                }, 100);
-            } catch (error: unknown) {
-                if (isAxiosError(error) && error.response?.status === 404) {
-                    const elapsedTime = Date.now() - startTime;
-                    if (elapsedTime < waitTime) {
-                        setError("Waiting for logs...");
+                try {
+                    const logs = await axios.get(
+                        `${BUILDER_BACKEND}/logs/${owner}/${repo}`
+                    );
+                    console.log(logs.data);
+                    //@ts-ignore
+                    setOutput(
+                        (logs.data as string).replaceAll(/\\|\||\-/g, "")
+                    );
+                    setError(null);
+
+                    setTimeout(() => {
+                        const logsDiv = document.getElementById("logs");
+                        logsDiv?.scrollTo({
+                            top: logsDiv.scrollHeight,
+                            behavior: "smooth",
+                        });
+                    }, 100);
+                } catch (error: unknown) {
+                    if (isAxiosError(error) && error.response?.status === 404) {
+                        const elapsedTime = Date.now() - startTime;
+                        if (elapsedTime < waitTime) {
+                            setError("Waiting for logs...");
+                        } else {
+                            setError(
+                                "Failed to fetch logs after 1 minute. They may not be available yet."
+                            );
+                            clearInterval(interval);
+                        }
                     } else {
-                        setError("Failed to fetch logs after 1 minute. They may not be available yet.");
+                        setError("An error occurred while fetching logs.");
+                        console.error("Error fetching logs:", error);
                         clearInterval(interval);
                     }
-                } else {
-                    setError("An error occurred while fetching logs.");
-                    console.error("Error fetching logs:", error);
-                    clearInterval(interval);
                 }
-            }
-        }, 1000);
+            },
+            1000
+        );
 
-        return () => { clearInterval(interval); }
+        return () => {
+            clearInterval(interval);
+        };
     }, [name, deploying, repoUrl, owner]);
 
     return (
@@ -96,7 +113,10 @@ function Logs({ name, deploying, repoUrl, owner }: {
             {error ? (
                 <div className="text-yellow-500 pl-2 mb-2">{error}</div>
             ) : null}
-            <pre className="font-mono text-xs border p-2 rounded-lg px-4 bg-black/30 overflow-scroll max-h-[250px]" id="logs">
+            <pre
+                className="font-mono text-xs border p-2 rounded-lg px-4 bg-black/30 overflow-scroll max-h-[250px]"
+                id="logs"
+            >
                 <Ansi log={output} />
             </pre>
         </div>
@@ -107,7 +127,7 @@ export default function DeployThirdParty() {
     const globalState = useGlobalState();
     const navigate = useNavigate();
     //@ts-ignore
-    const { managerProcess, refresh , deployments} = useDeploymentManager();
+    const { managerProcess, refresh, deployments } = useDeploymentManager();
     const address = useActiveAddress();
     const [projName, setProjName] = useState("");
     const [repoUrl, setRepoUrl] = useState("");
@@ -116,14 +136,22 @@ export default function DeployThirdParty() {
     const [outputDir, setOutputDir] = useState("./dist");
     const [deploying, setDeploying] = useState(false);
     const [arnsProcess, setArnsProcess] = useState("");
-    const [protocolLandRepos, setProtocolLandRepos] = useState<ProtocolLandRepo[]>([]);
-    const [selectedRepo, setSelectedRepo] = useState<ProtocolLandRepo | null>(null);
+    const [protocolLandRepos, setProtocolLandRepos] = useState<
+        ProtocolLandRepo[]
+    >([]);
+    const [selectedRepo, setSelectedRepo] = useState<ProtocolLandRepo | null>(
+        null
+    );
     const [loading, setLoading] = useState(true);
-    const [arnsNames, setArnsNames] = useState<{ name: string; processId: string }[]>([]);
+    const [arnsNames, setArnsNames] = useState<
+        { name: string; processId: string }[]
+    >([]);
     const [loadingArnsNames, setLoadingArnsNames] = useState(false);
     const [showArnsDropdown, setShowArnsDropdown] = useState(false);
-    const [step, setStep] = useState<"repositories" | "project" | "domain" | "deploy">("repositories")
-    const [searchQuery, setSearchQuery] = useState<string>("")
+    const [step, setStep] = useState<
+        "repositories" | "project" | "domain" | "deploy"
+    >("repositories");
+    const [searchQuery, setSearchQuery] = useState<string>("");
     const [useArns, setUseArns] = useState(false);
     const [customArnsName, setCustomArnsName] = useState("");
 
@@ -138,8 +166,8 @@ export default function DeployThirdParty() {
                 const repos = await fetchUserRepos(address);
                 setProtocolLandRepos(repos);
             } catch (error) {
-                console.error('Error fetching repositories:', error);
-                toast.error('Failed to fetch repositories');
+                console.error("Error fetching repositories:", error);
+                toast.error("Failed to fetch repositories");
             } finally {
                 setLoading(false);
             }
@@ -148,16 +176,16 @@ export default function DeployThirdParty() {
         fetchRepos();
     }, [address]);
 
-    const filteredRepositories = protocolLandRepos.filter(repo =>
+    const filteredRepositories = protocolLandRepos.filter((repo) =>
         repo.name.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    );
 
     const handleRepoSelect = (repo: ProtocolLandRepo) => {
         setSelectedRepo(repo);
         setRepoUrl(repo.cloneUrl);
         setProjName(repo.name);
         setStep("project");
-    }
+    };
 
     const handleBack = () => {
         switch (step) {
@@ -176,7 +204,7 @@ export default function DeployThirdParty() {
                 }
                 break;
         }
-    }
+    };
 
     const handleNext = () => {
         switch (step) {
@@ -187,8 +215,9 @@ export default function DeployThirdParty() {
                 deploy();
                 break;
         }
-    }
+    };
 
+    //--------------------FETCH ARNS NAMES----------------------
     async function fetchArnsNames() {
         if (!address) {
             toast.error("Wallet address not found");
@@ -206,7 +235,10 @@ export default function DeployThirdParty() {
         }
     }
 
-    function handleArnsSelection(selectedArns: { name: string; processId: string } | null) {
+    //--------------------ARNS SELECTION SHIT----------------------
+    function handleArnsSelection(
+        selectedArns: { name: string; processId: string } | null
+    ) {
         if (selectedArns) {
             setArnsProcess(selectedArns.processId);
             setUseArns(true);
@@ -217,6 +249,8 @@ export default function DeployThirdParty() {
         setShowArnsDropdown(false);
     }
 
+
+    //--------------------DEPLOYMENT SHIT----------------------
     async function deploy() {
         if (!projName) return toast.error("Project Name is required");
         if (!repoUrl) return toast.error("Repository URL is required");
@@ -226,8 +260,10 @@ export default function DeployThirdParty() {
         if (!address) return toast.error("Wallet address is required");
 
         if (deploying) return;
-        if (!globalState.managerProcess) return toast.error("Manager process not found");
-        if (deployments.find(dep => dep.Name === projName)) return toast.error("Project name already exists");
+        if (!globalState.managerProcess)
+            return toast.error("Manager process not found");
+        if (deployments.find((dep) => dep.Name === projName))
+            return toast.error("Project name already exists");
 
         let finalArnsProcess = arnsProcess;
         //@ts-ignore
@@ -253,27 +289,35 @@ export default function DeployThirdParty() {
         await refresh();
 
         try {
-            const txid = await axios.post(`${BUILDER_BACKEND}/deploy`, {
-                repository: repoUrl,
-                installCommand,
-                buildCommand,
-                outputDir,
-                branch: "main", // Assuming main branch for Protocol Land repos
-                subDirectory: "./",
-                protocolLand: true,
-                repoName: selectedRepo?.name,
-                walletAddress: address,
-                customArnsName: customArnsName || "",
-                
-               
-            }, { timeout: 60 * 60 * 1000, headers: { "Content-Type": "application/json" } });
+            const txid = await axios.post(
+                `${BUILDER_BACKEND}/deploy`,
+                {
+                    repository: repoUrl,
+                    installCommand,
+                    buildCommand,
+                    outputDir,
+                    branch: "main", // Assuming main branch for Protocol Land repos
+                    subDirectory: "./",
+                    protocolLand: true,
+                    repoName: selectedRepo?.name,
+                    walletAddress: address,
+                    customArnsName: customArnsName || "",
+                },
+                {
+                    timeout: 60 * 60 * 1000,
+                    headers: { "Content-Type": "application/json" },
+                }
+            );
 
             if (txid.status === 200) {
                 console.log("https://arweave.net/" + txid.data);
                 toast.success("Deployment successful");
 
-                //@ts-ignore    
-                const updres = await runLua(`db:exec[[UPDATE Deployments SET DeploymentId='${txid.data}' WHERE Name='${projName}']]`, globalState.managerProcess);
+                //@ts-ignore
+                const updres = await runLua(
+                    `db:exec[[UPDATE Deployments SET DeploymentId='${txid.data}' WHERE Name='${projName}']]`,
+                    globalState.managerProcess
+                );
 
                 // Only set ArNS name if we're using ArNS (either existing or custom)
                 if (useArns || customArnsName) {
@@ -300,7 +344,9 @@ export default function DeployThirdParty() {
             <div className="min-h-screen">
                 <header className="flex justify-between items-center p-6 border-b border-border bg-transparent">
                     <div>
-                        <h1 className="text-2xl font-bold">Deploy from Protocol Land</h1>
+                        <h1 className="text-2xl font-bold">
+                            Deploy from Protocol Land
+                        </h1>
                     </div>
                 </header>
 
@@ -314,7 +360,9 @@ export default function DeployThirdParty() {
                                     placeholder="Search repositories..."
                                     className="w-full pl-10 bg-card/50 shadow-md"
                                     value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onChange={(e) =>
+                                        setSearchQuery(e.target.value)
+                                    }
                                 />
                             </div>
                             <div className="space-y-4">
@@ -325,16 +373,23 @@ export default function DeployThirdParty() {
                                     </div>
                                 ) : filteredRepositories.length > 0 ? (
                                     filteredRepositories.map((repo) => (
-                                        <div key={repo.cloneUrl} className="flex items-center justify-between bg-card/50 p-4 rounded-md shadow-lg">
+                                        <div
+                                            key={repo.cloneUrl}
+                                            className="flex items-center justify-between bg-card/50 p-4 rounded-md shadow-lg"
+                                        >
                                             <div className="flex items-center space-x-4">
                                                 <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-500 rounded-md"></div>
                                                 <div>
-                                                    <p className="font-medium">{repo.name}</p>
+                                                    <p className="font-medium">
+                                                        {repo.name}
+                                                    </p>
                                                 </div>
                                             </div>
-                                            <Button 
-                                                variant="outline" 
-                                                onClick={() => handleRepoSelect(repo)}
+                                            <Button
+                                                variant="outline"
+                                                onClick={() =>
+                                                    handleRepoSelect(repo)
+                                                }
                                                 className="bg-background/50 shadow-md"
                                             >
                                                 Import
@@ -342,7 +397,11 @@ export default function DeployThirdParty() {
                                         </div>
                                     ))
                                 ) : (
-                                    <div className="text-center">No repositories found. Please make sure your wallet is connected and you have repositories on Protocol Land.</div>
+                                    <div className="text-center">
+                                        No repositories found. Please make sure
+                                        your wallet is connected and you have
+                                        repositories on Protocol Land.
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -351,39 +410,55 @@ export default function DeployThirdParty() {
                     {step === "project" && (
                         <div className="space-y-6">
                             <div>
-                                <Label htmlFor="project-name">Project Name</Label>
+                                <Label htmlFor="project-name">
+                                    Project Name
+                                </Label>
                                 <Input
                                     id="project-name"
                                     value={projName}
-                                    onChange={(e) => setProjName(e.target.value)}
+                                    onChange={(e) =>
+                                        setProjName(e.target.value)
+                                    }
                                     className="mt-1 bg-card/50 shadow-md"
                                 />
                             </div>
                             <div>
-                                <Label htmlFor="output-dir">Output Directory</Label>
+                                <Label htmlFor="output-dir">
+                                    Output Directory
+                                </Label>
                                 <Input
                                     id="output-dir"
                                     value={outputDir}
-                                    onChange={(e) => setOutputDir(e.target.value)}
+                                    onChange={(e) =>
+                                        setOutputDir(e.target.value)
+                                    }
                                     className="mt-1 bg-card/50 shadow-md"
                                     placeholder="./dist"
                                 />
                             </div>
                             <div>
-                                <Label htmlFor="install-command">Install Command</Label>
+                                <Label htmlFor="install-command">
+                                    Install Command
+                                </Label>
                                 <Input
                                     id="install-command"
                                     value={installCommand}
-                                    onChange={(e) => setInstallCommand(e.target.value)}
+                                    onChange={(e) =>
+                                        setInstallCommand(e.target.value)
+                                    }
                                     className="mt-1 bg-card/50 shadow-md"
                                 />
                             </div>
                             <div>
-                                <Label htmlFor="build-command">Build Command</Label>
+                                <Label htmlFor="build-command">
+                                    Build Command
+                                </Label>
                                 <Input
                                     id="build-command"
                                     value={buildCommand}
-                                    onChange={(e) => setBuildCommand(e.target.value)}
+                                    onChange={(e) =>
+                                        setBuildCommand(e.target.value)
+                                    }
                                     className="mt-1 bg-card/50 shadow-md"
                                 />
                             </div>
@@ -403,17 +478,23 @@ export default function DeployThirdParty() {
                                         }
                                     }}
                                 />
-                                <Label htmlFor="use-arns">Use existing ArNS</Label>
+                                <Label htmlFor="use-arns">
+                                    Use existing ArNS
+                                </Label>
                             </div>
                             {useArns ? (
                                 <>
-                                    <Label htmlFor="arns-process">ArNS Name</Label>
+                                    <Label htmlFor="arns-process">
+                                        ArNS Name
+                                    </Label>
                                     <div className="relative">
-                                        <Input 
-                                            placeholder="Select an ArNS name or enter Process ID" 
-                                            id="arns-process" 
+                                        <Input
+                                            placeholder="Select an ArNS name or enter Process ID"
+                                            id="arns-process"
                                             value={arnsProcess}
-                                            onChange={(e) => setArnsProcess(e.target.value)}
+                                            onChange={(e) =>
+                                                setArnsProcess(e.target.value)
+                                            }
                                             onFocus={() => {
                                                 setShowArnsDropdown(true);
                                                 if (arnsNames.length === 0) {
@@ -425,17 +506,25 @@ export default function DeployThirdParty() {
                                         {showArnsDropdown && (
                                             <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-md shadow-lg">
                                                 <ul className="py-1">
-                                                    <li 
+                                                    <li
                                                         className="px-3 py-2 hover:bg-gray-700 cursor-pointer text-gray-200"
-                                                        onClick={() => handleArnsSelection(null)}
+                                                        onClick={() =>
+                                                            handleArnsSelection(
+                                                                null
+                                                            )
+                                                        }
                                                     >
                                                         None
                                                     </li>
                                                     {arnsNames.map((arns) => (
-                                                        <li 
-                                                            key={arns.processId} 
+                                                        <li
+                                                            key={arns.processId}
                                                             className="px-3 py-2 hover:bg-gray-700 cursor-pointer text-gray-200"
-                                                            onClick={() => handleArnsSelection(arns)}
+                                                            onClick={() =>
+                                                                handleArnsSelection(
+                                                                    arns
+                                                                )
+                                                            }
                                                         >
                                                             {arns.name}
                                                         </li>
@@ -452,16 +541,24 @@ export default function DeployThirdParty() {
                                 </>
                             ) : (
                                 <div>
-                                    <Label htmlFor="custom-arns-name">Custom ArNS Undername</Label>
-                                    <Input 
-                                        placeholder="yournamechoice" 
-                                        id="custom-arns-name" 
+                                    <Label htmlFor="custom-arns-name">
+                                        Custom ArNS Undername
+                                    </Label>
+                                    <Input
+                                        placeholder="yournamechoice"
+                                        id="custom-arns-name"
                                         value={customArnsName}
-                                        onChange={(e) => setCustomArnsName(e.target.value)}
+                                        onChange={(e) =>
+                                            setCustomArnsName(e.target.value)
+                                        }
                                         className="mt-1 bg-card/50 shadow-md"
                                     />
                                     <p className="text-sm text-muted-foreground mt-1">
-                                        Your custom name will be: {customArnsName ? `${customArnsName}_arlink.arweave.net` : ""} (if available)
+                                        Your custom name will be:{" "}
+                                        {customArnsName
+                                            ? `${customArnsName}_arlink.arweave.net`
+                                            : ""}{" "}
+                                        (if available)
                                     </p>
                                 </div>
                             )}
@@ -470,15 +567,15 @@ export default function DeployThirdParty() {
 
                     {step === "deploy" && (
                         <div className="space-y-4">
-                            <h2 className="text-xl font-semibold">Deployment Logs</h2>
+                            <h2 className="text-xl font-semibold">
+                                Deployment Logs
+                            </h2>
                             <div className="bg-card/50 p-4 rounded-md h-64 overflow-y-auto shadow-lg">
-                                <Logs 
-                                    
-                                    name={selectedRepo?.name || '' } 
-                                    deploying={deploying} 
+                                <Logs
+                                    name={selectedRepo?.name || ""}
+                                    deploying={deploying}
                                     repoUrl={repoUrl}
-                                    
-                                    owner={address || ''}
+                                    owner={address || ""}
                                 />
                             </div>
                         </div>
@@ -509,7 +606,9 @@ export default function DeployThirdParty() {
                 </div>
 
                 <footer className="mt-8 p-6 border-t border-border text-center text-muted-foreground bg-transparent">
-                    <a href="#" className="hover:text-foreground">Learn more about deploying projects →</a>
+                    <a href="#" className="hover:text-foreground">
+                        Learn more about deploying projects →
+                    </a>
                 </footer>
             </div>
         </Layout>
