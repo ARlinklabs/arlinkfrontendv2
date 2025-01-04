@@ -56,6 +56,14 @@ export default function Navbar() {
             name: "Logs",
             url: `/deployment/logs?repo=${extractRepoName(repo || "")}`,
         },
+        {
+            name: "Analytics",
+            url: `/deployment/analytics`,
+        },
+        {
+            name: "Settings",
+            url: `/deployment/settings`,
+        },
     ];
 
     const location = useLocation();

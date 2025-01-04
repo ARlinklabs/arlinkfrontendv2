@@ -37,7 +37,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
                             </h2>
                             <a
                                 href={`https://${project.arnsProcess}`}
-                                className="text-sm block text-neutral-500 hover:underline hover:text-neutral-400 transition-colors"
+                                className="text-sm text-nowrap block text-neutral-500 hover:underline hover:text-neutral-400 transition-colors"
                                 target="_blank"
                                 rel="noreferrer"
                             >

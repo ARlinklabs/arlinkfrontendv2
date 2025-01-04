@@ -1,4 +1,9 @@
-import type { DirectoryStructure, ProtocolLandRepo, Repository } from "@/types";
+import type {
+    ArnsName,
+    DirectoryStructure,
+    ProtocolLandRepo,
+    Repository,
+} from "@/types";
 import { BUILDER_BACKEND } from "@/lib/utils";
 import { Octokit } from "@octokit/rest";
 import { index } from "arweave-indexer";
@@ -7,6 +12,7 @@ import type React from "react";
 import { toast } from "sonner";
 import { SetStateAction } from "react";
 import fetchUserRepos from "@/lib/fetchprotolandrepo";
+import { getWalletOwnedNames } from "@/lib/get-arns";
 
 export async function fetchRepositories({
     githubToken,
@@ -225,6 +231,7 @@ export function createTokenizedRepoUrl(repoUrl: string, token: string): string {
     const [, , , username, repo] = repoUrl.split("/");
     return `https://${token}@github.com/${username}/${repo}.git`;
 }
+
 export const detectFrameworkImage = (
     outputDir: string
 ): {
@@ -367,7 +374,34 @@ export async function fetchProtocolLandRepos({
     } catch (error) {
         console.error("Error fetching repositories:", error);
         toast.error("Failed to fetch repositories");
-    } 
+    }
+}
+
+export async function handleFetchExistingArnsName({
+    setExistingArnsLoading,
+    activeAddress,
+    setArnsNames,
+}: {
+    setExistingArnsLoading: React.Dispatch<SetStateAction<boolean>>;
+    activeAddress: string | undefined;
+    setArnsNames: React.Dispatch<SetStateAction<ArnsName[]>>;
+}) {
+    setExistingArnsLoading(true);
+    if (!activeAddress) {
+        toast.error("wallet address not found");
+        return;
+    }
+    try {
+        // our logic of fetching the arns name
+        const names = await getWalletOwnedNames(activeAddress);
+        setArnsNames(names);
+        console.log("hello world");
+    } catch (error) {
+        console.error("Error fetching ArNS names:", error);
+        toast.error("Failed to fetch ArNS names");
+    } finally {
+        setExistingArnsLoading(false);
+    }
 }
 
 // export const handleFetchLogs = ({

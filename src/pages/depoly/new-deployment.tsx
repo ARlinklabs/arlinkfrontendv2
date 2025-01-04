@@ -1,11 +1,12 @@
 import Layout from "@/layouts/layout";
-import { TemplateSelection } from "./template";
-import GitAuthRepoSelector from "./provdier-repository";
-import ConfiguringDeploymentProject from "./configuring-deployment";
+import { TemplateSelection } from "../../components/ui/template";
+import ConfiguringDeploymentProject from "./github/configuring-deployment";
 import { useState } from "react";
 import type { Steps } from "@/types";
+import RepoProvider from "./repo-provider";
+import ConfigureProtocolLandProject from "./protocol-land/configure-protocol-land-project";
 
-const Deploy = () => {
+const NewDeployment = () => {
     const [selectedRepoUrl, setSelectedRepoUrl] = useState<string>("");
     const [step, setStep] = useState<Steps>("importing");
 
@@ -23,7 +24,7 @@ const Deploy = () => {
     );
 };
 
-export default Deploy;
+export default NewDeployment;
 
 const Steps = ({
     step,
@@ -50,7 +51,7 @@ const Steps = ({
                     </p>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <GitAuthRepoSelector
+                        <RepoProvider
                             setSelectedRepo={setSelectedRepo}
                             setStep={setStep}
                         />
@@ -65,6 +66,8 @@ const Steps = ({
                     setStep={setStep}
                 />
             );
+        case "configuring-protocol":
+            return <ConfigureProtocolLandProject setStep={setStep} />;
         default:
             return <div>Something wrong happened</div>;
     }

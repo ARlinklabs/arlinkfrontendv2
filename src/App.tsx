@@ -8,14 +8,14 @@ import {
 import Home from "@/pages/index";
 import Dashboard from "@/pages/dashboard";
 import Deployment from "@/pages/deployments/deployment";
-import DeployThirdParty from "@/pages/deploythirdparty";
-import Navbar from "./components/navbar";
+import DeployThirdParty from "@/archive/deploythirdparty";
+import Navbar from "./components/shared/navbar";
 import NotFound from "./components/ui/not-found";
 import { Toaster } from "./components/ui/sonner";
 import DeploymentLogs from "./pages/deployments/deployment-logs";
 import { useEffect } from "react";
-import Deploy from "./pages/depoly/deploy";
 import ComingSoon from "./components/coming-soon";
+import NewDeployment from "./pages/depoly/new-deployment";
 
 // Layout component remains the same
 function Layout() {
@@ -68,7 +68,7 @@ const router = createBrowserRouter([
                     },
                     {
                         path: "deploy",
-                        element: <Deploy />,
+                        element: <NewDeployment />,
                     },
                     {
                         path: "integration",

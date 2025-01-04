@@ -2,22 +2,21 @@ import { useGlobalState } from "@/store/useGlobalState";
 import type { ProtocolLandRepo, Repository, Steps } from "@/types";
 import { useEffect, useState } from "react";
 import { fetchProtocolLandRepos, fetchRepositories } from "./utilts";
-import { CustomDropdown } from "../../components/drop-down";
+import { CustomDropdown } from "../../components/shared/drop-down";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { timeAgo } from "@/lib/utils";
 import { useActiveAddress } from "arweave-wallet-kit";
 import { RepoSkeleton } from "@/components/skeletons";
+import { RepositoryItem } from "@/components/shared/repository-item";
 
 type GitAuthRepoSelectorTypesProps = {
     setSelectedRepo: React.Dispatch<React.SetStateAction<string>>;
     setStep: React.Dispatch<React.SetStateAction<Steps>>;
 };
 
-const GitAuthRepoSelector = ({
+const RepoProvider = ({
     setSelectedRepo,
     setStep,
 }: GitAuthRepoSelectorTypesProps) => {
@@ -155,66 +154,26 @@ const GitAuthRepoSelector = ({
                                   <RepoSkeleton key={arrayValue} />
                               ))
                             : provider === "github"
-                            ? filteredRepositories.map((value) => (
-                                  <div
-                                      key={value.id}
-                                      className="flex hover:bg-neutral-900 duration-75 transition-all items-center justify-between pl-2 px-4 py-3 border-b"
-                                  >
-                                      <div className="flex items-center space-x-3">
-                                          <div className="w-10 h-10 ">
-                                              <img
-                                                  src="/joose.svg"
-                                                  alt="logo"
-                                                  className="h-full w-full"
-                                              />
-                                          </div>
-                                          <span className="font-medium">
-                                              {value.full_name}
-                                          </span>
-                                          <span className="text-sm text-neutral-500">
-                                              {timeAgo(value.updated_at)}
-                                          </span>
-                                      </div>
-                                      <Button
-                                          size="sm"
-                                          className="rounded-sm h-8 mr-1"
-                                          onClick={() =>
-                                              handleRepoSelection(
-                                                  value.html_url
-                                              )
-                                          }
-                                      >
-                                          Import
-                                      </Button>
-                                  </div>
+                            ? filteredRepositories.map((repo) => (
+                                  <RepositoryItem
+                                      key={repo.id}
+                                      id={repo.id.toString()}
+                                      fullName={repo.full_name}
+                                      updatedAt={repo.updated_at}
+                                      url={repo.html_url}
+                                      onImport={handleRepoSelection}
+                                  />
                               ))
                             : filteredProtocolRepos.map((value) => (
-                                  <div
+                                  <RepositoryItem
                                       key={value.cloneUrl}
-                                      className="flex hover:bg-neutral-900 duration-75 transition-all items-center justify-between pl-2 px-4 py-3 border-b"
-                                  >
-                                      <div className="flex items-center space-x-3">
-                                          <div className="w-10 h-10 ">
-                                              <img
-                                                  src="/joose.svg"
-                                                  alt="logo"
-                                                  className="h-full w-full"
-                                              />
-                                          </div>
-                                          <span className="font-medium">
-                                              {value.name}
-                                          </span>
-                                      </div>
-                                      <Button
-                                          size="sm"
-                                          className="rounded-sm h-8 mr-1"
-                                          onClick={() =>
-                                              console.log(value.cloneUrl)
-                                          }
-                                      >
-                                          Import
-                                      </Button>
-                                  </div>
+                                      fullName={value.name}
+                                      id={value.cloneUrl}
+                                      onImport={() =>
+                                          console.log("hello world")
+                                      }
+                                      url={value.cloneUrl}
+                                  />
                               ))}
                     </ScrollArea>
                 </div>
@@ -223,4 +182,4 @@ const GitAuthRepoSelector = ({
     );
 };
 
-export default GitAuthRepoSelector;
+export default RepoProvider;

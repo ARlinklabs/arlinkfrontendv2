@@ -25,23 +25,25 @@ import {
     Loader2,
     MoreVertical,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import RootDirectoryDrawer from "./rootdir-drawer";
+import React, { SetStateAction, useEffect, useState } from "react";
+import RootDirectoryDrawer from "../../../components/rootdir-drawer";
 import { useActiveAddress } from "arweave-wallet-kit";
 import { toast } from "sonner";
-import DomainSelection from "./domain-selection";
+import DomainSelection from "../../../components/shared/domain-selection";
 import { getWalletOwnedNames } from "@/lib/get-arns";
 import useDeploymentManager from "@/hooks/useDeploymentManager";
 import { BUILDER_BACKEND } from "@/lib/utils";
 import { runLua, setArnsName as setUpArnsName } from "@/lib/ao-vars";
 import { useNavigate } from "react-router-dom";
-import DeploymentLogs from "./deploying-logs";
+import DeploymentLogs from "../../../components/shared/deploying-logs";
 import {
     createTokenizedRepoUrl,
     detectFrameworkImage,
+    handleFetchExistingArnsName,
     handleFetchLogs,
     indexInMalik,
-} from "./utilts";
+} from "../utilts";
+import NewDeploymentCard from "@/components/shared/new-deployment-card";
 
 const ConfiguringDeploymentProject = ({
     repoUrl,
@@ -84,13 +86,7 @@ const ConfiguringDeploymentProject = ({
     const [arnsProcess, setArnsProcess] = useState<string>("");
 
     // for the arns domain from wallet
-    const [arnsNames, setArnsNames] = useState<ArnsName[]>([
-        {
-            name: "arnsOne",
-            processId: "1",
-        },
-    ]);
-
+    const [arnsNames, setArnsNames] = useState<ArnsName[]>([]);
     const [arnsName, setArnsName] = useState<ArnsName | undefined>(undefined);
 
     // build and output setting states
@@ -112,7 +108,6 @@ const ConfiguringDeploymentProject = ({
     // deployment state
     const [isDeploying, setIsDeploying] = useState<boolean>(false);
     const [deploymentStarted, setDeploymentStarted] = useState<boolean>(false);
-
     const [deploymentComplete, setDeploymentComplete] =
         useState<boolean>(false);
     const [deploymentSucceded, setDeploymentSucceded] =
@@ -222,26 +217,6 @@ const ConfiguringDeploymentProject = ({
             }
         } finally {
             setLoadingBranches(false);
-        }
-    }
-
-    // when arns existing arns is selected this will will called
-    async function handleFetchExistingArnsName() {
-        setExistingArnsLoading(true);
-        if (!activeAddress) {
-            toast.error("wallet address not found");
-            return;
-        }
-        try {
-            // our logic of fetching the arns name
-            const names = await getWalletOwnedNames(activeAddress);
-            setArnsNames(names);
-            console.log("hello world");
-        } catch (error) {
-            console.error("Error fetching ArNS names:", error);
-            toast.error("Failed to fetch ArNS names");
-        } finally {
-            setExistingArnsLoading(false);
         }
     }
 
@@ -402,6 +377,14 @@ const ConfiguringDeploymentProject = ({
         }
     };
 
+    const handleFetchArns = async () => {
+        handleFetchExistingArnsName({
+            setArnsNames,
+            activeAddress,
+            setExistingArnsLoading,
+        });
+    };
+
     return (
         <div className="text-white px-8 mb-20 max-w-3xl mx-auto">
             <button
@@ -415,55 +398,14 @@ const ConfiguringDeploymentProject = ({
                 Set up ur deployment process
             </h1>
             <div className="rounded-lg mb-6">
-                <Card className="mb-6 bg-arlink-bg-secondary-color border border-neutral-800 w-full text-white">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm text-neutral-500 font-semibold">
-                            New Deployment card
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex items-center gap-4 mt-2">
-                            <div className="relative w-16 h-16 overflow-hidden rounded-lg bg-neutral-700">
-                                <img
-                                    src={`/logos/${frameWork.svg}`}
-                                    alt={`/logos/${frameWork.name}`}
-                                    className="w-10 h-10 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-                                />
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="text-lg font-semibold">
-                                    {projectName.length === 0
-                                        ? "Project Name"
-                                        : projectName}
-                                </h3>
-                                <div className="flex items-center gap-2 text-sm text-neutral-400">
-                                    <Globe className="w-4 h-4" />
-                                    <div className="hover:underline">
-                                        {activeTab === "arlink"
-                                            ? `${
-                                                  customArnsName.length === 0
-                                                      ? projectName.toLowerCase()
-                                                      : customArnsName.toLocaleLowerCase()
-                                              }.arlink.arweave.net`
-                                            : `${projectName}.${arnsName?.name}`}
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="flex flex-col items-end gap-2">
-                                <div className="flex items-center gap-2 text-sm text-neutral-400">
-                                    <GitBranch className="w-4 h-4" />
-                                    <span>{selectedBranch}</span>
-                                </div>
-                                <button
-                                    type="button"
-                                    className="text-neutral-400 hover:text-white transition-colors"
-                                >
-                                    <MoreVertical className="w-5 h-5" />
-                                </button>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                <NewDeploymentCard
+                    projectName={projectName}
+                    framework={frameWork}
+                    activeTab={activeTab}
+                    customArnsName={customArnsName}
+                    arnsName={arnsName}
+                    selectedBranch={selectedBranch}
+                />
                 {frameWork.dir.toLocaleLowerCase().includes("next") && (
                     <Card className="w-full mb-4 mx-auto bg-yellow-950/30 border-yellow-500/50 shadow-lg shadow-yellow-500/10">
                         <CardHeader className="pb-2">
@@ -603,7 +545,7 @@ const ConfiguringDeploymentProject = ({
                     activeTab={activeTab}
                     setActiveTab={setActiveTab}
                     setExistingArnsLoading={setExistingArnsLoading}
-                    handleFetchExistingArnsName={handleFetchExistingArnsName}
+                    handleFetchExistingArnsName={handleFetchArns}
                     setCustomArnsName={setCustomArnsName}
                     projectName={projectName}
                     customArnsName={customArnsName}

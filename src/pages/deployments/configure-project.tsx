@@ -196,7 +196,8 @@ const ConfigureProject = ({ deployment }: DeploymentComponentProps) => {
                             <GithubIcon className="w-5 h-5 text-neutral-600" />
                         }
                         label="GitHub Repository"
-                        value={deployment.RepoUrl}
+                        // value={deployment.RepoUrl}
+                        value={"https://github.com/arlink/dumdumtower"}
                         readOnly
                     />
                     <div className="space-y-2">

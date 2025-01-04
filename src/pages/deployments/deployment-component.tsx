@@ -16,7 +16,7 @@ import {
     ConfigureProjectSkeleton,
     DeploymentCardSkeleton,
 } from "@/components/skeletons";
-import DeploymentCard from "@/components/deployment-card";
+import DeploymentCard from "@/components/shared/deployment-card";
 import { extractGithubPath } from "../depoly/utilts";
 import { useDeploymentStore } from "@/store/use-deployment-store";
 
