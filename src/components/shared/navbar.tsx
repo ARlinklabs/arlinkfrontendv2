@@ -57,12 +57,8 @@ export default function Navbar() {
             url: `/deployment/logs?repo=${extractRepoName(repo || "")}`,
         },
         {
-            name: "Analytics",
-            url: `/deployment/analytics`,
-        },
-        {
             name: "Settings",
-            url: `/deployment/settings`,
+            url: `/deployment/settings?repo=${extractRepoName(repo || "")}`,
         },
     ];
 
@@ -97,7 +93,7 @@ export default function Navbar() {
 
     return (
         <nav className="bg-[#0D0D0D]/80 arlink-navbar z-50 sticky top-0 backdrop-blur-lg border-b-2 border-neutral-800  box-border">
-            <div className="px-[40px] pt-4 w-full flex items-center justify-between">
+            <div className="md:px-[40px] px-[16px] pt-4 w-full flex items-center justify-between">
                 <div className="flex gap-1 items-center">
                     <Link to="/dashboard">
                         <img
@@ -124,7 +120,7 @@ export default function Navbar() {
                 </div>
             </div>
             <div>
-                <div className="flex ml-[50px]">
+                <div className="flex md:ml-[50px] ml-[16px]">
                     {repo
                         ? deployPageNavlinks.map((link) => {
                               return (

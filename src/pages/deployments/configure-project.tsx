@@ -33,7 +33,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { analyzeRepoStructure, extractOwnerName } from "../depoly/utilts";
+import { extractOwnerName } from "../depoly/utilts";
 
 interface DeploymentComponentProps {
     deployment: TDeployment;
@@ -128,28 +128,6 @@ const ConfigureProject = ({ deployment }: DeploymentComponentProps) => {
         }
     }, [globalState.githubToken]);
 
-    // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-    useEffect(() => {
-        if (!deployment.RepoUrl) return;
-        if (globalState.githubToken === null) return;
-        const init = () => {
-            const repoUrl = deployment.RepoUrl;
-            const data = analyzeRepoStructure(
-                extractOwnerName(repoUrl),
-                repoUrl,
-                globalState.githubToken as string
-            );
-            console.log(
-                "------------------BITCH THIS IS THE DATA------------------------"
-            );
-            console.log(data);
-            console.log(
-                "------------------BITCH THIS IS THE DATA------------------------"
-            );
-        };
-        init();
-    }, [globalState.githubToken]);
-
     return (
         <div className="w-full mx-auto p-4 md:p-10 rounded-lg border border-neutral-800 bg-arlink-bg-secondary-color text-white shadow-2xl">
             <div className="flex flex-col lg:flex-row justify-between items-start gap-2">
@@ -196,8 +174,7 @@ const ConfigureProject = ({ deployment }: DeploymentComponentProps) => {
                             <GithubIcon className="w-5 h-5 text-neutral-600" />
                         }
                         label="GitHub Repository"
-                        // value={deployment.RepoUrl}
-                        value={"https://github.com/arlink/dumdumtower"}
+                        value={deployment.RepoUrl}
                         readOnly
                     />
                     <div className="space-y-2">

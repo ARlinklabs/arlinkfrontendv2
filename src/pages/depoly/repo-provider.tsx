@@ -12,7 +12,9 @@ import { RepoSkeleton } from "@/components/skeletons";
 import { RepositoryItem } from "@/components/shared/repository-item";
 
 type GitAuthRepoSelectorTypesProps = {
-    setSelectedRepo: React.Dispatch<React.SetStateAction<string>>;
+    setSelectedRepo: React.Dispatch<
+        React.SetStateAction<{ name: string; url: string }>
+    >;
     setStep: React.Dispatch<React.SetStateAction<Steps>>;
 };
 
@@ -88,10 +90,29 @@ const RepoProvider = ({
         setSearchQuery(e.target.value);
     };
 
-    const handleRepoSelection = (value: string) => {
-        setSelectedRepo(value);
-        console.log(value);
+    const handleRepoSelection = ({
+        name,
+        url,
+    }: {
+        name: string;
+        url: string;
+    }) => {
+        setSelectedRepo({
+            name,
+            url,
+        });
         setStep("configuring");
+    };
+
+    const handleProtocolLandrepoSelection = ({
+        name,
+        url,
+    }: {
+        name: string;
+        url: string;
+    }) => {
+        setSelectedRepo({ name, url });
+        setStep("configuring-protocol");
     };
 
     const handleProvider = (provider: "github" | "protocol") => {
@@ -161,7 +182,12 @@ const RepoProvider = ({
                                       fullName={repo.full_name}
                                       updatedAt={repo.updated_at}
                                       url={repo.html_url}
-                                      onImport={handleRepoSelection}
+                                      onImport={() => {
+                                          handleRepoSelection({
+                                              name: repo.name,
+                                              url: repo.html_url,
+                                          });
+                                      }}
                                   />
                               ))
                             : filteredProtocolRepos.map((value) => (
@@ -169,9 +195,12 @@ const RepoProvider = ({
                                       key={value.cloneUrl}
                                       fullName={value.name}
                                       id={value.cloneUrl}
-                                      onImport={() =>
-                                          console.log("hello world")
-                                      }
+                                      onImport={() => {
+                                          handleProtocolLandrepoSelection({
+                                              name: value.name,
+                                              url: value.cloneUrl,
+                                          });
+                                      }}
                                       url={value.cloneUrl}
                                   />
                               ))}

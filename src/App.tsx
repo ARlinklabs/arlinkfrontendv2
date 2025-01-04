@@ -8,14 +8,13 @@ import {
 import Home from "@/pages/index";
 import Dashboard from "@/pages/dashboard";
 import Deployment from "@/pages/deployments/deployment";
-import DeployThirdParty from "@/archive/deploythirdparty";
 import Navbar from "./components/shared/navbar";
-import NotFound from "./components/ui/not-found";
 import { Toaster } from "./components/ui/sonner";
 import DeploymentLogs from "./pages/deployments/deployment-logs";
 import { useEffect } from "react";
 import ComingSoon from "./components/coming-soon";
 import NewDeployment from "./pages/depoly/new-deployment";
+import DeploymentSetting from "./pages/deployments/deployment-settings";
 
 // Layout component remains the same
 function Layout() {
@@ -63,8 +62,8 @@ const router = createBrowserRouter([
                         element: <DeploymentLogs />,
                     },
                     {
-                        path: "deploythirdparty",
-                        element: <DeployThirdParty />,
+                        path: "deployment/settings",
+                        element: <DeploymentSetting />,
                     },
                     {
                         path: "deploy",

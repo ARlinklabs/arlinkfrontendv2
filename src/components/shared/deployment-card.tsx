@@ -21,19 +21,11 @@ const DeploymentCard = ({
                     {antName ? (
                         <>
                             <iframe
-                                // src={`https://${antName}_arlink.arweave.net/`}
-                                src={`https://dumdumtower_arlink.ar.io/`}
+                                src={`https://${antName}_arlink.arweave.net/`}
                                 className="w-full border border-neutral-700 z-20 h-[330px] relative rounded-sm"
                                 title="Deployment Preview"
                                 scrolling="no"
                             />
-                            {/* <iframe
-                                // src={`https://${antName}_arlink.arweave.net/`}
-                                src={`https://dumdumtower_arlink.ar.io/`}
-                                className="w-full scale-[1.01] absolute top-0 left-0 blur-3xl border border-neutral-700 h-[330px] rounded-sm"
-                                title="Deployment Preview"
-                                scrolling="no"
-                            /> */}
                         </>
                     ) : (
                         <div className="w-full border border-neutral-700 h-[330px] flex items-center rounded-sm justify-center bg-neutral-900 text-white">
@@ -86,8 +78,7 @@ const DeploymentCard = ({
                                     target="_blank"
                                     className="text-sm hover:underline flex items-center"
                                 >
-                                    {/* {`${antName}_arlink.arweave.net`} */}
-                                    https://dumdumtower_arlink.ar.io/
+                                    {`${antName}_arlink.arweave.net`}
                                     <MoveUpRight className="w-4 h-4 ml-2" />
                                 </Link>
                             </div>
@@ -140,11 +131,11 @@ const DeploymentCard = ({
                             alt="github-logo"
                         />
                         <span className="font-medium text-neutral-400">
-                            {/* {deployment?.RepoUrl?.replace(
+                            {deployment?.RepoUrl?.replace(
                                 "https://github.com/",
                                 ""
-                            )} */}
-                            arlink/dumdumtower
+                            )}
+                            {/* arlink/dumdumtower */}
                         </span>
                     </a>
                 </div>

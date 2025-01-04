@@ -119,3 +119,32 @@ export type Steps =
     | "deployment"
     | "configuring-protocol"
     | "deployment-protocol";
+
+export interface SettingInputProps {
+    label: string;
+    placeholder: string;
+    value: string;
+    enabled: boolean;
+    onValueChange: (value: string) => void;
+    onEnabledChange: (enabled: boolean) => void;
+}
+
+export interface BuildSetting {
+    value: string;
+    enabled: boolean;
+}
+
+export interface BuildSettings {
+    buildCommand: BuildSetting;
+    installCommand: BuildSetting;
+    outPutDir: BuildSetting;
+}
+
+interface BuildSettingsProps {
+    buildSettings: BuildSettings;
+    onSettingChange: (
+        setting: keyof BuildSettings,
+        field: keyof BuildSetting,
+        value: string | boolean
+    ) => void;
+}

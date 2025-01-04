@@ -299,7 +299,7 @@ export default function DeployThirdParty() {
                     branch: "main", // Assuming main branch for Protocol Land repos
                     subDirectory: "./",
                     protocolLand: true,
-                    repoName: selectedRepo?.name,
+                    repoName: selectedRepo.name,
                     walletAddress: address,
                     customArnsName: customArnsName || "",
                 },
@@ -325,8 +325,6 @@ export default function DeployThirdParty() {
                 }
 
                 navigate(`/deployment?repo=${projName}`);
-
-                window.open("https://arweave.net/" + txid.data, "_blank");
             } else {
                 toast.error("Deployment failed");
                 console.log(txid);

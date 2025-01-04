@@ -4,10 +4,17 @@ import ConfiguringDeploymentProject from "./github/configuring-deployment";
 import { useState } from "react";
 import type { Steps } from "@/types";
 import RepoProvider from "./repo-provider";
-import ConfigureProtocolLandProject from "./protocol-land/configure-protocol-land-project";
+import ConfigureProtocolLandProject from "./protocol-land/configuring-pl-deployment";
 
 const NewDeployment = () => {
-    const [selectedRepoUrl, setSelectedRepoUrl] = useState<string>("");
+    const [selectedRepoUrl, setSelectedRepoUrl] = useState<{
+        name: string;
+        url: string;
+    }>({
+        name: "project name",
+        url: "demo-url",
+    });
+
     const [step, setStep] = useState<Steps>("importing");
 
     return (
@@ -16,7 +23,7 @@ const NewDeployment = () => {
                 <Steps
                     step={step}
                     setSelectedRepo={setSelectedRepoUrl}
-                    repoUrl={selectedRepoUrl}
+                    selectedRepo={selectedRepoUrl}
                     setStep={setStep}
                 />
             </div>
@@ -29,12 +36,14 @@ export default NewDeployment;
 const Steps = ({
     step,
     setSelectedRepo,
-    repoUrl,
+    selectedRepo,
     setStep,
 }: {
     step: Steps;
-    setSelectedRepo: React.Dispatch<React.SetStateAction<string>>;
-    repoUrl: string;
+    setSelectedRepo: React.Dispatch<
+        React.SetStateAction<{ name: string; url: string }>
+    >;
+    selectedRepo: { name: string; url: string };
     setStep: React.Dispatch<React.SetStateAction<Steps>>;
 }) => {
     switch (step) {
@@ -62,12 +71,18 @@ const Steps = ({
         case "configuring":
             return (
                 <ConfiguringDeploymentProject
-                    repoUrl={repoUrl}
+                    repoName={selectedRepo.name}
+                    repoUrl={selectedRepo.url}
                     setStep={setStep}
                 />
             );
         case "configuring-protocol":
-            return <ConfigureProtocolLandProject setStep={setStep} />;
+            return (
+                <ConfigureProtocolLandProject
+                    setStep={setStep}
+                    selectedRepo={selectedRepo}
+                />
+            );
         default:
             return <div>Something wrong happened</div>;
     }

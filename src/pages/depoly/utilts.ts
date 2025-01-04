@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { SetStateAction } from "react";
 import fetchUserRepos from "@/lib/fetchprotolandrepo";
 import { getWalletOwnedNames } from "@/lib/get-arns";
+import { getRepoConfig } from "@/lib/getRepoconfig";
 
 export async function fetchRepositories({
     githubToken,
@@ -116,7 +117,9 @@ export async function analyzeRepoStructure(
     async function getContents(path = ""): Promise<DirectoryStructure[]> {
         try {
             const response = await fetch(
-                `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
+                `https://api.github.com/repos/${owner}/${extractRepoName(
+                    repo
+                )}/contents/${path}`,
                 {
                     headers: {
                         Authorization: `Bearer ${githubToken}`,
@@ -124,7 +127,6 @@ export async function analyzeRepoStructure(
                     },
                 }
             );
-
             if (!response.ok) {
                 throw new Error(`GitHub API error: ${response.statusText}`);
             }
@@ -152,6 +154,140 @@ export async function analyzeRepoStructure(
                     })
                 );
 
+                const repoContent = contents.filter(
+                    (item) =>
+                        ![
+                            "node_modules",
+                            ".git",
+                            ".github",
+                            "dist",
+                            "build",
+                        ].includes(item.name)
+                );
+
+                return repoContent.filter((repo) =>
+                    repo.path.includes("package.json")
+                );
+            }
+        } catch (error) {
+            console.error(`Error fetching contents for ${path}:`, error);
+            return [];
+        }
+
+        return [];
+    }
+
+    const structure = await getContents();
+    return findFrontendDirs(repo, owner, structure);
+}
+
+interface ProjectDeploymentConfig {
+    owner: string;
+    repoName: string;
+    repository: string;
+    branch: string;
+    installCommand: string;
+    buildCommand: string;
+    outputDir: string;
+    subDirectory: string;
+    lastBuiltCommit: string;
+    maxDailyDeploys: number;
+    deployCount: number;
+    url: string;
+    arnsUnderName: string;
+    noSizeCheck: boolean;
+}
+
+interface RepoProjectStructure {
+    name: string;
+    path: string;
+    type: "dir" | "file";
+    outputDir?: string;
+    deploymentConfig?: ProjectDeploymentConfig;
+    children?: RepoProjectStructure[];
+}
+
+export async function analyzeProjectDeploymentStructure(
+    owner: string,
+    repo: string,
+    githubToken: string,
+    configApiUrl?: string
+): Promise<RepoProjectStructure[]> {
+    // Fetch deployment config if available
+    async function fetchProjectDeploymentConfig(): Promise<ProjectDeploymentConfig | null> {
+        if (!configApiUrl) return null;
+
+        try {
+            const response = await fetch(
+                `${configApiUrl}/config/${owner}/${repo}`
+            );
+            if (!response.ok) return null;
+            return await response.json();
+        } catch (error) {
+            console.error("Error fetching deployment config:", error);
+            return null;
+        }
+    }
+
+    // Get the deployment config once at the start
+    const deploymentConfig = await fetchProjectDeploymentConfig();
+
+    async function getProjectContents(
+        path = ""
+    ): Promise<RepoProjectStructure[]> {
+        try {
+            const response = await fetch(
+                `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${githubToken}`,
+                        Accept: "application/vnd.github.v3+json",
+                    },
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`GitHub API error: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            if (Array.isArray(data)) {
+                const contents = await Promise.all(
+                    data.map(async (item) => {
+                        const structure: RepoProjectStructure = {
+                            name: item.name,
+                            path: item.path,
+                            type: item.type as "dir" | "file",
+                        };
+
+                        if (item.type === "dir") {
+                            // Check if this directory matches the deployment config's subDirectory
+                            if (
+                                deploymentConfig &&
+                                item.path === deploymentConfig.subDirectory
+                            ) {
+                                structure.outputDir =
+                                    deploymentConfig.outputDir;
+                                structure.deploymentConfig = deploymentConfig;
+                            }
+
+                            // Skip processing certain directories
+                            if (
+                                !["node_modules", ".git", "dist"].includes(
+                                    item.name
+                                )
+                            ) {
+                                structure.children = await getProjectContents(
+                                    item.path
+                                );
+                            }
+                        }
+
+                        return structure;
+                    })
+                );
+
                 return contents.filter(
                     (item) =>
                         ![
@@ -167,17 +303,18 @@ export async function analyzeRepoStructure(
             console.error(`Error fetching contents for ${path}:`, error);
             return [];
         }
-
         return [];
     }
 
-    const structure = await getContents();
-    return findFrontendDirs(structure);
+    const structure = await getProjectContents();
+    return structure;
 }
 
-function findFrontendDirs(
+async function findFrontendDirs(
+    repo: string,
+    owner: string,
     structure: DirectoryStructure[]
-): DirectoryStructure[] {
+): Promise<DirectoryStructure[]> {
     const frontendIndicators = [
         "package.json",
         "src",
@@ -190,7 +327,7 @@ function findFrontendDirs(
         "tsconfig.json",
     ];
 
-    return structure.filter((item) => {
+    const output = structure.filter((item) => {
         if (item.type === "dir") {
             return item.children?.some((child) =>
                 frontendIndicators.includes(child.name.toLowerCase())
@@ -198,6 +335,16 @@ function findFrontendDirs(
         }
         return false;
     });
+
+    const repoConfigesPromises = output.map((project) => {
+        return getRepoConfig(owner, extractRepoName(repo), project.path);
+    });
+    const repoConfigs = await Promise.all(repoConfigesPromises);
+    console.log(repoConfigs);
+    console.log({
+        repo,
+    });
+    return output;
 }
 
 export function extractRepoName(url: string): string {
@@ -337,7 +484,9 @@ export const handleFetchLogs = async ({
                     stopPolling();
                 }
             } else {
-                setLogError("An error occurred while fetching logs.");
+                setLogError(
+                    "Deployment failed or an error occured while fetching logs."
+                );
                 console.error("Error fetching logs:", error);
                 setIsFetchingLogs(false);
                 stopPolling();

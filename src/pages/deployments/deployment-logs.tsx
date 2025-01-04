@@ -165,16 +165,16 @@ const DeploymentLogs = () => {
 
     return (
         <Layout>
-            <div className="container p-10">
-                <div className=" bg-arlink-bg-secondary-color p-8 rounded-lg mt-6 border border-[#383838]">
-                    <h2 className="text-xl font-semibold mb-4">
-                        Deployment Process
+            <div className="container py-5 ">
+                <div className="rounded-lg mt-6 border-[#383838]">
+                    <h2 className="text-3xl font-semibold mb-6">
+                        Deployment Logs
                     </h2>
                     <div className="space-y-2 w-full">
                         <Accordion type="single" collapsible className="w-full">
                             <AccordionItem
                                 value="item-1"
-                                className="rounded-lg w-full border overflow-hidden"
+                                className="rounded-lg bg-arlink-bg-secondary-color w-full border overflow-hidden"
                             >
                                 <AccordionTrigger className="p-4 w-full">
                                     <div className="flex items-center w-full justify-between">

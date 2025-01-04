@@ -1,14 +1,6 @@
 // shadcn imports
 import { Skeleton } from "./ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 
 // icon imports
 import {
@@ -21,7 +13,10 @@ import {
     GithubIcon,
     Hammer,
     Package,
+    AlertTriangle,
+    ExternalLink,
 } from "lucide-react";
+import { CardTitle } from "./ui/card-hover-effect";
 
 export const ProjectCardSkeleton = ({ viewMode }: { viewMode: string }) => (
     <div
@@ -198,5 +193,51 @@ export const RepoSkeleton = () => {
             </div>
             <div className="w-16 h-8 bg-neutral-700 rounded" />
         </div>
+    );
+};
+
+export const NextJsProjectWarningCard = () => {
+    return (
+        <Card className="w-full mb-4 mx-auto bg-yellow-950/30 border-yellow-500/50 shadow-lg shadow-yellow-500/10">
+            <CardHeader className="pb-2">
+                <CardTitle className="flex items-center text-yellow-300">
+                    <AlertTriangle className="w-5 h-5 mr-2 text-yellow-400" />
+                    Warning
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm">
+                <p className="mb-3 text-yellow-200">
+                    You are deploying a Next.js project. Make sure you are using
+                    a static export.
+                </p>
+                <p className="font-medium text-yellow-100 mb-2">
+                    Learn how to deploy a Next.js project:
+                </p>
+                <ul className="space-y-2">
+                    <li>
+                        <a
+                            href="https://arlink.gitbook.io/arlink-docs/getting-started/making-your-website-arweave-compatible#next.js"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center text-yellow-300 hover:text-yellow-100 transition-colors"
+                        >
+                            Arlink Next.js docs
+                            <ExternalLink className="w-4 h-4 ml-1" />
+                        </a>
+                    </li>
+                    <li>
+                        <a
+                            href="https://nextjs.org/docs/pages/building-your-application/deploying/static-exports"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center text-yellow-300 hover:text-yellow-100 transition-colors"
+                        >
+                            Next.js docs
+                            <ExternalLink className="w-4 h-4 ml-1" />
+                        </a>
+                    </li>
+                </ul>
+            </CardContent>
+        </Card>
     );
 };

@@ -9,9 +9,13 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Switch } from "@/components/ui/switch";
 import { useGlobalState } from "@/store/useGlobalState";
-import type { ArnsName, Steps } from "@/types";
+import {
+    DirectoryStructure,
+    type ArnsName,
+    type BuildSettings,
+    type Steps,
+} from "@/types";
 import { getRepoConfig } from "@/lib/getRepoconfig";
 import { SelectGroup } from "@radix-ui/react-select";
 import axios, { isAxiosError } from "axios";
@@ -20,12 +24,9 @@ import {
     ChevronDown,
     ChevronLeft,
     ExternalLink,
-    GitBranch,
-    Globe,
     Loader2,
-    MoreVertical,
 } from "lucide-react";
-import React, { SetStateAction, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import RootDirectoryDrawer from "../../../components/rootdir-drawer";
 import { useActiveAddress } from "arweave-wallet-kit";
 import { toast } from "sonner";
@@ -37,18 +38,26 @@ import { runLua, setArnsName as setUpArnsName } from "@/lib/ao-vars";
 import { useNavigate } from "react-router-dom";
 import DeploymentLogs from "../../../components/shared/deploying-logs";
 import {
+    analyzeProjectDeploymentStructure,
+    analyzeRepoStructure,
     createTokenizedRepoUrl,
     detectFrameworkImage,
+    extractOwnerName,
+    extractRepoName,
     handleFetchExistingArnsName,
     handleFetchLogs,
     indexInMalik,
 } from "../utilts";
 import NewDeploymentCard from "@/components/shared/new-deployment-card";
+import { BuildDeploymentSetting } from "@/components/shared/build-settings";
+import { NextJsProjectWarningCard } from "@/components/skeletons";
 
 const ConfiguringDeploymentProject = ({
+    repoName,
     repoUrl,
     setStep,
 }: {
+    repoName: string;
     repoUrl: string;
     setStep: React.Dispatch<React.SetStateAction<Steps>>;
 }) => {
@@ -70,6 +79,7 @@ const ConfiguringDeploymentProject = ({
 
     // project states
     const [projectName, setProjectName] = useState<string>("");
+    const [subDir, setSubDir] = useState<DirectoryStructure[]>([]);
 
     // branches state
     const [branches, setBranches] = useState<string[]>(["main", "master"]);
@@ -90,7 +100,7 @@ const ConfiguringDeploymentProject = ({
     const [arnsName, setArnsName] = useState<ArnsName | undefined>(undefined);
 
     // build and output setting states
-    const [buildSettings, setBuildSettings] = useState({
+    const [buildSettings, setBuildSettings] = useState<BuildSettings>({
         buildCommand: { enabled: false, value: "npm run build" },
         installCommand: { enabled: false, value: "npm install" },
         outPutDir: { enabled: false, value: "./dist" },
@@ -100,6 +110,7 @@ const ConfiguringDeploymentProject = ({
     const [loadingBranches, setLoadingBranches] = useState<boolean>(true);
     const [existingArnsLoading, setExistingArnsLoading] =
         useState<boolean>(true);
+    const [fetchingSubDir, setFetchingSubDir] = useState<boolean>(false);
 
     // error states < will keep adding more after deploy button >
     const [branchError, setBranchError] = useState<string>("");
@@ -115,7 +126,6 @@ const ConfiguringDeploymentProject = ({
 
     const [deploymentFailed, setDeploymentFailed] = useState<boolean>(false);
 
-    // log states
     const [logs, setLogs] = useState<string[]>([]);
     const [logError, setLogError] = useState<string>("");
     const [isWaitingForLogs, setIsWaitingForLogs] = useState<boolean>(false);
@@ -149,11 +159,9 @@ const ConfiguringDeploymentProject = ({
             console.log({
                 config,
             });
-            // setting the config values
-            // default project names
+
             setProjectName(defaultProjectName);
             setCustomArnsName(defaultProjectName);
-            // build and output settinsg configuration
             setBuildSettings((prev) => ({
                 ...prev,
                 buildCommand: {
@@ -229,17 +237,6 @@ const ConfiguringDeploymentProject = ({
     }
 
     // build and output settings handler commands
-    const handleSettingChange = (
-        setting: keyof typeof buildSettings,
-        field: "enabled" | "value",
-        value: boolean | string
-    ) => {
-        setBuildSettings((prev) => ({
-            ...prev,
-            [setting]: { ...prev[setting], [field]: value },
-        }));
-    };
-
     const deployProject = async () => {
         // deployment states
         setIsDeploying(true);
@@ -301,24 +298,22 @@ const ConfiguringDeploymentProject = ({
                 `${BUILDER_BACKEND}/deploy`,
                 {
                     repository: tokenizedRepoUrl,
-                    branch: selectedBranch,
-                    installCommand: "bun install",
-                    buildCommand: "bun run build",
-                    subDirectory: rootDirectory,
+                    installCommand: buildSettings.installCommand.value,
+                    buildCommand: buildSettings.buildCommand.value,
                     outputDir: buildSettings.outPutDir.value,
-                    repoName: customArnsName,
+                    subDirectory: rootDirectory,
+                    protocolLand: false,
+                    repoName: repoName,
+                    branch: selectedBranch,
                     githubToken,
+                    walletAddress: activeAddress,
+                    customArnsName: customArnsName || "",
                 },
                 {
                     timeout: 60 * 60 * 1000,
                     headers: { "Content-Type": "application/json" },
                 }
             );
-            console.log("----------------RESPONSE-------------------------");
-            console.log({
-                response,
-            });
-            console.log("-----------------------------------------");
 
             // after the deployment has started we call this function
             // This function is responsible for fetching logs,
@@ -336,7 +331,7 @@ const ConfiguringDeploymentProject = ({
                 const query = `local res = db:exec[[
 						INSERT INTO Deployments (Name, RepoUrl, Branch, InstallCMD, BuildCMD, OutputDIR, ArnsProcess)
 							VALUES
-						('${projectName}', '${repoUrl}', '${selectedBranch}', '${buildSettings.installCommand}', '${buildSettings.buildCommand}', '${buildSettings.outPutDir}', '${finalArnsProcess}')
+						('${projectName}', '${repoUrl}', '${selectedBranch}', '${buildSettings.installCommand.value}', '${buildSettings.buildCommand.value}', '${buildSettings.outPutDir.value}', '${finalArnsProcess}')
 				]]`;
 
                 const res = await runLua(query, mgProcess);
@@ -362,12 +357,10 @@ const ConfiguringDeploymentProject = ({
                 // In the deploy function within pages/deploy.tsx, update this line:
                 navigate(`/deployment?repo=${projectName}`);
             } else {
-                toast.error("deployment failed");
                 throw new Error("Deployment failed: Unexpected response");
             }
         } catch (error) {
             console.error("Deployment error:", error);
-            toast.error("deployment failed. Please check logs on dashboard");
             setDeploymentSucceded(false);
             setDeploymentComplete(false);
             setDeploymentFailed(true);
@@ -384,6 +377,44 @@ const ConfiguringDeploymentProject = ({
             setExistingArnsLoading,
         });
     };
+
+    const handleSettingChange = (
+        setting: keyof BuildSettings,
+        field: keyof BuildSettings[keyof BuildSettings],
+        value: string | boolean
+    ) => {
+        setBuildSettings((prev) => ({
+            ...prev,
+            [setting]: {
+                ...prev[setting],
+                [field]: value,
+            },
+        }));
+    };
+
+    useEffect(() => {
+        if (!repoUrl) return;
+        if (githubToken === null) return;
+
+        const init = async () => {
+            setFetchingSubDir(true);
+            try {
+                const data = await analyzeRepoStructure(
+                    extractOwnerName(repoUrl),
+                    repoUrl,
+                    githubToken as string
+                );
+
+                setSubDir(data);
+            } catch (error) {
+                console.log(error);
+            } finally {
+                setFetchingSubDir(false);
+            }
+        };
+
+        init();
+    }, []);
 
     return (
         <div className="text-white px-8 mb-20 max-w-3xl mx-auto">
@@ -407,47 +438,7 @@ const ConfiguringDeploymentProject = ({
                     selectedBranch={selectedBranch}
                 />
                 {frameWork.dir.toLocaleLowerCase().includes("next") && (
-                    <Card className="w-full mb-4 mx-auto bg-yellow-950/30 border-yellow-500/50 shadow-lg shadow-yellow-500/10">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="flex items-center text-yellow-300">
-                                <AlertTriangle className="w-5 h-5 mr-2 text-yellow-400" />
-                                Warning
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="text-sm">
-                            <p className="mb-3 text-yellow-200">
-                                You are deploying a Next.js project. Make sure
-                                you are using a static export.
-                            </p>
-                            <p className="font-medium text-yellow-100 mb-2">
-                                Learn how to deploy a Next.js project:
-                            </p>
-                            <ul className="space-y-2">
-                                <li>
-                                    <a
-                                        href="https://arlink.gitbook.io/arlink-docs/getting-started/making-your-website-arweave-compatible#next.js"
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="flex items-center text-yellow-300 hover:text-yellow-100 transition-colors"
-                                    >
-                                        Arlink Next.js docs
-                                        <ExternalLink className="w-4 h-4 ml-1" />
-                                    </a>
-                                </li>
-                                <li>
-                                    <a
-                                        href="https://nextjs.org/docs/pages/building-your-application/deploying/static-exports"
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="flex items-center text-yellow-300 hover:text-yellow-100 transition-colors"
-                                    >
-                                        Next.js docs
-                                        <ExternalLink className="w-4 h-4 ml-1" />
-                                    </a>
-                                </li>
-                            </ul>
-                        </CardContent>
-                    </Card>
+                    <NextJsProjectWarningCard />
                 )}
                 <div className="space-y-4">
                     <div>
@@ -525,6 +516,7 @@ const ConfiguringDeploymentProject = ({
                                 id="directory"
                                 value={rootDirectory}
                                 readOnly
+                                disabled={fetchingSubDir}
                                 className="bg-[#0D0D0D] p-4 placeholder:text-neutral-500 rounded-md border-[#383838] text-white"
                             />
                             <Button
@@ -532,6 +524,7 @@ const ConfiguringDeploymentProject = ({
                                 onClick={() =>
                                     setIsRootDirectoryDrawerOpen(true)
                                 }
+                                disabled={fetchingSubDir}
                             >
                                 Change
                             </Button>
@@ -564,100 +557,10 @@ const ConfiguringDeploymentProject = ({
                 </p>
 
                 <div className="space-y-4">
-                    <div>
-                        <p className="mb-3 font-medium text-sm">
-                            Build command
-                        </p>
-                        <div className="relative">
-                            {/* <div className="flex items-center absolute right-2 z-10 top-1/2 -translate-y-1/2 justify-between">
-								<Switch
-									checked={buildSettings.buildCommand.enabled}
-									onCheckedChange={(checked) =>
-										handleSettingChange("buildCommand", "enabled", checked)
-									}
-								/>
-							</div> */}
-                            <Input
-                                placeholder="npm run build"
-                                value={buildSettings.buildCommand.value}
-                                onChange={(e) =>
-                                    handleSettingChange(
-                                        "buildCommand",
-                                        "value",
-                                        e.target.value
-                                    )
-                                }
-                                disabled={!buildSettings.buildCommand.enabled}
-                                className="bg-[#0C0C0C] border-[#383838] text-white"
-                            />
-                        </div>
-                    </div>
-
-                    <div>
-                        <p className="mb-3 font-medium text-sm">
-                            Install command
-                        </p>
-                        <div className="relative">
-                            <div className="flex items-center absolute right-2 z-10 top-1/2 -translate-y-1/2 justify-between">
-                                <Switch
-                                    checked={
-                                        buildSettings.installCommand.enabled
-                                    }
-                                    onCheckedChange={(checked) =>
-                                        handleSettingChange(
-                                            "installCommand",
-                                            "enabled",
-                                            checked
-                                        )
-                                    }
-                                />
-                            </div>
-                            <Input
-                                placeholder="Enter your install command"
-                                value={buildSettings.installCommand.value}
-                                onChange={(e) =>
-                                    handleSettingChange(
-                                        "installCommand",
-                                        "value",
-                                        e.target.value
-                                    )
-                                }
-                                disabled={!buildSettings.installCommand.enabled}
-                                className="bg-[#0C0C0C] border-[#383838] text-white"
-                            />
-                        </div>
-                    </div>
-
-                    <div>
-                        <p className="mb-3 font-medium text-sm">Output dir</p>
-                        <div className="relative">
-                            <div className="flex items-center absolute right-2 z-10 top-1/2 -translate-y-1/2 justify-between">
-                                <Switch
-                                    checked={buildSettings.outPutDir.enabled}
-                                    onCheckedChange={(checked) =>
-                                        handleSettingChange(
-                                            "outPutDir",
-                                            "enabled",
-                                            checked
-                                        )
-                                    }
-                                />
-                            </div>
-                            <Input
-                                placeholder="Enter your output dir"
-                                value={buildSettings.outPutDir.value}
-                                onChange={(e) =>
-                                    handleSettingChange(
-                                        "outPutDir",
-                                        "value",
-                                        e.target.value
-                                    )
-                                }
-                                disabled={!buildSettings.outPutDir.enabled}
-                                className="bg-[#0C0C0C] border-[#383838] text-white"
-                            />
-                        </div>
-                    </div>
+                    <BuildDeploymentSetting
+                        buildSettings={buildSettings}
+                        onSettingChange={handleSettingChange}
+                    />
                 </div>
             </div>
 
@@ -665,7 +568,7 @@ const ConfiguringDeploymentProject = ({
                 className="w-full bg-white hover:bg-neutral-200 text-black"
                 onClick={deployProject}
             >
-                Deploy now {frameWork.name}
+                Deploy now
             </Button>
 
             {deploymentStarted && (
@@ -678,6 +581,7 @@ const ConfiguringDeploymentProject = ({
             )}
 
             <RootDirectoryDrawer
+                subDir={subDir}
                 isOpen={isRootDirectoryDrawerOpen}
                 onClose={() => setIsRootDirectoryDrawerOpen(false)}
                 onSelect={setRootDirectory}
