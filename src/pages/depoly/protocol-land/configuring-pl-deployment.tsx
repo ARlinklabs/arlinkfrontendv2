@@ -141,7 +141,7 @@ const ConfigureProtocolLandProject = ({
                         installCommand: buildSettings.installCommand.value,
                         buildCommand: buildSettings.buildCommand.value,
                         outputDir: buildSettings.outPutDir.value,
-                        branch: "main", 
+                        branch: "main",
                         subDirectory: "./",
                         protocolLand: true,
                         repoName: selectedRepo.name,
@@ -250,7 +250,7 @@ const ConfigureProtocolLandProject = ({
             </div>
             <Button
                 className="w-full mt-10 bg-white hover:bg-neutral-200 text-black"
-                // onClick={deployProject}
+                onClick={handleDeployProject}
             >
                 Deploy now
             </Button>

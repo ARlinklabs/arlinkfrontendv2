@@ -325,8 +325,7 @@ export default function DeploymentSetting() {
                                     </Label>
                                     <Input
                                         id="current"
-                                        defaultValue="arn:aws:lambda:us-west-2:123456789012:function:my-function"
-                                        readOnly
+                                        placeholder="current arns will be displayed here?"
                                         className="bg-neutral-900 border-neutral-800 text-neutral-100 text-xs md:text-sm"
                                     />
                                 </div>
