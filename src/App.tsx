@@ -15,6 +15,7 @@ import { useEffect } from "react";
 import ComingSoon from "./components/coming-soon";
 import NewDeployment from "./pages/depoly/new-deployment";
 import DeploymentSetting from "./pages/deployments/deployment-settings";
+import DeploymentPreview from "./pages/deployments/deployment-preview";
 
 // Layout component remains the same
 function Layout() {
@@ -60,6 +61,10 @@ const router = createBrowserRouter([
                     {
                         path: "deployment/logs",
                         element: <DeploymentLogs />,
+                    },
+                    {
+                        path: "deployment/preview",
+                        element: <DeploymentPreview />,
                     },
                     {
                         path: "deployment/settings",

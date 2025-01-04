@@ -1,5 +1,4 @@
 import useDeploymentManager from "@/hooks/useDeploymentManager";
-import { useGlobalState } from "@/store/useGlobalState";
 import { ArnsName, BuildSettings, Steps } from "@/types";
 import { useActiveAddress } from "arweave-wallet-kit";
 import { useState } from "react";
