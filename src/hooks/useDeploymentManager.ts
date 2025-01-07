@@ -49,21 +49,15 @@ export default function useDeploymentManager() {
     const globalState = useGlobalState();
     const { connected } = useConnection();
     const address = useActiveAddress();
-    //@ts-ignore
-    const ao = connect();
 
     useEffect(() => {
         if (connected && address) {
             getManagerProcessFromAddress(address).then((id) => {
                 if (id) {
-                    // console.log("deployment manager id", id);
                     globalState.setManagerProcess(id);
                 } else {
-                    // console.log("No manager process found, spawning new one");
-                    //@ts-ignore
                     spawnProcess("ARlink-Manager").then(async (newId) => {
                         await runLua(setupCommands, newId);
-                        // console.log("deployment manager id", newId);
                         globalState.setManagerProcess(newId);
                     });
                 }

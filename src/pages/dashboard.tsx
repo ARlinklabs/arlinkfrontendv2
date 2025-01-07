@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { Search, Grid, List, Plus } from "lucide-react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useConnection, useActiveAddress } from "arweave-wallet-kit";
@@ -24,9 +24,13 @@ const Dashboardcomp = () => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("activity");
-  const [noDeploymentFound, setNoDeploymentFound] = useState<boolean>(false);
+  const [isFetchingDeployments, setIsFetchingDeployments] =
+    useState<boolean>(true);
   const { managerProcess, deployments } = useDeploymentManager();
   const [cardsLimit, setCardsLimit] = useState(0);
+  const navigate = useNavigate();
+  const [managerProcessExists, setManagerProcessExists] =
+    useState<boolean>(true);
 
   const formatProjectData = (deployments: TDeployment[]) => {
     return deployments.map((dep: TDeployment) => ({
@@ -69,15 +73,35 @@ const Dashboardcomp = () => {
   }, [deployments]);
 
   useEffect(() => {
-    if (!noDeploymentFound) {
-      const intervalId = setTimeout(() => {
-        setNoDeploymentFound(true);
+    let timeOutId: NodeJS.Timeout | null = null;
+
+    if (isFetchingDeployments) {
+      if (deployments.length > 0) {
+        setIsFetchingDeployments(false);
+        return () => {
+          if (timeOutId) {
+            clearInterval(timeOutId);
+          }
+        };
+      }
+
+      timeOutId = setTimeout(() => {
+        setIsFetchingDeployments(false);
       }, 10000);
+
       return () => {
-        clearInterval(intervalId);
+        if (timeOutId) clearTimeout(timeOutId);
       };
     }
-  }, [noDeploymentFound]);
+  }, [deployments]);
+
+  useEffect(() => {
+    if (managerProcess) {
+      setManagerProcessExists(true);
+    } else {
+      setManagerProcessExists(false);
+    }
+  }, [managerProcess]);
 
   return (
     <Layout>
@@ -117,34 +141,38 @@ const Dashboardcomp = () => {
             >
               <List className="w-4 h-4" />
             </Button>
-            <Link to="/deploy">
-              <Button className="font-semibold">
-                <Plus /> Add deployment
-              </Button>
-            </Link>
+            <Button
+              onClick={() => navigate("/deploy")}
+              className="font-semibold"
+              disabled={!managerProcessExists}
+            >
+              <Plus /> Add deployment
+            </Button>
           </div>
         </div>
 
-        {deployments.length === 0 && (
+        {managerProcess ? (
+          isFetchingDeployments ? (
+            <ProjectCardSkeleton viewMode={viewMode} />
+          ) : deployments.length > 0 ? (
+            <div
+              className={`grid ${
+                viewMode === "grid"
+                  ? "md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3"
+                  : "grid-cols-1"
+              } gap-6`}
+            >
+              {filteredAndSortedProjects.slice(0, cardsLimit).map((project) => (
+                <ProjectCard key={project.id} project={project} />
+              ))}
+            </div>
+          ) : (
+            <NoDeploymentFoundCard />
+          )
+        ) : isFetchingDeployments ? (
           <ProjectCardSkeleton viewMode={viewMode} />
-        )}
-
-        {deployments.length === 0 && noDeploymentFound && (
+        ) : (
           <NoDeploymentFoundCard />
-        )}
-
-        {managerProcess && deployments.length > 0 && (
-          <div
-            className={`grid ${
-              viewMode === "grid"
-                ? "md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3"
-                : "grid-cols-1"
-            } gap-6`}
-          >
-            {filteredAndSortedProjects.slice(0, cardsLimit).map((project) => (
-              <ProjectCard key={project.id} project={project} />
-            ))}
-          </div>
         )}
 
         {cardsLimit < deployments.length && (

@@ -37,11 +37,11 @@ export function ProjectCard({ project }: ProjectCardProps) {
                             </h2>
                             <a
                                 href={`https://${project.arnsProcess}`}
-                                className="text-sm text-nowrap block text-neutral-500 hover:underline hover:text-neutral-400 transition-colors"
+                                className="text-xs text-nowrap block text-neutral-500 hover:underline hover:text-neutral-400 transition-colors"
                                 target="_blank"
                                 rel="noreferrer"
                             >
-                                {project.arnsProcess.toLowerCase()}
+                                {project.arnsProcess.length > 35 ? `${project.arnsProcess.substring(0, 35)}...` : project.arnsProcess.toLowerCase()}
                             </a>
                         </div>
                     </div>
