@@ -10,6 +10,11 @@ export interface Repository {
     html_url: string;
 }
 
+export interface DeploymentResponse  {
+    result: string
+    finalUndername: string
+}
+
 export interface RepoConfig {
     Name: string;
     InstallCMD: string;
@@ -48,6 +53,7 @@ export type TDeployment = {
     ArnsProcess: string;
     DeploymentId: string;
     DeploymentHash: string;
+    ArnsUndername: string
 };
 
 export type TDeployments = {

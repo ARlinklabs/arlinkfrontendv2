@@ -11,6 +11,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGlobalState } from "@/store/useGlobalState";
 import {
+    DeploymentResponse,
     DirectoryStructure,
     type ArnsName,
     type BuildSettings,
@@ -293,7 +294,7 @@ const ConfiguringDeploymentProject = ({
             // const response = await axios.get(
             // 	`https://vmi1968527.contaboserver.net/backend/config/${owner}/${repoName}`,
             // );
-            const response = await axios.post(
+            const response = await axios.post<DeploymentResponse>(
                 // 	`https://vmi1968527.contaboserver.net/backend/}`,
                 `${BUILDER_BACKEND}/deploy`,
                 {
@@ -325,13 +326,17 @@ const ConfiguringDeploymentProject = ({
                 setDeploymentComplete(true);
 
                 // repsonse.data.arnsProcess
-                console.log(response.data.arnsUnderName);
+                console.log(response.data.result);
 
                 // assuming we get the transaction id after this is successful
+                const installCmd = buildSettings.installCommand.value;
+                const buildCmd = buildSettings.buildCommand.value;
+                const outputDir = buildSettings.outPutDir.value;
+
                 const query = `local res = db:exec[[
 						INSERT INTO Deployments (Name, RepoUrl, Branch, InstallCMD, BuildCMD, OutputDIR, ArnsProcess)
 							VALUES
-						('${projectName}', '${repoUrl}', '${selectedBranch}', '${buildSettings.installCommand.value}', '${buildSettings.buildCommand.value}', '${buildSettings.outPutDir.value}', '${finalArnsProcess}')
+						('${projectName}', '${repoUrl}', '${selectedBranch}', '${installCmd}', '${buildCmd}', '${outputDir}', '${finalArnsProcess}')
 				]]`;
 
                 const res = await runLua(query, mgProcess);
@@ -342,13 +347,13 @@ const ConfiguringDeploymentProject = ({
                 await refresh();
 
                 if (arnsName) {
-                    await setUpArnsName(finalArnsProcess, response.data);
+                    await setUpArnsName(finalArnsProcess, response.data.finalUndername);
                 }
 
                 await indexInMalik({
                     projectName,
                     description: "An awesome decentralized project",
-                    txid: response.data,
+                    txid: response.data.result,
                     owner: activeAddress,
                     link: `https://arweave.net/${response.data}`,
                     arlink: finalArnsProcess,

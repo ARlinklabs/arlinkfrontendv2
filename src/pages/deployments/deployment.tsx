@@ -19,10 +19,6 @@ export default function DeploymentPage() {
         });
     }, []);
 
-    console.log({
-        deployments: deployments.find((project) => project.Name === repo),
-    });
-
     useEffect(() => {
         if (!repo) {
             toast.error("No repository specified");

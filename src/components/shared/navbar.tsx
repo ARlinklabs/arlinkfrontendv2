@@ -7,6 +7,9 @@ import {
 import { useState, useEffect } from "react";
 import { getProfileByWalletAddress, type ProfileHeaderType } from "@/lib/Bazar";
 import { extractRepoName } from "@/pages/depoly/utilts";
+import { Button } from "../ui/button";
+// import { ArConnect } from 'arweavekit/auth'
+
 
 export default function Navbar() {
     //@ts-ignore
@@ -187,3 +190,15 @@ const NavLink = ({
         </Link>
     );
 };
+
+
+// const ConnectButton = () =>{
+//     const connectWallet = () => {
+
+//     }
+//     return (
+//         <Button>
+//             Connect wallet
+//         </Button>
+//     )
+// }

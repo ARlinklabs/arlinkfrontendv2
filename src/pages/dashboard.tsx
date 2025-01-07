@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { Search, Grid, List, Plus } from "lucide-react";
+import { Search, Grid, List, Plus, RocketIcon } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +45,7 @@ const Dashboardcomp = () => {
       branch: dep.Branch,
       outputDir: dep.OutputDIR,
       deploymentId: dep.DeploymentId,
+      undername: dep.ArnsUndername,
     }));
   };
 
@@ -69,6 +70,10 @@ const Dashboardcomp = () => {
   }, [projects, searchTerm, sortBy]);
 
   useEffect(() => {
+    console.log(filteredAndSortedProjects);
+  }, [filteredAndSortedProjects]);
+
+  useEffect(() => {
     setCardsLimit(Math.min(deployments.length, 12));
   }, [deployments]);
 
@@ -87,7 +92,7 @@ const Dashboardcomp = () => {
 
       timeOutId = setTimeout(() => {
         setIsFetchingDeployments(false);
-      }, 10000);
+      }, 6000);
 
       return () => {
         if (timeOutId) clearTimeout(timeOutId);
@@ -143,8 +148,8 @@ const Dashboardcomp = () => {
             </Button>
             <Button
               onClick={() => navigate("/deploy")}
-              className="font-semibold"
-              disabled={!managerProcessExists}
+              className="font-semibold transition-all"
+              disabled={!managerProcess}
             >
               <Plus /> Add deployment
             </Button>
@@ -194,12 +199,16 @@ export default Dashboardcomp;
 
 const NoDeploymentFoundCard = () => {
   return (
-    <Card className="bg-arlink-bg-secondary-color order-neutral-800">
-      <CardContent className="flex flex-col items-center justify-center p-6">
-        <p className="text-muted-foreground mb-2">No deployments yet</p>
+    <Card className="bg-arlink-bg-secondary-color border-dashed">
+      <CardContent className="flex flex-col items-center justify-center p-10 text-center">
+        <RocketIcon className="w-12 h-12 text-muted-foreground mb-4" />
+        <h3 className="text-lg font-semibold mb-2">No deployments yet</h3>
+        <p className="text-muted-foreground mb-6">
+          Start your first deployment and bring your project to life!
+        </p>
         <Link to="/deploy">
-          <Button variant="link" className="text-muted-foreground">
-            Click here to create one
+          <Button variant="default" className="font-medium">
+            Create Your First Deployment
           </Button>
         </Link>
       </CardContent>

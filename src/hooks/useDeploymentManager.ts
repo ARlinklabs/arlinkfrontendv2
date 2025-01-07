@@ -46,66 +46,67 @@ return "OK"
 // deploy -> 200 value, set a dummy value
 
 export default function useDeploymentManager() {
-    const globalState = useGlobalState();
-    const { connected } = useConnection();
-    const address = useActiveAddress();
+  const globalState = useGlobalState();
+  const { connected } = useConnection();
+  const address = useActiveAddress();
 
-    useEffect(() => {
-        if (connected && address) {
-            getManagerProcessFromAddress(address).then((id) => {
-                if (id) {
-                    globalState.setManagerProcess(id);
-                } else {
-                    spawnProcess("ARlink-Manager").then(async (newId) => {
-                        await runLua(setupCommands, newId);
-                        globalState.setManagerProcess(newId);
-                    });
-                }
-            });
+  useEffect(() => {
+    if (connected && address) {
+      getManagerProcessFromAddress(address).then((id) => {
+        if (id) {
+          globalState.setManagerProcess(id);
+        } else {
+          spawnProcess("ARlink-Manager").then(async (newId) => {
+            await runLua(setupCommands, newId);
+            globalState.setManagerProcess(newId);
+          });
         }
-    }, [connected, address, globalState.setManagerProcess]);
-
-    useEffect(() => {
-        refresh();
-    }, [globalState.managerProcess]);
-
-    async function refresh() {
-        if (!globalState.managerProcess) return;
-
-        // console.log("fetching deployments");
-        const result = await connect().dryrun({
-            process: globalState.managerProcess,
-            tags: [{ name: "Action", value: "ARlink.GetDeployments" }],
-            Owner: address,
-        });
-
-        try {
-            if (result.Error) return alert(result.Error);
-            // console.log("result", result);
-            const { Messages } = result;
-            const deployments = JSON.parse(Messages[0].Data);
-            console.log("deployments", deployments);
-            globalState.setDeployments(deployments);
-        } catch {
-            await runLua(setupCommands, globalState.managerProcess);
-            await refresh();
-        }
+      });
     }
+  }, [connected, address, globalState.setManagerProcess]);
 
-    return {
-        managerProcess: globalState.managerProcess,
-        deployments: globalState.deployments,
-        refresh,
-    };
+  useEffect(() => {
+    refresh();
+  }, [globalState.managerProcess]);
+
+  async function refresh() {
+    if (!globalState.managerProcess) return;
+
+    // console.log("fetching deployments");
+    const result = await connect().dryrun({
+      process: globalState.managerProcess,
+      tags: [{ name: "Action", value: "ARlink.GetDeployments" }],
+      Owner: address,
+    });
+
+    try {
+      if (result.Error) return alert(result.Error);
+      // console.log("result", result);
+      const { Messages } = result;
+      const deployments = JSON.parse(Messages[0].Data);
+      console.log("deployments", deployments);
+      console.log({ updated_data: deployments });
+      globalState.setDeployments(deployments);
+    } catch {
+      await runLua(setupCommands, globalState.managerProcess);
+      await refresh();
+    }
+  }
+
+  return {
+    managerProcess: globalState.managerProcess,
+    deployments: globalState.deployments,
+    refresh,
+  };
 }
 // keep it as local host if NODE_ENV is test
 
 export async function getManagerProcessFromAddress(address: string) {
-    const client = new GraphQLClient(
-        "https://arweave-search.goldsky.com/graphql"
-    );
+  const client = new GraphQLClient(
+    "https://arweave-search.goldsky.com/graphql"
+  );
 
-    const query = gql`
+  const query = gql`
   query {
   transactions(
     owners: ["${address}"]
@@ -122,18 +123,18 @@ export async function getManagerProcessFromAddress(address: string) {
   }
 }`;
 
-    type response = {
-        transactions: {
-            edges: {
-                node: {
-                    id: string;
-                };
-            }[];
+  type response = {
+    transactions: {
+      edges: {
+        node: {
+          id: string;
         };
+      }[];
     };
+  };
 
-    const data: response = await client.request(query);
-    return data.transactions.edges.length > 0
-        ? data.transactions.edges[0].node.id
-        : null;
+  const data: response = await client.request(query);
+  return data.transactions.edges.length > 0
+    ? data.transactions.edges[0].node.id
+    : null;
 }
