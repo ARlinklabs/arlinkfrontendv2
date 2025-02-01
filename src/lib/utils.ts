@@ -3,6 +3,8 @@ import { twMerge } from "tailwind-merge";
 import { connect, createDataItemSigner } from "@permaweb/aoconnect";
 import { ANT, ARIO, ArconnectSigner } from "@ar.io/sdk/web";
 import Arweave from "arweave";
+import { useAoSigner } from "@project-kardeshev/ao-wallet-kit";
+
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
@@ -54,6 +56,7 @@ export function getTime() {
 }
 
 export async function setUndername(
+    
     antProcess: string,
     manifestId: string,
     undername: string,
@@ -66,10 +69,12 @@ export async function setUndername(
         { name: "TTL-Seconds", value: "3600" },
     ];
     try {
+
+        const signer = useAoSigner();
         const result = await ao.message({
             process: antProcess,
             tags: msgtags,
-            signer: createDataItemSigner(window.arweaveWallet),
+            signer: createDataItemSigner(signer),
             data: "",
         });
         console.log("set arns message officially sent out ", result);
@@ -82,12 +87,14 @@ export async function setUndername(
 
 export async function getPrimaryname(walletaddy: string) {
     try {
+
+const signer = useAoSigner();
         // Initialize Arweave
         const arweave = Arweave.init({});
 
         // step 1 init ario
         const ario = ARIO.init({
-            signer: new ArconnectSigner(window.arweaveWallet),
+            signer: new ArconnectSigner(signer),
         });
 
         // step 2 get primary name from wallet
@@ -114,7 +121,7 @@ export async function getPrimaryname(walletaddy: string) {
 
         // step 4 get logo from process id
         const ant = ANT.init({
-            signer: new ArconnectSigner(window.arweaveWallet),
+            signer: new ArconnectSigner(signer),
             processId: pid,
         });
 

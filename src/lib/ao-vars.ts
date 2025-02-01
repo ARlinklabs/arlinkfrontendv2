@@ -1,4 +1,5 @@
 import { connect, createDataItemSigner } from "@permaweb/aoconnect";
+import { useAoSigner } from "@project-kardeshev/ao-wallet-kit";
 
 export const AppVersion = "1.0.0";
 export const AOModule = "u1Ju_X8jiuq4rX9Nh-ZGRQuYQZgV2MKLMT3CZsykk54"; // sqlite
@@ -11,7 +12,9 @@ const CommonTags = [
 
 export type Tag = { name: string; value: string };
 
+// Separate the functions from the hook
 export async function spawnProcess(
+    signer: any,
     name?: string,
     tags?: Tag[],
     newProcessModule?: string,
@@ -29,13 +32,18 @@ export async function spawnProcess(
         module: newProcessModule ? newProcessModule : AOModule,
         scheduler: AOScheduler,
         tags,
-        signer: createDataItemSigner(window.arweaveWallet),
+        signer: createDataItemSigner(signer),
     });
 
     return result;
 }
 
-export async function runLua(code: string, process: string, tags?: Tag[]) {
+export async function runLua(
+    signer: any,
+    code: string,
+    process: string,
+    tags?: Tag[],
+) {
     const ao = connect();
 
     if (tags) {
@@ -44,28 +52,30 @@ export async function runLua(code: string, process: string, tags?: Tag[]) {
         tags = CommonTags;
     }
 
-    // if (!window.arweaveWallet) {
-    //   const dryMessage = await ao.dryrun({
-    //     process,
-    //     data: code,
-    //     tags,
-    //   });
-    //   return dryMessage
-    // }
-
     tags = [...tags, { name: "Action", value: "Eval" }];
 
     const message = await ao.message({
         process,
         data: code,
-        signer: createDataItemSigner(window.arweaveWallet),
+        signer: createDataItemSigner(signer),
         tags,
     });
 
     const result = await ao.result({ process, message });
     console.log("result of run lua ", result);
-    (result as any).id = message;
     return result;
+}
+
+// Keep the hook for convenience, but have it use the exported functions
+export function useAoProcess() {
+    const signer = useAoSigner();
+
+    return {
+        spawnProcess: (name?: string, tags?: Tag[], newProcessModule?: string) =>
+            spawnProcess(signer, name, tags, newProcessModule),
+        runLua: (code: string, process: string, tags?: Tag[]) =>
+            runLua(signer, code, process, tags),
+    };
 }
 
 export async function getResults(process: string, cursor = "") {
@@ -89,10 +99,11 @@ export async function getResults(process: string, cursor = "") {
 
 export async function monitor(process: string) {
     const ao = connect();
+    const signer = useAoSigner();
 
     const r = await ao.monitor({
         process,
-        signer: createDataItemSigner(window.arweaveWallet),
+        signer: createDataItemSigner(signer),
     });
 
     return r;
@@ -100,10 +111,11 @@ export async function monitor(process: string) {
 
 export async function unmonitor(process: string) {
     const ao = connect();
+    const signer = useAoSigner();
 
     const r = await ao.unmonitor({
         process,
-        signer: createDataItemSigner(window.arweaveWallet),
+        signer: createDataItemSigner(signer),
     });
 
     return r;
@@ -182,10 +194,12 @@ export async function setArnsName(
         { name: "TTL-Seconds", value: "3600" },
     ];
     try {
+        const signer = useAoSigner();
+
         const result = await ao.message({
             process: antProcess,
             tags: msgtags,
-            signer: createDataItemSigner(window.arweaveWallet),
+            signer: createDataItemSigner(signer),
             data: "",
         });
         console.log("set arns message officially sent out ", result);

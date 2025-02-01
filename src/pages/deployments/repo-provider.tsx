@@ -7,7 +7,7 @@ import { Info, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
-import { useActiveAddress } from "arweave-wallet-kit";
+import { useAddress } from "@project-kardeshev/ao-wallet-kit";
 import { RepoSkeleton } from "@/components/skeletons";
 import { RepositoryItem } from "@/components/shared/repository-item";
 import useDeploymentManager from "@/hooks/use-deployment-manager";
@@ -25,7 +25,7 @@ const RepoProvider = ({
 }: GitAuthRepoSelectorTypesProps) => {
     // global state
     const { githubToken } = useGlobalState();
-    const address = useActiveAddress();
+    const address = useAddress();
 
     // loading states
     const [isLoading, setIsLoading] = useState(true);

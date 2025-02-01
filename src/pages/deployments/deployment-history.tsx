@@ -62,7 +62,7 @@ import {
     extractRepoName,
     handleFetchExistingArnsName,
 } from "../utilts";
-import { useActiveAddress } from "arweave-wallet-kit";
+import { useAddress } from "@project-kardeshev/ao-wallet-kit";
 import { TransactionDialog } from "@/components/transactionBlock";
 import { revertNonArnsProject } from "@/actions/deploy";
 
@@ -82,7 +82,7 @@ export default function DeploymentHistory() {
     const [loadingDeploymentHistory, setLoadingDeploymentHistory] =
         useState<boolean>(false);
     const [, setHistoryError] = useState<string | null>("");
-    const activeAddress = useActiveAddress();
+    const activeAddress = useAddress();
     if (!foundDeployment) return;
 
     const [arnsNames, setArnsNames] = useState<ArnsName[]>([]);

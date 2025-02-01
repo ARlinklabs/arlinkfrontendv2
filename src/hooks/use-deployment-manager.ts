@@ -1,11 +1,11 @@
 import { useEffect } from "react";
 import { useGlobalState } from "@/store/useGlobalState";
-import { useActiveAddress, useConnection } from "arweave-wallet-kit";
+import { useAddress, useConnection } from "@project-kardeshev/ao-wallet-kit";
 import { runLua, spawnProcess } from "@/lib/ao-vars";
 import { connect, createDataItemSigner } from "@permaweb/aoconnect";
 import { gql, GraphQLClient } from "graphql-request";
 import { GetDemploymentHistoryReturnType } from "@/types";
-
+import { useAoSigner } from "@project-kardeshev/ao-wallet-kit";
 const setupCommands = `
     json = require "json"
 
@@ -133,7 +133,7 @@ db:exec[[
 export default function useDeploymentManager() {
     const globalState = useGlobalState();
     const { connected } = useConnection();
-    const address = useActiveAddress();
+    const address = useAddress();
     //@ts-ignore
     const ao = connect();
 
@@ -233,6 +233,7 @@ export async function getDeploymentHistory(
 ): Promise<GetDemploymentHistoryReturnType> {
     const TARGET_PROCESS = managerProcess;
     const ao = connect();
+    const signer = useAoSigner();
 
     try {
         // Send get deployment history message
@@ -245,7 +246,7 @@ export async function getDeploymentHistory(
                 },
                 { name: "ProjectName", value: projectName },
             ],
-            signer: createDataItemSigner(window.arweaveWallet),
+            signer: createDataItemSigner(signer),
         });
 
         console.log("Message sent with ID:", message);

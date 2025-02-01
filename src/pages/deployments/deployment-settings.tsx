@@ -53,7 +53,7 @@ import {
     extractRepoName,
     handleFetchExistingArnsName,
 } from "../utilts";
-import { useActiveAddress } from "arweave-wallet-kit";
+import { useAddress } from "@project-kardeshev/ao-wallet-kit";
 import { Popover, PopoverContent } from "@/components/ui/popover";
 import { ArnsName } from "@/types";
 import {
@@ -106,7 +106,7 @@ export default function DeploymentSetting() {
     };
 
     // arns data
-    const activeAddress = useActiveAddress();
+    const activeAddress = useAddress();
     // const [arnsNames, setArnsNames] = useState<ArnsName[]>([
     //     { name: "my-app-1.arweave", processId: "process-123" },
     //     { name: "my-app-2.arweave", processId: "process-456" },

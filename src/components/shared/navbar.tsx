@@ -2,8 +2,8 @@ import { Link, useLocation, useSearchParams } from "react-router-dom";
 import {
     useConnection,
     ConnectButton,
-    useActiveAddress,
-} from "arweave-wallet-kit";
+    useAddress,
+} from "@project-kardeshev/ao-wallet-kit";
 import { useState, useEffect } from "react";
 import { getProfileByWalletAddress, type ProfileHeaderType } from "@/lib/Bazar";
 import { extractRepoName } from "@/pages/utilts";
@@ -13,7 +13,7 @@ import { getPrimaryname } from "@/lib/utils";
 export default function Navbar() {
     //@ts-ignore
     const { connected } = useConnection();
-    const address = useActiveAddress();
+    const address = useAddress();
 
     //@ts-ignore
     const [isNewDeployment, setIsNewDeployment] = useState(false);

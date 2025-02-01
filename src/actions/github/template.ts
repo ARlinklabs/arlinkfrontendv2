@@ -1,6 +1,7 @@
 import { TemplatesResponse, TemplateSubmission } from "@/types";
 import { Octokit } from "@octokit/rest";
 import { createDataItemSigner, connect } from "@permaweb/aoconnect";
+import { useAoSigner } from "@project-kardeshev/ao-wallet-kit";
 
 export async function forkRepository(
     githubToken: string,
@@ -26,7 +27,7 @@ export async function forkRepository(
 export async function submitTemplate(template: TemplateSubmission) {
     const TARGET_PROCESS = "6M87yicVAKQzGkMrjLZKaomLbBj2BdRCWM-WUFpWHr4";
     const ao = connect();
-
+    const signer = useAoSigner();
     try {
         // Send template submission message
         const message = await ao.message({
@@ -41,7 +42,7 @@ export async function submitTemplate(template: TemplateSubmission) {
                 { name: "ThumbnailUrl", value: template.thumbnailUrl },
                 { name: "CreatorName", value: template.creatorName },
             ],
-            signer: createDataItemSigner(window.arweaveWallet),
+            signer: createDataItemSigner(signer),
         });
 
         console.log("Template submission message sent with ID:", message);

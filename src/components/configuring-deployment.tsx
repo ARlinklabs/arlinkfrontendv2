@@ -21,7 +21,7 @@ import axios, { isAxiosError } from "axios";
 import { AlertTriangle, ChevronDown, ChevronLeft, Loader2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import RootDirectoryDrawer from "./rootdir-drawer";
-import { useActiveAddress } from "arweave-wallet-kit";
+import { useAddress } from "@project-kardeshev/ao-wallet-kit";
 import { toast } from "sonner";
 import DomainSelection from "./shared/domain-selection";
 import useDeploymentManager from "@/hooks/use-deployment-manager";
@@ -56,7 +56,7 @@ const ConfiguringDeploymentProject = ({
     const { refresh, deployments } = useDeploymentManager();
     const navigate = useNavigate();
 
-    const activeAddress = useActiveAddress();
+    const activeAddress = useAddress();
     const [frameWork, setFrameWork] = useState<{
         name: string;
         dir: string;

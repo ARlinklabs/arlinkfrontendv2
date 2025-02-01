@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ConnectButton, useConnection } from "arweave-wallet-kit";
+import { ConnectButton, useConnection } from "@project-kardeshev/ao-wallet-kit";
 import { useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";

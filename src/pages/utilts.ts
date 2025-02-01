@@ -37,6 +37,7 @@ export async function fetchRepositories({
 }
 
 export const indexInMalik = async ({
+    
     projectName,
     description,
     txid,
