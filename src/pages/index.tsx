@@ -1,24 +1,52 @@
+import {  spawn } from "@permaweb/aoconnect";
 import { Button } from "@/components/ui/button";
-import { ConnectButton, useConnection } from "@project-kardeshev/ao-wallet-kit";
-import { useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useLocation } from "react-router-dom";
+import { ConnectButton, useConnection, useActiveStrategy } from "@project-kardeshev/ao-wallet-kit";
+import { useEffect, useRef, useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, useInView } from "framer-motion";
 
 export default function Home() {
-    const { connected, connect } = useConnection();
+    const { connected, connect: connectWallet } = useConnection();
+    const strategy = useActiveStrategy();
     const navigate = useNavigate();
     const location = useLocation();
+    const [processId, setProcessId] = useState<string>("");
 
     useEffect(() => {
-        connect();
+        connectWallet();
         console.log(import.meta.env.VITE_ENV);
-
-        // Check if we're not supposed to be on the home page
+        console.log('strategies are this', strategy);
         if (location.pathname !== "/") {
             navigate(location.pathname + location.search);
         }
     }, [navigate, location]);
+
+    const handleSpawnProcess = async () => {
+        try { 
+            const signerr = await strategy?.createDataItemSigner();
+            
+            if (!signerr) {
+                console.error("No signer found, connect a wallet first");
+                return;
+            }
+
+            const result = await spawn({
+                module: "u1Ju_X8jiuq4rX9Nh-ZGRQuYQZgV2MKLMT3CZsykk54",
+                scheduler: "_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA",
+                signer: signerr,
+                tags: [
+                    { name: "App-Name", value: "Arlink" },
+                    { name: "App-Version", value: "1.0.0" },
+                    { name: "Strategy", value: strategy?.name || "default" }
+                ]
+            });
+
+            setProcessId(result);
+            console.log("Process spawned:", result);
+        } catch (error) {
+            console.error("Error spawning process:", error);
+        }
+    };
 
     // Only render the home page content if we're actually on the home page
     if (location.pathname !== "/") {
@@ -62,7 +90,31 @@ export default function Home() {
                                 transition={{ delay: 0.2, duration: 0.6 }}
                                 className="inline-block rounded-full bg-gradient-to-r from-neutral-800 via-neutral-400/20 to-neutral-800 px-4 py-1.5 text-sm text-white/70"
                             >
-                                Built for the PermaWeb
+                                <div className="flex flex-col items-center gap-2">
+                                    {strategy ? (
+                                        <span>Active Strategy: {strategy.name}</span>
+                                    ) : (
+                                        <span>No active strategy</span>
+                                    )}
+                                    
+                                    <Button
+                                        onClick={handleSpawnProcess}
+                                        className="bg-gradient-to-r from-white via-neutral-200 to-white text-black hover:opacity-90 transition-opacity"
+                                    >
+                                        Spawn Process
+                                    </Button>
+                                    
+                                    {processId && (
+                                        <a 
+                                            href={`https://ao.link/#/process/${processId}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-sm text-blue-400 hover:text-blue-300"
+                                        >
+                                            View Process: {processId.slice(0, 8)}...
+                                        </a>
+                                    )}
+                                </div>
                             </motion.div>
                             <motion.h1
                                 initial={{ opacity: 0 }}

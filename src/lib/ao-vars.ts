@@ -1,6 +1,5 @@
-import { connect, createDataItemSigner } from "@permaweb/aoconnect";
-import { useAoSigner } from "@project-kardeshev/ao-wallet-kit";
-
+import { connect, spawn } from "@permaweb/aoconnect";
+import { useActiveStrategy , useConnection } from "@project-kardeshev/ao-wallet-kit";
 export const AppVersion = "1.0.0";
 export const AOModule = "u1Ju_X8jiuq4rX9Nh-ZGRQuYQZgV2MKLMT3CZsykk54"; // sqlite
 export const AOScheduler = "_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA";
@@ -12,14 +11,18 @@ const CommonTags = [
 
 export type Tag = { name: string; value: string };
 
-// Separate the functions from the hook
 export async function spawnProcess(
-    signer: any,
+    strategy: any,
     name?: string,
     tags?: Tag[],
     newProcessModule?: string,
 ) {
     const ao = connect();
+    const signerr = await strategy?.createDataItemSigner();
+    
+    if (!signerr) {
+        throw new Error("No signer available");
+    }
 
     if (tags) {
         tags = [...CommonTags, ...tags];
@@ -28,54 +31,47 @@ export async function spawnProcess(
     }
     tags = name ? [...tags, { name: "Name", value: name }] : tags;
 
-    const result = await ao.spawn({
+    const result = await spawn({
         module: newProcessModule ? newProcessModule : AOModule,
         scheduler: AOScheduler,
         tags,
-        signer: createDataItemSigner(signer),
+        signer: signerr,
     });
 
     return result;
 }
 
-export async function runLua(
-    signer: any,
-    code: string,
-    process: string,
-    tags?: Tag[],
-) {
+export async function runLua(code: string, process: string,strategy: any, tags?: Tag[]) {
     const ao = connect();
-
+    const signerr = await strategy?.createDataItemSigner();
     if (tags) {
         tags = [...CommonTags, ...tags];
     } else {
         tags = CommonTags;
     }
 
+    // if (!window.arweaveWallet) {
+    //   const dryMessage = await ao.dryrun({
+    //     process,
+    //     data: code,
+    //     tags,
+    //   });
+    //   return dryMessage
+    // }
+
     tags = [...tags, { name: "Action", value: "Eval" }];
 
     const message = await ao.message({
         process,
         data: code,
-        signer: createDataItemSigner(signer),
+        signer: signerr,
         tags,
     });
 
     const result = await ao.result({ process, message });
     console.log("result of run lua ", result);
+    (result as any).id = message;
     return result;
-}
-
-// Keep the hook for convenience, but have it use the exported functions
-export function useAoProcess() {
-    const signer = useAoSigner();
-
-    return {
-        spawnProcess: (name?: string, tags?: Tag[], newProcessModule?: string) =>
-            spawnProcess(signer, name, tags, newProcessModule),
-        runLua: (code: string, process: string, tags?: Tag[]) =>
-            runLua(signer, code, process, tags),
-    };
 }
 
 export async function getResults(process: string, cursor = "") {
@@ -99,11 +95,10 @@ export async function getResults(process: string, cursor = "") {
 
 export async function monitor(process: string) {
     const ao = connect();
-    const signer = useAoSigner();
 
     const r = await ao.monitor({
         process,
-        signer: createDataItemSigner(signer),
+        signer: createDataItemSigner(window.arweaveWallet),
     });
 
     return r;
@@ -111,11 +106,10 @@ export async function monitor(process: string) {
 
 export async function unmonitor(process: string) {
     const ao = connect();
-    const signer = useAoSigner();
 
     const r = await ao.unmonitor({
         process,
-        signer: createDataItemSigner(signer),
+        signer: createDataItemSigner(window.arweaveWallet),
     });
 
     return r;
@@ -134,18 +128,7 @@ export function parseOutupt(out: any) {
         return output;
     }
 }
-export const BAZAR = {
-    // module: 'Pq2Zftrqut0hdisH_MC2pDOT6S4eQFoxGsFUzR6r350',
-    // scheduler: '_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA',
-    assetSrc: "Fmtgzy1Chs-5ZuUwHpQjQrQ7H7v1fjsP0Bi8jVaDIKA",
-    defaultToken: "xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10",
-    ucm: "U3TjJAZWJjlWBB4KAXSHKzuky81jtyh0zqH8rUL4Wd0",
-    pixl: "DM3FoZUq_yebASPhgd8pEIRIzDW6muXEhxz5-JwbZwo",
-    collectionsRegistry: "TFWDmf8a3_nw43GCm_CuYlYoylHAjCcFGbgHfDaGcsg",
-    collectionSrc: "2ZDuM2VUCN8WHoAKOOjiH4_7Apq0ZHKnTWdLppxCdGY",
-    profileRegistry: "SNy4m-DrqxWl01YqGM4sxI8qCni-58re8uuJLvZPypY",
-    profileSrc: "_R2XYWDPUXVvQrQKFaQRvDTDcDwnQNbqlTd_qvCRSpQ",
-};
+
 export async function readHandler(args: {
     processId: string;
     action: string;
@@ -194,12 +177,10 @@ export async function setArnsName(
         { name: "TTL-Seconds", value: "3600" },
     ];
     try {
-        const signer = useAoSigner();
-
         const result = await ao.message({
             process: antProcess,
             tags: msgtags,
-            signer: createDataItemSigner(signer),
+            signer: createDataItemSigner(window.arweaveWallet),
             data: "",
         });
         console.log("set arns message officially sent out ", result);

@@ -14,6 +14,9 @@ importers:
       '@ar.io/sdk':
         specifier: ^3.2.0
         version: 3.2.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      '@fontsource/cinzel-decorative':
+        specifier: ^5.1.1
+        version: 5.1.1
       '@octokit/rest':
         specifier: ^21.0.2
         version: 21.0.2
@@ -74,6 +77,9 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: ^1.1.6
         version: 1.1.6(@types/react-dom@18.3.5(@types/react@18.3.17))(@types/react@18.3.17)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@tanstack/react-query':
+        specifier: ^5.66.0
+        version: 5.66.0(react@18.3.1)
       '@tanstack/react-virtual':
         specifier: ^3.11.0
         version: 3.11.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -1273,6 +1279,9 @@ packages:
 
   '@floating-ui/utils@0.2.8':
     resolution: {integrity: sha512-kym7SodPp8/wloecOpcmSnWJsK7M0E5Wg8UcFA+uO4B9s5d0ywXOEro/8HM9x0rW+TljRzul/14UYz3TleT3ig==}
+
+  '@fontsource/cinzel-decorative@5.1.1':
+    resolution: {integrity: sha512-oz02FVmujGmjq1JNGcsUX9WQenwNPm4cVGN0/l2WoQgSCNipxQzfYcC7b69pEics8dYEvIeNW0BolVd6oYtvFA==, tarball: https://registry.npmjs.org/@fontsource/cinzel-decorative/-/cinzel-decorative-5.1.1.tgz}
 
   '@google-cloud/kms@4.5.0':
     resolution: {integrity: sha512-i2vC0DI7bdfEhQszqASTw0KVvbB7HsO2CwTBod423NawAu7FWi+gVVa7NLfXVNGJaZZayFfci2Hu+om/HmyEjQ==, tarball: https://registry.npmjs.org/@google-cloud/kms/-/kms-4.5.0.tgz}
@@ -6418,7 +6427,7 @@ packages:
     resolution: {integrity: sha512-E5LDX7Wrp85Kil5bhZv46j8jOeboKq5JMmYM3gVGdGH8xFpPWXUMsNrlODCrkoxMEeNi/XZIwuRvY4XNwYMJpw==}
 
   sha.js@2.4.11:
-    resolution: {integrity: sha512-QMEp5B7cftE7APOjk5Y6xgrbWu+WkLVQwk8JNjZ8nKRciZaByEW6MubieAiToS7+dwvrjGhH8jRXz3MVd0AYqQ==}
+    resolution: {integrity: sha512-QMEp5B7cftE7APOjk5Y6xgrbWu+WkLVQwk8JNjZ8nKRciZaByEW6MubieAiToS7+dwvrjGhH8jRXz3MVd0AYqQ==, tarball: https://registry.npmjs.org/sha.js/-/sha.js-2.4.11.tgz}
     hasBin: true
 
   shallow-clone@3.0.1:
@@ -8899,6 +8908,8 @@ snapshots:
 
   '@floating-ui/utils@0.2.8': {}
 
+  '@fontsource/cinzel-decorative@5.1.1': {}
+
   '@google-cloud/kms@4.5.0':
     dependencies:
       google-gax: 4.4.1
@@ -9426,8 +9437,8 @@ snapshots:
     dependencies:
       '@ethereumjs/tx': 4.2.0
       '@metamask/superstruct': 3.1.0
-      '@noble/hashes': 1.7.0
-      '@scure/base': 1.1.9
+      '@noble/hashes': 1.7.1
+      '@scure/base': 1.2.4
       '@types/debug': 4.1.12
       debug: 4.4.0(supports-color@8.1.1)
       pony-cause: 2.1.11

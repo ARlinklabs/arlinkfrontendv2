@@ -5,7 +5,7 @@ import { runLua, spawnProcess } from "@/lib/ao-vars";
 import { connect, createDataItemSigner } from "@permaweb/aoconnect";
 import { gql, GraphQLClient } from "graphql-request";
 import { GetDemploymentHistoryReturnType } from "@/types";
-import { useAoSigner } from "@project-kardeshev/ao-wallet-kit";
+import { useActiveStrategy } from "@project-kardeshev/ao-wallet-kit";
 const setupCommands = `
     json = require "json"
 
@@ -133,6 +133,8 @@ db:exec[[
 export default function useDeploymentManager() {
     const globalState = useGlobalState();
     const { connected } = useConnection();
+    const strategy = useActiveStrategy();
+
     const address = useAddress();
     //@ts-ignore
     const ao = connect();
@@ -145,8 +147,8 @@ export default function useDeploymentManager() {
                 } else {
                     console.log("No manager process found, spawning new one");
                     //@ts-ignore
-                    spawnProcess("ARlink-Manager").then(async (newId) => {
-                        await runLua(setupCommands, newId);
+                    spawnProcess(strategy, "ARlink-Manager").then(async (newId) => {
+                        await runLua(setupCommands, newId, strategy);
                         // console.log("deployment manager id", newId);
                         globalState.setManagerProcess(newId);
                     });

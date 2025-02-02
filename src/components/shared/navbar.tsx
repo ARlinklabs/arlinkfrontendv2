@@ -5,7 +5,6 @@ import {
     useAddress,
 } from "@project-kardeshev/ao-wallet-kit";
 import { useState, useEffect } from "react";
-import { getProfileByWalletAddress, type ProfileHeaderType } from "@/lib/Bazar";
 import { extractRepoName } from "@/pages/utilts";
 import ProfileCard from "../profile-card";
 import { getPrimaryname } from "@/lib/utils";
@@ -75,20 +74,20 @@ export default function Navbar() {
     // const isDeployPage = location.pathname === "#/deploy";
 
     useEffect(() => {
-        async function fetchProfile() {
-            if (address) {
-                try {
-                    const fetchedProfile = await getProfileByWalletAddress({
-                        address,
-                    });
-                    setProfile(fetchedProfile);
-                } catch (error) {
-                    console.error("Error fetching profile:", error);
-                }
-            }
-        }
+        // async function fetchProfile() {
+        //     if (address) {
+        //         try {
+        //             const fetchedProfile = await getProfileByWalletAddress({
+        //                 address,
+        //             });
+        //             setProfile(fetchedProfile);
+        //         } catch (error) {
+        //             console.error("Error fetching profile:", error);
+        //         }
+        //     }
+        // }
 
-        fetchProfile();
+        // fetchProfile();
     }, [address]);
 
     useEffect(() => {
