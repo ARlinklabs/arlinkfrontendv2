@@ -13,6 +13,20 @@ body {
     all: revert;
 }
 
+.radial_gradient_overlay {
+    background: radial-gradient(
+        circle,
+        rgba(0, 0, 0, 0),
+        rgba(0, 0, 0, 0.936),
+        black
+    );
+}
+
+
+.debug {
+    @apply border border-red-500
+}
+
 @layer base {
     :root {
         --background: 0 0% 100%;
