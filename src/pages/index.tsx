@@ -1,4 +1,9 @@
+import Community from "@/components/landing/community";
+import FAQSection from "@/components/landing/faq";
+import Features from "@/components/landing/features";
 import { Hero } from "@/components/landing/hero";
+import HowItWorks from "@/components/landing/how-it-works";
+import Revolutioniaze from "@/components/landing/revolutionize";
 import { Nav } from "@/components/landing/ui";
 import { useConnection } from "arweave-wallet-kit";
 import { useEffect } from "react";
@@ -26,9 +31,14 @@ export default function Home() {
     }
 
     return (
-        <main>
-           <Nav /> 
-           <Hero />
+        <main className="bg-[#09090B] ">
+            <Nav />
+            <Hero />
+            <Features />
+            <HowItWorks />
+            <Community />
+            <FAQSection />
+            <Revolutioniaze />
         </main>
     );
 }

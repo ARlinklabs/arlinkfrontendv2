@@ -27,7 +27,7 @@ export const Nav = () => {
                     <img className="size-12" src="/joose.svg" alt="Logo" />
                     <span className="-translate-x-2 font-semibold">Arlink</span>
                 </div>
-                <div className="second_column text-sm space-x-6 bg-neutral-900 rounded-md p-2 px-4">
+                <div className="second_column text-sm space-x-6 bg-[#151516] rounded-md p-2 px-4">
                     {links.map((link) => (
                         <Link key={link.url} to={link.url}>
                             {link.name}

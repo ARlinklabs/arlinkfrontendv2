@@ -1,0 +1,88 @@
+ <svg
+            width="400"
+            height="278"
+            viewBox="0 0 400 278"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+        >
+            <g opacity="0.05">
+                <mask
+                    id="mask0_2142_5539"
+                    style="mask-type:alpha"
+                    maskUnits="userSpaceOnUse"
+                    x="-1"
+                    y="-1"
+                    width="402"
+                    height="382"
+                >
+                    <path d="M0 0.312012V379.874" stroke="white" />
+                    <path d="M21.0527 0.312012V379.874" stroke="white" />
+                    <path d="M42.1052 0.312012V379.874" stroke="white" />
+                    <path d="M63.158 0.312012V379.874" stroke="white" />
+                    <path d="M84.2104 0.312012V379.874" stroke="white" />
+                    <path d="M105.263 0.312012V379.874" stroke="white" />
+                    <path d="M126.316 0.312012V379.874" stroke="white" />
+                    <path d="M147.368 0.312012V379.874" stroke="white" />
+                    <path d="M168.421 0.312012V379.874" stroke="white" />
+                    <path d="M189.474 0.312012V379.874" stroke="white" />
+                    <path d="M210.526 0.312012V379.874" stroke="white" />
+                    <path d="M231.579 0.312012V379.874" stroke="white" />
+                    <path d="M252.632 0.312012V379.874" stroke="white" />
+                    <path d="M273.684 0.312012V379.874" stroke="white" />
+                    <path d="M294.737 0.312012V379.874" stroke="white" />
+                    <path d="M315.79 0.312012V379.874" stroke="white" />
+                    <path d="M336.842 0.312012V379.874" stroke="white" />
+                    <path d="M357.895 0.312012V379.874" stroke="white" />
+                    <path d="M378.948 0.312012V379.874" stroke="white" />
+                    <path d="M400 0.312012V379.874" stroke="white" />
+                    <path d="M0 0.312012H400" stroke="white" />
+                    <path d="M0 20.2891H400" stroke="white" />
+                    <path d="M0 40.2659H400" stroke="white" />
+                    <path d="M0 60.2429H400" stroke="white" />
+                    <path d="M0 80.2197H400" stroke="white" />
+                    <path d="M0 100.197H400" stroke="white" />
+                    <path d="M0 120.174H400" stroke="white" />
+                    <path d="M0 140.151H400" stroke="white" />
+                    <path d="M0 160.128H400" stroke="white" />
+                    <path d="M0 180.104H400" stroke="white" />
+                    <path d="M0 200.082H400" stroke="white" />
+                    <path d="M0 220.058H400" stroke="white" />
+                    <path d="M0 240.035H400" stroke="white" />
+                    <path d="M0 260.012H400" stroke="white" />
+                </mask>
+                <g mask="url(#mask0_2142_5539)">
+                    <g filter="url(#filter0_f_2142_5539)">
+                        <ellipse
+                            cx="200"
+                            cy="110.312"
+                            rx="139"
+                            ry="110"
+                            fill="white"
+                        />
+                    </g>
+                </g>
+            </g>
+            <defs>
+                <filter
+                    id="filter0_f_2142_5539"
+                    x="3.36497"
+                    y="-57.323"
+                    width="393.27"
+                    height="335.27"
+                    filterUnits="userSpaceOnUse"
+                    color-interpolation-filters="sRGB"
+                >
+                    <feFlood flood-opacity="0" result="BackgroundImageFix" />
+                    <feBlend
+                        mode="normal"
+                        in="SourceGraphic"
+                        in2="BackgroundImageFix"
+                        result="shape"
+                    />
+                    <feGaussianBlur
+                        stdDeviation="28.8175"
+                        result="effect1_foregroundBlur_2142_5539"
+                    />
+                </filter>
+            </defs>
+        </svg>

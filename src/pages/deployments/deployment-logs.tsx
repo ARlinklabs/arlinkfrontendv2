@@ -12,7 +12,7 @@ import { Loader2 } from "lucide-react";
 import { Logs } from "@/components/ui/logs";
 import axios from "axios";
 import { runLua } from "@/lib/ao-vars";
-import { BUILDER_BACKEND, TESTING_FETCH } from "@/lib/utils";
+import { TESTING_FETCH } from "@/lib/utils";
 
 const DeploymentLogs = () => {
     // hooks and global state
