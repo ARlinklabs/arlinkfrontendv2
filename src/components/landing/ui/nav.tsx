@@ -42,7 +42,7 @@ export const Nav = () => {
             </nav>
 
             {/* Mobile Navbar */}
-            <nav className="lg:hidden flex z-50 items-center justify-between p-[16px] fixed top-0 w-full">
+            <nav className="lg:hidden flex z-[500] items-center justify-between p-[16px] fixed top-0 w-full">
                 <div className="flex items-center gap-1">
                     {/* Toggle Sidebar */}
                     <button onClick={() => setOpenSideBar((prev) => !prev)}>

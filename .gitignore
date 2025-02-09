@@ -4,6 +4,7 @@ wallet.json
 Wallet.json
 _wallet.json
 .env
+.vscode
 builds/*
 !builds/.gitkeep
 node_modules
