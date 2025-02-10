@@ -1,12 +1,21 @@
 import { InteractiveGrid } from "../ui";
 import { motion } from "framer-motion";
 import { ArIo } from "@/components/ui/icons/ario";
+import { useConnection } from "arweave-wallet-kit";
+import { useNavigate } from "react-router-dom";
 
 const Hero = () => {
+    const { connected, connect } = useConnection();
+    const navigate = useNavigate();
+
     const headingLines = [
         "Deployments on Arweave",
         "made as simple as one click",
     ];
+
+    const connecting = async () => {
+        await connect();
+    };
 
     const descriptionLines = [
         "Arlink allows you to permanently deploy and",
@@ -108,21 +117,45 @@ const Hero = () => {
                     ))}
                 </p>
 
-                <motion.div
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{
-                        type: "spring",
-                        stiffness: 100,
-                        damping: 20,
-                        delay: 1.5,
-                    }}
-                    className="w-full flex justify-center mt-6 md:mt-[30px] relative z-30"
-                >
-                    <button className="px-4 py-2 mx-auto bg-white rounded-lg text-black font-semibold text-center pointer-events-auto text-sm md:text-base">
-                        Deploy Now
-                    </button>
-                </motion.div>
+                {connected ? (
+                    <motion.div
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{
+                            type: "spring",
+                            stiffness: 100,
+                            damping: 20,
+                            delay: 1.5,
+                        }}
+                        className="w-full flex justify-center mt-6 md:mt-[30px] relative z-30"
+                        onClick={() => {
+                            navigate("/deploy");
+                        }}
+                    >
+                        <button className="px-4 py-2 mx-auto bg-white rounded-lg text-black font-semibold text-center pointer-events-auto text-sm md:text-base">
+                            Deploy Now
+                        </button>
+                    </motion.div>
+                ) : (
+                    <motion.div
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{
+                            type: "spring",
+                            stiffness: 100,
+                            damping: 20,
+                            delay: 1.5,
+                        }}
+                        className="w-full flex justify-center mt-6 md:mt-[30px] relative z-30"
+                        onClick={() => {
+                            connecting();
+                        }}
+                    >
+                        <button className="px-4 py-2 mx-auto bg-white rounded-lg text-black font-semibold text-center pointer-events-auto text-sm md:text-base">
+                            Deploy Now
+                        </button>
+                    </motion.div>
+                )}
 
                 <motion.div
                     initial={{ y: 20, opacity: 0 }}

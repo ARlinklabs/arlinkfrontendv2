@@ -1,6 +1,27 @@
-import { Menu } from "lucide-react"; // Using X for a close icon
+import { useActiveAddress, useConnection } from "arweave-wallet-kit";
+import { Menu, Copy } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 type NavLink = {
     name: string;
@@ -8,7 +29,12 @@ type NavLink = {
 };
 
 export const Nav = () => {
+    const { connected, connect, disconnect } = useConnection();
     const [openSideBar, setOpenSideBar] = useState<boolean>(false);
+    const [loading, setLoading] = useState<boolean>(false);
+    const [disconnecting, setDisconnecting] = useState<boolean>(false);
+    const address = useActiveAddress();
+
     const links: NavLink[] = [
         { name: "Home", url: "#home" },
         { name: "Features", url: "#features" },
@@ -22,6 +48,25 @@ export const Nav = () => {
         },
         { name: "Community", url: "#community" },
     ];
+
+    const connecting = async () => {
+        setLoading(true);
+        await connect();
+        setLoading(false);
+    };
+
+    const disConnect = async () => {
+        setDisconnecting(true);
+        await disconnect();
+        setDisconnecting(false);
+    };
+
+    const copyAddress = () => {
+        if (address) {
+            navigator.clipboard.writeText(address);
+            toast("Address copied to clipboard");
+        }
+    };
 
     return (
         <>
@@ -50,16 +95,60 @@ export const Nav = () => {
                     )}
                 </div>
                 <div className="third_column">
-                    <button className="bg-white text-black font-semibold px-3 py-1 rounded-md">
-                        Connect
-                    </button>
+                    {connected ? (
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <button className="bg-white text-black font-semibold px-3 py-1 rounded-md">
+                                    {`${address?.slice(
+                                        0,
+                                        5,
+                                    )}...${address?.slice(
+                                        address.length - 5,
+                                        address.length - 1,
+                                    )}`}
+                                </button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[425px]">
+                                <DialogHeader>
+                                    <DialogTitle>Wallet Options</DialogTitle>
+                                    <DialogDescription>
+                                        Your connected wallet address: {address}
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <div className="flex justify-between items-center mt-4">
+                                    <button
+                                        onClick={copyAddress}
+                                        className="bg-white text-black font-semibold px-3 py-1 rounded-md flex items-center"
+                                    >
+                                        <Copy className="mr-2 h-4 w-4" />
+                                        Copy Address
+                                    </button>
+
+                                    <button
+                                        onClick={disConnect}
+                                        className="bg-red-500 text-white font-semibold px-3 py-1 rounded-md"
+                                    >
+                                        {disconnecting
+                                            ? "Disconnecting..."
+                                            : "Disconnect"}
+                                    </button>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+                    ) : (
+                        <button
+                            onClick={connecting}
+                            className="bg-white text-black font-semibold px-3 py-1 rounded-md"
+                        >
+                            {loading ? "Connecting..." : "Connect"}
+                        </button>
+                    )}
                 </div>
             </nav>
 
             {/* Mobile Navbar */}
             <nav className="lg:hidden flex z-[500] items-center justify-between p-[16px] fixed top-0 w-full">
                 <div className="flex items-center gap-1">
-                    {/* Toggle Sidebar */}
                     <button onClick={() => setOpenSideBar((prev) => !prev)}>
                         <Menu />
                     </button>
@@ -71,9 +160,76 @@ export const Nav = () => {
                     </div>
                 </div>
                 <div className="third_column">
-                    <button className="bg-white text-black font-semibold px-3 py-1 rounded-md">
-                        Connect
-                    </button>
+                    {connected ? (
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <button className="bg-white text-black font-semibold px-3 py-1 rounded-md">
+                                    {`${address?.slice(
+                                        0,
+                                        5,
+                                    )}...${address?.slice(
+                                        address.length - 5,
+                                        address.length - 1,
+                                    )}`}
+                                </button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[425px]">
+                                <DialogHeader>
+                                    <DialogTitle>Wallet Options</DialogTitle>
+                                    <DialogDescription>
+                                        Your connected wallet address: {address}
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <div className="flex justify-between items-center mt-4">
+                                    <button
+                                        onClick={copyAddress}
+                                        className="bg-white text-black font-semibold px-3 py-1 rounded-md flex items-center"
+                                    >
+                                        <Copy className="mr-2 h-4 w-4" />
+                                        Copy Address
+                                    </button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <button className="bg-red-500 text-white font-semibold px-3 py-1 rounded-md">
+                                                Disconnect
+                                            </button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>
+                                                    Are you absolutely sure?
+                                                </AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    This action will disconnect
+                                                    your wallet from the
+                                                    application.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>
+                                                    Cancel
+                                                </AlertDialogCancel>
+                                                <AlertDialogAction
+                                                    onClick={disConnect}
+                                                >
+                                                    {disconnecting
+                                                        ? "Disconnecting..."
+                                                        : "Disconnect"}
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+                    ) : (
+                        <button
+                            onClick={connecting}
+                            className="bg-white text-black font-semibold px-3 py-1 rounded-md"
+                        >
+                            {loading ? "Connecting..." : "Connect"}
+                        </button>
+                    )}
                 </div>
             </nav>
 
