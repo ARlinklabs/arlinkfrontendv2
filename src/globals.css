@@ -9,6 +9,11 @@ body {
     overflow-x: hidden;
 }
 
+html {
+    scroll-padding-top: 100px;
+    scroll-behavior: smooth;
+}
+
 .markdown > * {
     all: revert;
 }

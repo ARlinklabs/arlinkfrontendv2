@@ -3,7 +3,7 @@ import AnimatedDescription from "../effects/animated-description";
 import { Link } from "react-router-dom";
 import { ArrowUpRight } from "lucide-react";
 
-export const Projects = () => {
+const Projects = () => {
     const headline = ["See what others have", "Built with Arlink"];
     const description = [
         "Explore inspiring projects hosted on the decentralized web",
@@ -15,14 +15,21 @@ export const Projects = () => {
             image: "sentio.png",
             description:
                 "SENTIO, selected for the Arweave India Launchpad, will launch v1 on Arweave, with beta users getting early access. We’ll present it on Demo Day to the community and investors.",
-            link: "https://velocity.ar.io/",
+            link: "https://sentio_arlink.ar.io/",
         },
         {
             headline: "anon-labs",
             image: "https://anon-labs_arlink.ar.io/assets/logo2-CU9s94qp.png",
             description:
                 "Impactful design, Created effortlessly, Design tools shouldn't slow you down, Layer combines powerful features with an intuitive interface that keeps you in your creative flow",
-            link: "https://velocity.ar.io/",
+            link: "https://anon-labs_arlink.ar.io/",
+        },
+        {
+            headline: "ao-learn",
+            image: "ao-learn.png",
+            description:
+                "AO Learn is a decentralized AI framework for building and training agents. It supports applications like DeFi and smart recommendations. With a no-code drag-and-drop interface, it's easy to use for everyone.",
+            link: "https://aolearn_arlink.ar.io/",
         },
         {
             headline: "Velocity",
@@ -34,7 +41,7 @@ export const Projects = () => {
     ];
 
     return (
-        <section>
+        <section id="projects">
             <header className="flex items-center relative z-50 mt-[100px] justify-center flex-col space-y-6">
                 <motion.div
                     initial={{ y: 10, opacity: 0 }}
@@ -54,7 +61,7 @@ export const Projects = () => {
                     <AnimatedDescription descriptionString={description} />
                 </div>
             </header>
-            <div className="grid sm:grid-cols-3 grid-cols-1 mt-[40px] mb-[100px] max-w-4xl mx-auto gap-4">
+            <div className="grid lg:grid-cols-4 md:grid-cols-2 grid-cols-1 mt-[40px] mb-[100px] max-w-6xl mx-auto gap-4">
                 {projectData.map((project, index) => {
                     return (
                         <motion.div
@@ -107,3 +114,5 @@ export const Projects = () => {
         </section>
     );
 };
+
+export default Projects;

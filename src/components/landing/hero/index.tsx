@@ -1,9 +1,8 @@
 import { InteractiveGrid } from "../ui";
 import { motion } from "framer-motion";
 import { ArIo } from "@/components/ui/icons/ario";
-import { Link } from "react-router-dom";
 
-export const Hero = () => {
+const Hero = () => {
     const headingLines = [
         "Deployments on Arweave",
         "made as simple as one click",
@@ -33,19 +32,30 @@ export const Hero = () => {
                 <div className="radial_gradient_overlay  pointer-events-none md:scale-x-150 scale-x-100 z-10 absolute inset-0 w-full h-full" />
                 <InteractiveGrid />
             </div>
-            <motion.div className="mt-[100px] absolute z-50 left-1/2 -translate-x-1/2 md:mt-[180px] ">
-                <a
-                    className="px-3 py-2 font-medium items-center gap-2 flex tracking-tight transition-all hover:border-transparent  hover:bg-[#2f2f33] bg-[#222225] border-2 border-[#52525b] rounded-xl w-fit mx-auto text-sm md:text-base"
-                    href="https://ar.io/?utm_campaign=poweredbyario&utm_medium=affiliate&utm_source=metalinks"
-                    target="_blank"
-                    rel="noopener noreferrer"
+            <div className="mt-[100px] absolute z-50 left-1/2 -translate-x-1/2 md:mt-[180px] ">
+                <motion.div
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{
+                        type: "spring",
+                        stiffness: 100,
+                        damping: 20,
+                        delay: 0.1,
+                    }}
                 >
-                    <span className="pr-1 md:pr-2 md:text-base text-xs">
-                        <ArIo />
-                    </span>
-                    Powered By ar.io
-                </a>
-            </motion.div>
+                    <a
+                        className="px-3 py-2 font-medium items-center gap-2 flex tracking-tight transition-all hover:border-transparent  hover:bg-[#2f2f33] bg-[#222225] border-2 border-[#52525b] rounded-xl w-fit mx-auto text-sm md:text-base"
+                        href="https://ar.io/?utm_campaign=poweredbyario&utm_medium=affiliate&utm_source=metalinks"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        <span className="pr-1 md:pr-2 md:text-base text-xs">
+                            <ArIo />
+                        </span>
+                        Powered By ar.io
+                    </a>
+                </motion.div>
+            </div>
             <div className="relative pointer-events-none z-30 w-full px-4 sm:px-6">
                 <div className="mt-[150px] md:mt-[250px] flex flex-col gap-4 md:gap-8">
                     <h1 className="md:text-5xl  pointer-events-none sm:text-3xl text-3xl lg:text-6xl text-center font-bold capitalize flex flex-col">

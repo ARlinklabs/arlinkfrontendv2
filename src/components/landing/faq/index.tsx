@@ -29,7 +29,10 @@ const FAQSection = () => {
 
     const headline = ["Frequently Asked", "Question"];
     return (
-        <div className="w-full flex items-center mt-[200px] mb-[100px] px-4 justify-center flex-col  p-4 space-y-3">
+        <section
+            id="faq"
+            className="w-full flex items-center mt-[200px] mb-[100px] px-4 justify-center flex-col  p-4 space-y-3"
+        >
             <header className="flex mb-8 items-center justify-center flex-col space-y-6">
                 <motion.div
                     initial={{ y: 10, opacity: 0 }}
@@ -79,7 +82,7 @@ const FAQSection = () => {
                     ))}
                 </Accordion>
             </motion.div>
-        </div>
+        </section>
     );
 };
 

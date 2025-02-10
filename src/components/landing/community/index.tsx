@@ -34,12 +34,15 @@ const Community = () => {
                         <AnimatedDescription descriptionString={description} />
                     </div>
                 </header>
-                <motion.button
+                <motion.a
                     initial={{ y: 10, opacity: 0 }}
                     whileInView={{ y: 0, opacity: 1 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.5 }}
-                    className="bg-white sm:w-auto w-full px-4 py-2 gap-2 text-black flex items-center justify-center font-semibold hover:bg-neutral-300 rounded-xl mx-auto mt-12"
+                    href="https://discord.com/invite/PZjQH8DVTP"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-white sm:w-fit w-full px-4 py-2 gap-2 text-black flex items-center justify-center font-semibold hover:bg-neutral-300 rounded-xl mx-auto mt-12"
                 >
                     <svg
                         width="21"
@@ -66,7 +69,7 @@ const Community = () => {
                         </defs>
                     </svg>
                     Join the community
-                </motion.button>
+                </motion.a>
             </section>
         </div>
     );

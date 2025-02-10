@@ -52,7 +52,43 @@ const InfiniteScroll = ({
     // Reference to measur  e the container width
     const containerRef = useRef<HTMLDivElement>(null);
 
-    const testimonials = Array(5).fill(null);
+    const testimonials = [
+        {
+            name: "Arweave India",
+            username: "@arweaveindia",
+            image: "https://pbs.twimg.com/profile_images/1705002503367184384/_wTnYvte_400x400.jpg",
+            description:
+                "Are you building for @aoTheComputer mainnet?🌐 Any onchain backend needs a solid frontend that users can always access + centralized hosting can bring single points of failure Arlink helps you create timeless frontends hosted on @ArweaveEco 🐘",
+        },
+        {
+            name: "Rohit",
+            username: "@ropats16",
+            image: "https://pbs.twimg.com/profile_images/1832435374909755392/oxgXES3L_400x400.jpg",
+            description:
+                "Your awesome backend doesn’t matter if users lose access to the frontend!\n\nNot everyone can interact directly with the backend. A simple interface is their only path Build timeless frontends with\n@arlinklabs\n+ assign friendly ArNS names via\n@ar_io_network\nfor easy discovery",
+        },
+        {
+            name: "NikoChan",
+            username: "@NikoChan256",
+            image: "https://pbs.twimg.com/profile_images/1823258081062428673/5uXY9oAC_400x400.jpg",
+            description:
+                "all my fellow developer definitely checkout\nhttps://arlink.ar-io.dev\nit'll make your life easier fr fr fr",
+        },
+        {
+            name: "AAshutosh Mittal",
+            username: "@AashutoshMitta9",
+            image: "https://pbs.twimg.com/profile_images/1829612083362873345/mWvpzQN3_400x400.jpg",
+            description:
+                "🚀 YO! GemHunter-AO has officially hit the PermaWeb! 🎉 Big thanks to\n@arlinklabs\n&\n@naik_nischal\nfor making this happen 💎🔥\n\nhttps://gemhunter-ao_arlink.ar-io.dev\n\n#PermaWeb #GemHunter",
+        },
+        {
+            name: "Arche",
+            username: "@ArcheAOagent",
+            image: "https://pbs.twimg.com/profile_images/1867166639546155009/3rPUWPew_400x400.jpg",
+            description:
+                "@arweaveindia\n@aoTheComputer\n@ArweaveEco\ncentralized frontends are so 2023. arlink makes your dapps truly permanent - backend and frontend living forever on the permaweb. no more points of failure, just pure decentralized perfection.",
+        },
+    ];
 
     useEffect(() => {
         if (!containerRef.current) return;
@@ -81,38 +117,42 @@ const InfiniteScroll = ({
                 animate={controls}
             >
                 {/* Double the items to create seamless loop */}
-                {testimonials.concat(testimonials).map((_, index) => (
-                    <TestimonialCard key={index} />
+                {testimonials.concat(testimonials).map((details, index) => (
+                    <TestimonialCard key={index} {...details} />
                 ))}
             </motion.div>
         </div>
     );
 };
 
-const TestimonialCard = () => {
+const TestimonialCard = ({
+    name,
+    username,
+    image,
+    description,
+}: {
+    name: string;
+    username: string;
+    image: string;
+    description: string;
+}) => {
     return (
         <div className="rounded-3xl transition-all hover:bg-[#151517] hover:border-transparent flex-shrink-0 max-w-[400px] p-6 shadow-xl border border-neutral-700/50">
             <div className="flex items-center gap-3">
                 <div className="relative flex-shrink-0">
                     <img
-                        src="sentio.png"
+                        src={image}
                         alt="Profile picture"
                         className="rounded-full size-8 object-cover"
                     />
                 </div>
                 <div className="flex flex-col">
-                    <h3 className="text-md font-semibold text-white">
-                        Aarav Patel
-                    </h3>
-                    <p className="text-neutral-400 text-xs">
-                        Software Developer
-                    </p>
+                    <h3 className="text-md font-semibold text-white">{name}</h3>
+                    <p className="text-neutral-400 text-xs">{username}</p>
                 </div>
             </div>
             <p className="mt-4 text-gray-100 text-sm leading-relaxed">
-                Arlink has completely transformed how I deploy my projects. The
-                process is so smooth, and the CI/CD integration saves me hours
-                of manual work!
+                {description}
             </p>
         </div>
     );

@@ -14,25 +14,40 @@ export const Nav = () => {
         { name: "Features", url: "#features" },
         { name: "How it works", url: "#how-it-works" },
         { name: "Projects", url: "#projects" },
-        { name: "Testimonials", url: "#home" },
+        { name: "Testimonials", url: "#testimonials" },
         { name: "FAQ's", url: "#faq" },
-        { name: "Docs", url: "#docs" },
+        {
+            name: "Docs",
+            url: "https://arlink.gitbook.io/arlink-docs/getting-started/quickstart",
+        },
+        { name: "Community", url: "#community" },
     ];
 
     return (
         <>
             {/* Desktop Navbar (lg and above) */}
-            <nav className="lg:flex hidden z-50 items-center justify-center gap-10 fixed top-4 w-full">
+            <nav className="lg:flex hidden z-[500] items-center justify-center gap-10 fixed top-4 w-full">
                 <div className="first_column flex items-center gap-1">
                     <img className="size-12" src="/joose.svg" alt="Logo" />
                     <span className="-translate-x-2 font-semibold">Arlink</span>
                 </div>
                 <div className="second_column text-sm space-x-6 bg-[#151516] rounded-md p-2 px-4">
-                    {links.map((link) => (
-                        <Link key={link.url} to={link.url}>
-                            {link.name}
-                        </Link>
-                    ))}
+                    {links.map((link) =>
+                        link.name === "Docs" ? (
+                            <a
+                                key={link.url}
+                                rel="noopener noreferrer"
+                                target="_blank"
+                                href={link.url}
+                            >
+                                {link.name}
+                            </a>
+                        ) : (
+                            <a key={link.url} href={link.url}>
+                                {link.name}
+                            </a>
+                        ),
+                    )}
                 </div>
                 <div className="third_column">
                     <button className="bg-white text-black font-semibold px-3 py-1 rounded-md">

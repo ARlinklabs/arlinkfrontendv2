@@ -1,17 +1,19 @@
+import { Nav } from "@/components/landing/ui";
+import Hero  from "@/components/landing/hero";
+import HowItWorks from "@/components/landing/how-it-works";
+import Projects from "@/components/landing/projects";
+import Testimonials from "@/testimonials";
 import Community from "@/components/landing/community";
 import FAQSection from "@/components/landing/faq";
 import Features from "@/components/landing/features";
 import Footer from "@/components/landing/footer";
-import { Hero } from "@/components/landing/hero";
-import HowItWorks from "@/components/landing/how-it-works";
-import { Projects } from "@/components/landing/projects";
-import Revolutioniaze from "@/components/landing/revolutionize";
-import { Nav } from "@/components/landing/ui";
-import Testimonials from "@/testimonials";
+
 import { useConnection } from "arweave-wallet-kit";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
+
+
 
 export default function Home() {
     const { connect } = useConnection();
