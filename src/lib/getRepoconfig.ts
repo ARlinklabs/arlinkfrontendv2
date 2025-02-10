@@ -68,12 +68,15 @@ export async function getRepoConfig(
 > {
     try {
         const branches = ["main", "master"];
-        let packageJson = null;
+        let packageJson: any = null;
+        let denoJson: any = null;
         let hasIndexHtml = false;
         const packageJsonPath = path ? `${path}/package.json` : "package.json";
         const indexHtmlPath = path ? `${path}/index.html` : "index.html";
+        const denoJsonPath = path ? `${path}/deno.json` : "deno.json";
+        const denoJsoncPath = path ? `${path}/deno.jsonc` : "deno.jsonc";
 
-        // First try to find package.json
+        // Try to load package.json
         for (const branch of branches) {
             try {
                 const { data } = await octokit.repos.getContent({
@@ -100,13 +103,77 @@ export async function getRepoConfig(
                 framework,
                 installCommand: packageJson.scripts?.install || "npm install",
                 buildCommand: packageJson.scripts?.build || "npm run build",
-                outputDir: outputDir,
+                outputDir,
                 error: false,
                 errorType: null,
             };
         }
 
-        // If package.json not found, look for index.html
+        // Try to load deno.json
+        for (const branch of branches) {
+            try {
+                const { data } = await octokit.repos.getContent({
+                    owner,
+                    repo,
+                    path: denoJsonPath,
+                    ref: branch,
+                });
+                if ("content" in data) {
+                    const content = atob(data.content);
+                    denoJson = JSON.parse(content);
+                    break;
+                }
+            } catch (e) {
+                console.log(e);
+            }
+        }
+
+        // If not found, try deno.jsonc
+        if (!denoJson) {
+            for (const branch of branches) {
+                try {
+                    const { data } = await octokit.repos.getContent({
+                        owner,
+                        repo,
+                        path: denoJsoncPath,
+                        ref: branch,
+                    });
+                    if ("content" in data) {
+                        const content = atob(data.content);
+                        // Use a JSONC parser or strip comments before JSON.parse
+                        denoJson = JSON.parse(content); // Replace with your JSONC parser if needed.
+                        break;
+                    }
+                } catch (e) {
+                    console.log(e);
+                }
+            }
+        }
+
+        // If deno.json (or deno.jsonc) is found, return its config.
+        if (denoJson) {
+            const installCommand =
+                denoJson.tasks?.install ||
+                denoJson.scripts?.install ||
+                "npm install";
+            const buildCommand =
+                denoJson.tasks?.build ||
+                denoJson.scripts?.build ||
+                "npm run build";
+
+            // Optionally update framework detection; here we simply label it as "deno"
+            return {
+                repoName: repo,
+                framework: "deno",
+                installCommand,
+                buildCommand,
+                outputDir: denoJson.outputDir || "./",
+                error: false,
+                errorType: null,
+            };
+        }
+
+        // If no config file found, check for index.html for a static site.
         for (const branch of branches) {
             try {
                 const { data } = await octokit.repos.getContent({
@@ -124,7 +191,6 @@ export async function getRepoConfig(
             }
         }
 
-        // If index.html is found, return static site config
         if (hasIndexHtml) {
             return {
                 repoName: repo,
@@ -137,7 +203,7 @@ export async function getRepoConfig(
             };
         }
 
-        // If neither package.json nor index.html is found, return null-like object
+        // Neither config nor index.html found.
         return {
             repoName: repo,
             framework: "unknown",

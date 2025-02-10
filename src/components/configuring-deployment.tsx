@@ -41,10 +41,7 @@ import {
 import NewDeploymentCard from "@/components/shared/new-deployment-card";
 import { BuildDeploymentSetting } from "@/components/shared/build-settings";
 import { NextJsProjectWarningCard } from "@/components/skeletons";
-import {
-    createGitHubWebhook,
-    deleteGitHubWebhook,
-} from "@/actions/github/Webhook";
+import { createGitHubWebhook } from "@/actions/github/Webhook";
 
 const ConfiguringDeploymentProject = ({
     repoUrl,
@@ -91,6 +88,9 @@ const ConfiguringDeploymentProject = ({
             extractRepoName(repoUrl),
             configPath,
         );
+        console.log({
+            config,
+        });
         const { buildSettings, configFailed, framework } =
             handleConfigurationAndBuild({
                 error: config.error,
@@ -164,7 +164,8 @@ const ConfiguringDeploymentProject = ({
         buildCommand: string;
     }
 
-    const handleConfigurationAndBuild = (config: Config) => {
+    const handleConfigurationAndBuild = (config: Config, deno?: boolean) => {
+        console.log({ bc: config.buildCommand, deno });
         let configState = {
             configFailed: {
                 error: false,
@@ -220,7 +221,7 @@ const ConfiguringDeploymentProject = ({
             };
         } else {
             configState.buildSettings = {
-                buildCommand: "npm run build",
+                buildCommand: deno ? config.buildCommand : "npm run build",
                 installCommand: "pnpm install",
                 outPutDir: config.outputDir
                     ? config.outputDir === ".next"
@@ -231,8 +232,13 @@ const ConfiguringDeploymentProject = ({
             };
         }
         console.log(config.outputDir);
-        configState.framework = detectFrameworkImage(config.outputDir);
-        console.log(detectFrameworkImage("public"));
+        configState.framework = deno
+            ? {
+                  name: "deno",
+                  svg: "deno.svg",
+                  dir: config.outputDir,
+              }
+            : detectFrameworkImage(config.outputDir);
         return configState;
     };
 
@@ -261,16 +267,20 @@ const ConfiguringDeploymentProject = ({
             // Fetch repository configuration
             setProjectName(defaultProjectName);
             const config = await getRepoConfig(owner, repo);
+            console.log(config);
             setCustomArnsName(defaultProjectName);
 
             const { buildSettings, configFailed, framework } =
-                handleConfigurationAndBuild({
-                    error: config.error,
-                    errorType: config.errorType,
-                    installCommand: config.installCommand,
-                    buildCommand: config.buildCommand,
-                    outputDir: config.outputDir,
-                });
+                handleConfigurationAndBuild(
+                    {
+                        error: config.error,
+                        errorType: config.errorType,
+                        installCommand: config.installCommand,
+                        buildCommand: config.buildCommand,
+                        outputDir: config.outputDir,
+                    },
+                    config.framework === "deno",
+                );
             handleBuildSettings({
                 ...buildSettings,
             });
@@ -475,48 +485,20 @@ const ConfiguringDeploymentProject = ({
         startLogPolling();
 
         try {
+            // First, extract owner and repo from tokenizedRepoUrl
             const urlParts = tokenizedRepoUrl.split("/");
             const repoName = urlParts[urlParts.length - 1].replace(".git", "");
             const owner = urlParts[urlParts.length - 2];
 
-            try {
-                console.log("🟠 creating webhook......");
+            // 1. Create webhook first
+            await createGitHubWebhook({
+                owner,
+                repo: repoName,
+                accessToken: githubToken, // Using the same githubToken from your deployment data
+                webhookSecret: "laudalasun", // Consider moving this to env variables
+            });
 
-                // if this throws error it goes in next catch block
-                await createGitHubWebhook({
-                    owner,
-                    repo: repoName,
-                    accessToken: githubToken,
-                    webhookSecret: "laudalasun",
-                });
-                console.log("🟢 created webhook......");
-            } catch (error) {
-                console.log("🔴_Failed to create the webhook");
-                console.log(error);
-
-                // if the webhook is there we delete it
-                try {
-                    console.log("🟠 deleting the webhook......");
-                    await deleteGitHubWebhook({
-                        owner,
-                        repo: repoName,
-                        accessToken: githubToken,
-                    });
-                    console.log("🟢 deleted the webhook......");
-
-                    console.log("🟠 creating webhook again......");
-                    await createGitHubWebhook({
-                        owner,
-                        repo: repoName,
-                        accessToken: githubToken,
-                        webhookSecret: "laudalasun",
-                    });
-                    console.log("🟢 created webhook......");
-                } catch (error) {
-                    console.log("🔴_Failed to delete the webhook");
-                    console.log(error);
-                }
-            }
+            console.log("webhook created");
 
             // 2. If webhook creation succeeds, proceed with deployment
             const deploymentData = {
@@ -538,7 +520,7 @@ const ConfiguringDeploymentProject = ({
             const response = await axios.post<{
                 result: string;
                 finalUnderName: string;
-            }>(`${TESTING_FETCH}/deploy`, deploymentData, {
+            }>(`${BUILDER_BACKEND}/deploy`, deploymentData, {
                 timeout: 60 * 60 * 1000,
                 headers: { "Content-Type": "application/json" },
             });
