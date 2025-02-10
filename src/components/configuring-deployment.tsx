@@ -41,7 +41,10 @@ import {
 import NewDeploymentCard from "@/components/shared/new-deployment-card";
 import { BuildDeploymentSetting } from "@/components/shared/build-settings";
 import { NextJsProjectWarningCard } from "@/components/skeletons";
-import { createGitHubWebhook } from "@/actions/github/Webhook";
+import {
+    createGitHubWebhook,
+    deleteGitHubWebhook,
+} from "@/actions/github/Webhook";
 
 const ConfiguringDeploymentProject = ({
     repoUrl,
@@ -472,22 +475,76 @@ const ConfiguringDeploymentProject = ({
         startLogPolling();
 
         try {
-             // First, extract owner and repo from tokenizedRepoUrl
-    const urlParts = tokenizedRepoUrl.split('/');
-    const repoName = urlParts[urlParts.length - 1].replace('.git', '');
-    const owner = urlParts[urlParts.length - 2];
+            // First, extract owner and repo from tokenizedRepoUrl
+            const urlParts = tokenizedRepoUrl.split("/");
+            const repoName = urlParts[urlParts.length - 1].replace(".git", "");
+            const owner = urlParts[urlParts.length - 2];
 
-    // 1. Create webhook first
-    await createGitHubWebhook({
-        owner,
-        repo: repoName,
-        accessToken: githubToken, // Using the same githubToken from your deployment data
-        webhookSecret: 'laudalasun' // Consider moving this to env variables
-    });
+            // 1. Create webhook first
+            // try {
+            //     await createGitHubWebhook({
+            //         owner,
+            //         repo: repoName,
+            //         accessToken: githubToken, // Using the same githubToken from your deployment data
+            //         webhookSecret: "laudalasun", // Consider moving this to env variables
+            //     });
+            // } catch (error) {
+            //     console.log(error);
+            //     console.log("deleting the webhook");
+            //     try {
+            //         await deleteGitHubWebhook({
+            //             owner,
+            //             repo: repoName,
+            //             accessToken: githubToken,
+            //         });
+            //         console.log("deleted the webhook");
+            //     } catch (error) {
+            //         console.log("failed to delete the webhook");
+            //         console.log(error);
+            //     }
+            // }
 
-    console.log("webhook created");
+            // create the web hook
+            try {
+                console.log("🟠 creating webhook......");
 
-    // 2. If webhook creation succeeds, proceed with deployment
+                // if this throws error it goes in next catch block
+                await createGitHubWebhook({
+                    owner,
+                    repo: repoName,
+                    accessToken: githubToken,
+                    webhookSecret: "laudalasun",
+                });
+                console.log("🟢 created webhook......");
+            } catch (error) {
+                console.log("🔴_Failed to create the webhook");
+                console.log(error);
+
+                // if the webhook is there we delete it
+                try {
+                    console.log("🟠 deleting the webhook......");
+                    await deleteGitHubWebhook({
+                        owner,
+                        repo: repoName,
+                        accessToken: githubToken,
+                    });
+                    console.log("🟢 deleted the webhook......");
+
+                    console.log("🟠 creating webhook again......");
+                    await createGitHubWebhook({
+                        owner,
+                        repo: repoName,
+                        accessToken: githubToken,
+                        webhookSecret: "laudalasun",
+                    });
+                    console.log("🟢 created webhook......");
+                } catch (error) {
+                    console.log("🔴_Failed to delete the webhook");
+                    console.log(error);
+                }
+            }
+
+            // 2. If webhook creation succeeds, proceed with deployment
             const deploymentData = {
                 repository: tokenizedRepoUrl,
                 installCommand: buildSettings.installCommand.value,
@@ -507,7 +564,7 @@ const ConfiguringDeploymentProject = ({
             const response = await axios.post<{
                 result: string;
                 finalUnderName: string;
-            }>(`${BUILDER_BACKEND}/deploy`, deploymentData, {
+            }>(`${TESTING_FETCH}/deploy`, deploymentData, {
                 timeout: 60 * 60 * 1000,
                 headers: { "Content-Type": "application/json" },
             });
