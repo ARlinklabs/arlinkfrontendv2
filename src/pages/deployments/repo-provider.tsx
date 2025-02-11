@@ -150,7 +150,7 @@ const RepoProvider = ({
     }, [provider]);
 
     return (
-        <Card className="bg-arlink-bg-secondary-color  w-2/3 p-6 rounded-lg">
+        <Card className="bg-arlink-bg-secondary-color lg:w-2/3 w-full p-6 rounded-lg">
             <h2 className="md:text-2xl text-md font-semibold mb-4">
                 Select a provider and import
             </h2>
@@ -174,9 +174,9 @@ const RepoProvider = ({
                     <ScrollArea className="h-[370px] border rounded-md">
                         {/*  this is added but not showing I will fix this don't worry  */}
                         {!isProviderSelected ? (
-                            <div className="h-[370px] w-full flex items-center justify-center">
+                            <div className="h-[370px] px-4 w-full flex items-center justify-center">
                                 <p className="text-center leading-[1.2] tracking-tight text-xl font-semibold -translate-y-2">
-                                    <span className="flex items-start gap-2">
+                                    <span className="flex md:flex-row flex-col md:items-start items-center justify-center gap-2">
                                         <Info className="w-6 h-6" />
                                         Please select a provider from the drop
                                         down menu

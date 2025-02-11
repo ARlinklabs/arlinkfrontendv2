@@ -3,11 +3,7 @@ import { ChevronDown, Check, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useGlobalState } from "@/store/useGlobalState";
-import {
-   
-    handleGitHubCallback,
-    initiateGitHubAuth,
-} from "@/actions/github";
+import { handleGitHubCallback, initiateGitHubAuth } from "@/actions/github";
 import useDeploymentManager from "@/hooks/use-deployment-manager";
 
 type Option = {
@@ -67,7 +63,7 @@ export function CustomDropdown({ handleProvider }: CustomDropdownProps) {
                 try {
                     const token = await handleGitHubCallback(code);
                     setGithubToken(token);
-                 
+
                     window.history.replaceState(
                         {},
                         "",
@@ -127,7 +123,7 @@ export function CustomDropdown({ handleProvider }: CustomDropdownProps) {
     // }, [githubToken]);
 
     return (
-        <div className="relative md:w-[500px] w-[200px]">
+        <div className="relative md:w-[500px] text-nowrap w-[300px]">
             <button
                 type="button"
                 className="w-full flex items-center justify-between px-3 py-2 text-sm bg-arlink-bg-secondary-color border border-[#383838] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-neutral-700 transition-colors focus:border-transparent"

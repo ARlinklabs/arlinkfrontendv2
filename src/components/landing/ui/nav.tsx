@@ -2,25 +2,8 @@ import { useActiveAddress, useConnection } from "arweave-wallet-kit";
 import { Menu, Copy, UserIcon, User, LogOut, Wallet } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+
 import { toast } from "sonner";
 import { getPrimaryname } from "@/lib/utils";
 
@@ -224,70 +207,86 @@ export const Nav = () => {
                     {connected ? (
                         <Dialog>
                             <DialogTrigger asChild>
-                                <button className="bg-white text-black font-semibold px-3 py-1 rounded-md">
-                                    {`${address?.slice(
+                                <button className="bg-white text-black pr-2 flex items-center font-semibold px-1 gap-2 py-1 rounded-md">
+                                    <div className="bg-[#151516] size-8 flex items-center justify-center text-white rounded-md">
+                                        <User className="size-4" />
+                                    </div>
+                                    <span>{`${address?.slice(
                                         0,
                                         5,
                                     )}...${address?.slice(
                                         address.length - 5,
                                         address.length - 1,
-                                    )}`}
+                                    )}`}</span>
                                 </button>
                             </DialogTrigger>
-                            <DialogContent className="sm:max-w-[425px]">
-                                <DialogHeader>
-                                    <DialogTitle>Wallet Options</DialogTitle>
-                                    <DialogDescription>
-                                        Your connected wallet address: {address}
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <div className="flex justify-between items-center mt-4">
+                            <DialogContent className="max-w-[400px] rounded-xl  bg-[#09090b] border-neutral-800 border text-white">
+                                <div className="text-lg font-semibold">
+                                    Profile
+                                </div>
+
+                                <div className="flex flex-col items-center gap-2 mb-4">
+                                    <div className="size-32 overflow-hidden border-2 border-neutral-700 rounded-full bg-gradient-to-b from-[#18171c] relative to-black flex items-center justify-center">
+                                        {avatarUrl ? (
+                                            <img
+                                                src={avatarUrl}
+                                                className="absolute h-full w-full"
+                                            />
+                                        ) : (
+                                            <User className="size-12" />
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col gap-3">
+                                    <div className="flex items-center justify-between bg-[#18171c] rounded-lg p-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="size-10 rounded-md flex items-center justify-center border border-[#302e36] ">
+                                                <Wallet />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-sm text-gray-400">
+                                                    Wallet Address
+                                                </span>
+                                                <span className="font-medium">{`${address?.slice(
+                                                    0,
+                                                    5,
+                                                )}...${address?.slice(
+                                                    address.length - 5,
+                                                    address.length - 1,
+                                                )}`}</span>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={copyAddress}
+                                            className="text-gray-400 hover:text-white transition-colors"
+                                        >
+                                            <Copy className="size-5" />
+                                        </button>
+                                    </div>
+
                                     <button
-                                        onClick={copyAddress}
-                                        className="bg-white text-black font-semibold px-3 py-1 rounded-md flex items-center"
+                                        onClick={disConnect}
+                                        className="flex items-center justify-center gap-2 w-full bg-transparent hover:bg-[#302e36] transition-colors rounded-lg py-2 border border-[#302e36]"
                                     >
-                                        <Copy className="mr-2 h-4 w-4" />
-                                        Copy Address
+                                        <LogOut className="size-5" />
+                                        <span className="font-medium">
+                                            {disconnecting
+                                                ? "Disconnecting..."
+                                                : "Disconnect"}
+                                        </span>
                                     </button>
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <button className="bg-red-500 text-white font-semibold px-3 py-1 rounded-md">
-                                                Disconnect
-                                            </button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>
-                                                    Are you absolutely sure?
-                                                </AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                    This action will disconnect
-                                                    your wallet from the
-                                                    application.
-                                                </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>
-                                                    Cancel
-                                                </AlertDialogCancel>
-                                                <AlertDialogAction
-                                                    onClick={disConnect}
-                                                >
-                                                    {disconnecting
-                                                        ? "Disconnecting..."
-                                                        : "Disconnect"}
-                                                </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
                                 </div>
                             </DialogContent>
                         </Dialog>
                     ) : (
                         <button
                             onClick={connecting}
-                            className="bg-white text-black font-semibold px-3 py-1 rounded-md"
+                            className="bg-white text-black pr-2 flex items-center font-semibold px-1 gap-2 py-1 rounded-md"
                         >
+                            <div className="bg-[#151516] p-2 w-fit text-white rounded-md">
+                                <UserIcon className="size-4" />
+                            </div>
                             {loading ? "Connecting..." : "Connect"}
                         </button>
                     )}

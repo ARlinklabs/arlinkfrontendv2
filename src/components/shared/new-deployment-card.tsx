@@ -32,7 +32,7 @@ export default function NewDeploymentCard({
             </CardHeader>
             <CardContent>
                 <div className="flex items-center gap-4 mt-2">
-                    <div className="relative w-16 h-16 overflow-hidden rounded-lg bg-neutral-700">
+                    <div className="relative hidden md:inline-block w-16 h-16 overflow-hidden rounded-lg bg-neutral-700">
                         {framework && (
                             <img
                                 src={`/logos/${framework.svg}`}

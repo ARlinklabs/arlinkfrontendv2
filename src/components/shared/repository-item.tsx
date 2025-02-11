@@ -21,7 +21,7 @@ export function RepositoryItem({
     return (
         <div
             key={id}
-            className="flex hover:bg-neutral-900 duration-75 transition-all items-center justify-between pl-2 px-4 py-3 border-b"
+            className="flex w-full hover:bg-neutral-900 duration-75 transition-all items-center justify-between pl-2 px-4 py-3 border-b"
         >
             <div className="flex items-center space-x-3">
                 <div className="w-10 h-10">
@@ -31,8 +31,11 @@ export function RepositoryItem({
                         className="h-full w-full"
                     />
                 </div>
-                <span className="font-medium lg:text-[16px] md:text-sm text-sm">
+                <span className="font-medium md:inline-block hidden lg:text-[16px] md:text-sm text-sm">
                     {fullName}
+                </span>
+                <span className="font-medium md:hidden inline-block lg:text-[16px] md:text-sm text-sm">
+                    {fullName.split("/")[1]}
                 </span>
                 {updatedAt && (
                     <span className="lg:text-md md:block hidden  md:text-sm text-sm text-neutral-500">

@@ -1,5 +1,6 @@
 import useDeploymentManager from "@/hooks/use-deployment-manager";
 import { Zap, Globe, ChevronRight, ExternalLink } from "lucide-react";
+import ReactConfetti from "react-confetti";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 export default function DeploymentCard({}) {
@@ -37,7 +38,16 @@ export default function DeploymentCard({}) {
     }
 
     return (
-        <div className="text-neutral-100 p-6 rounded-lg max-w-3xl mx-auto">
+        <div className="text-neutral-100 relative p-6 rounded-lg max-w-3xl mx-auto">
+            <ReactConfetti
+                numberOfPieces={200}
+                recycle={false}
+                gravity={0.2}
+                initialVelocityX={15}
+                className="absolute w-full"
+                initialVelocityY={30}
+                colors={["#FF69B4", "#FFD700", "#7FFFD4", "#FF6347"]}
+            />
             <h2 className="text-2xl font-semibold mb-8 mt-4 text-center">
                 Congratulation your app has been deployed 🎉
             </h2>

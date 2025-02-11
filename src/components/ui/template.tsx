@@ -25,7 +25,7 @@ export function TemplateSelection() {
     }, []);
 
     return (
-        <Card className="mx-auto py-4 flex-1 border-neutral-900 bg-arlink-bg-secondary-color md:w-auto w-full overflow-hidden relative px-6  rounded-lg flex flex-col">
+        <Card className="mx-auto py-4 flex-1 border-neutral-900 bg-arlink-bg-secondary-color lg:w-auto w-full overflow-hidden relative px-6  rounded-lg flex flex-col">
             <h2 className="text-2xl tracking-tight font-semibold mb-4">
                 Start with a template
             </h2>
