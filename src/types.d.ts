@@ -6,7 +6,13 @@ export type DeploymentRecord = {
     AssignedUndername?: string; // Optional, as it's not present in all records
 };
 export type PackageConfig = {
-    framework: "next" | "vite" | "create-react-app" | "gatsby" | "unknown";
+    framework:
+        | "next"
+        | "vite"
+        | "create-react-app"
+        | "gatsby"
+        | "deno"
+        | "unknown";
     repoName: string;
     installCommand: string;
     buildCommand: string;
