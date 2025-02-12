@@ -6,7 +6,6 @@ import {
     Wallet,
     EclipseIcon,
     Briefcase,
-    FileCode,
     ChevronUp,
     ChevronDown,
     ChevronRight,
@@ -18,7 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useTemplateStore } from "@/store/use-template-store";
 import { Link } from "react-router-dom";
 import { TemplateDashboard } from "@/types";
-import { extractOwnerName, extractRepoName } from "@/pages/utilts";
+import { extractOwnerName } from "@/pages/utilts";
 import { Separator } from "@/components/ui/separator";
 import {
     ReactIcon,
@@ -28,6 +27,7 @@ import {
     AngularIcon,
     Svelte,
     Gatsby,
+    JavascriptIcon,
 } from "@/components/ui/icons";
 
 interface Category {
@@ -71,6 +71,11 @@ const frameworks: Category[] = [
         id: "gatsby",
         icon: <Gatsby className="w-4 h-4" />,
         label: "Gatsby",
+    },
+    {
+        id: "static",
+        icon: <JavascriptIcon className="w-4 h-4" />,
+        label: "Static",
     },
 ];
 

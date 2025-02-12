@@ -6,6 +6,7 @@ import ViteIcon from "./vite-icon";
 import SolidJsIcon from "./solid-js";
 import Svelte from "./svelte";
 import Gatsby from "./gatsby";
+import JavascriptIcon from "./javascript";
 
 export {
     ReactIcon,
@@ -16,4 +17,5 @@ export {
     SolidJsIcon,
     Svelte,
     Gatsby,
+JavascriptIcon 
 };
