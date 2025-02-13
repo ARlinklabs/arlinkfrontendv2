@@ -13,15 +13,7 @@ const HowItWorks = () => {
     return (
         <section id="how-it-works" className="mt-[100px] px-[16px]">
             <header className="flex items-center justify-center flex-col space-y-6">
-                <motion.div
-                    initial={{ y: 10, opacity: 0 }}
-                    whileInView={{ y: 0, opacity: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5 }}
-                    className="px-4 border border-neutral-700 py-1 bg-neutral-800 rounded-full"
-                >
-                    How it works
-                </motion.div>
+               
 
                 <h2 className="md:text-5xl text-3xl leading-[0.9] lg:leading-[1] lg:text-6xl text-center font-bold capitalize flex flex-col space-y-2">
                     <AnimatedDescription descriptionString={headline} />

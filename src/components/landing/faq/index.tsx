@@ -11,20 +11,17 @@ const FAQSection = () => {
     const faqItems = [
         {
             question: "What is Arlink?",
-            answer: "Arlink is a decentralized hosting platform that allows you to build, deploy, and host your projects forever on the Arweave blockchain. With features like CI/CD, custom ARNS support, and permanent storage, it's designed to simplify your deployment process.",
+            answer: "Arlink is a web hosting platform that allows developers to deploy and host websites permanently on Arweave. Unlike traditional hosting services that rely on centralized servers and require ongoing payments, Arlink ensures that once a website is deployed, it remains online forever without maintenance. With features like CI/CD, custom ARNS support, and permanent storage, Arlink simplifies the deployment process while ensuring your projects are securely stored on the Arweave blockchain.",
         },
         {
             question: "What types of projects can I host on Arlink?",
-            answer: "",
+            answer: "Arlink supports hosting for a wide range of web applications, including static sites, single-page applications (SPAs), and front-end frameworks like React and Next.js. Any project that runs in a browser and doesn’t require a traditional backend server can be deployed on Arlink. This makes it ideal for personal websites, portfolio pages, dApps, documentation sites, and web3 projects.",
         },
         {
             question: "Do I need a custom domain to use Arlink?",
-            answer: "",
-        },
-        {
-            question: "How can I monitor my deployments?",
-            answer: "",
-        },
+            answer: "No, you don’t need a custom domain to use Arlink. Every deployment automatically gets a unique, human-readable Arlink Undername. If you prefer, you can also connect your own ARNS (Arweave Name System) domain for a fully customized and permanent web address. Your website will be accessible across 250+ gateways, ensuring maximum availability and decentralization.",
+        }
+        
     ];
 
     const headline = ["Frequently Asked", "Question"];

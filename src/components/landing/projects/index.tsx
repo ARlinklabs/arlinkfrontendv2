@@ -12,31 +12,31 @@ const Projects = () => {
     const projectData = [
         {
             headline: "Sentio",
-            image: "sentio.png",
+            image: "sentioo.png",
             description:
-                "SENTIO, selected for the Arweave India Launchpad, will launch v1 on Arweave, with beta users getting early access. We’ll present it on Demo Day to the community and investors.",
+                "Sentio helps you monitor, audit, and secure your AO processes with intelligent analysis, real-time alerts, and comprehensive reporting—so you always stay protected.",
             link: "https://sentio_arlink.ar.io/",
         },
         {
-            headline: "anon-labs",
-            image: "https://anon-labs_arlink.ar.io/assets/logo2-CU9s94qp.png",
+            headline: "Anon",
+            image: "anonn.png",
             description:
-                "Impactful design, Created effortlessly, Design tools shouldn't slow you down, Layer combines powerful features with an intuitive interface that keeps you in your creative flow",
+                "Anon lets you create dApps for AO effortlessly. Just describe your desired application in a prompt, and Anon will generate both the frontend and Lua code.",
             link: "https://anon-labs_arlink.ar.io/",
         },
         {
             headline: "ao-learn",
             image: "ao-learn.png",
             description:
-                "AO Learn is a decentralized AI framework for building and training agents. It supports applications like DeFi and smart recommendations. With a no-code drag-and-drop interface, it's easy to use for everyone.",
+                "AO Learn is a decentralized AI framework for building and training agents. It supports applications like DeFi and smart recommendations.",
             link: "https://aolearn_arlink.ar.io/",
         },
         {
             headline: "Velocity",
             image: "velocity.png",
             description:
-                "Your decentralized social hub on AO, Connect, share, and thrive in the decentralized social space with Velocity",
-            link: "https://velocity.ar.io/",
+                "Velocity is a decentralized social hub on AO, Connect, share, and thrive in the decentralized social space with Velocity",
+            link: "https://velocity_arlink.arweave.net/",
         },
     ];
 

@@ -139,7 +139,7 @@ function BentoGrid() {
                             Build and deploy apps in a few clicks, with no
                             complex setup or configuration. Arlink simplifies
                             your deployment process so you can focus on
-                            creating.
+                            building.
                         </p>
                     </div>
                 </GradientCard>
@@ -158,7 +158,7 @@ function BentoGrid() {
                         </div>
                         <div>
                             <h3 className="text-2xl font-semibold text-white mb-2">
-                                Integrated CI/CD
+                                Git-connected Deploys
                             </h3>
                             <p className="text-neutral-600 transition-all group-hover:text-neutral-400  md:text-md text-sm">
                                 Arlink automates your deployment pipeline,
@@ -188,8 +188,8 @@ function BentoGrid() {
                                 Permanent Storage
                             </h3>
                             <p className="text-neutral-600 transition-all group-hover:text-neutral-400  md:text-md text-sm">
-                                Your apps and data are stored on the
-                                decentralized web, always
+                                Your apps and data are stored on Arweaves
+                                decentralized permaweb, always
                                 <br className="md:inline-block hidden" />
                                 online, secure, and resistant to censorship and
                                 data loss.
@@ -208,7 +208,7 @@ function BentoGrid() {
                             <BrowserFrame>myapp.arweave.dev</BrowserFrame>
                         </div>
                         <h3 className="text-2xl font-semibold text-white mb-2">
-                            Custom ARNS Support
+                                ARNS Support
                         </h3>
                         <p className="text-neutral-600 transition-all group-hover:text-neutral-400  md:text-md text-sm">
                             Use custom, user-friendly domain names with Arlink's

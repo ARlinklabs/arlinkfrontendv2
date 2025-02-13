@@ -18,7 +18,7 @@ const Hero = () => {
     };
 
     const descriptionLines = [
-        "Arlink allows you to permanently deploy and",
+        "Arlink lets you permanently deploy and",
         "manage your web apps on the PermaWeb with ease.",
     ];
 
@@ -129,7 +129,7 @@ const Hero = () => {
                         }}
                         className="w-full flex justify-center mt-6 md:mt-[30px] relative z-30"
                         onClick={() => {
-                            navigate("/deploy");
+                            navigate("/dashboard");
                         }}
                     >
                         <button className="px-4 py-2 mx-auto bg-white rounded-lg text-black font-semibold text-center pointer-events-auto text-sm md:text-base">
