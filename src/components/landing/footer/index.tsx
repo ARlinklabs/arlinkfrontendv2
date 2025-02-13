@@ -34,16 +34,24 @@ export default function Footer() {
     ];
 
     return (
-        <footer className="bg-[#09090b] border-t-2 border-[#303031] rounded-t-xl text-gray-400 pt-16">
+        <footer className="bg-[#09090b] relative pb-8 border-t-2 border-[#303031] rounded-t-xl text-gray-400 pt-16">
             <div className="lg:max-w-5xl mx-auto px-4">
                 <div className="flex md:flex-row flex-col gap-8">
                     {/* Logo Section */}
-                    <div className="md:col-span-1">
+                    <div className="md:col-span-1 h-fit relative">
                         <Link
                             to="/"
                             className="text-white flex items-center gap-2"
                         >
                             <ArlinkLogo />
+                            <div className="absolute text-gray-400 text-xs -bottom-12 text-nowrap left-0">
+                                <div className="py-6 text-sm md:text-right text-left">
+                                    <span>©</span>{" "}
+                                    <span className="text-nowrap">
+                                        2025 Arlink 2.0.2
+                                    </span>
+                                </div>
+                            </div>
                             <span className="font-medium">Arlink</span>
                         </Link>
                     </div>
@@ -126,12 +134,6 @@ export default function Footer() {
                                 })}
                             </ul>
                         </div>
-                    </div>
-                </div>
-                <div className="pt-8">
-                    <div className="py-4 text-sm md:text-right text-left">
-                        <span>©</span>
-                        <span>2025 Arlink 2.0.2</span>
                     </div>
                 </div>
             </div>
