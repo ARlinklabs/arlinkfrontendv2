@@ -32,7 +32,7 @@ export const Nav = () => {
             name: "Docs",
             url: "https://arlink.gitbook.io/arlink-docs/getting-started/quickstart",
         },
-        { name: "Community", url: "#community" },
+        { name: "Templates", url: "/templates" },
     ];
 
     const connecting = async () => {
