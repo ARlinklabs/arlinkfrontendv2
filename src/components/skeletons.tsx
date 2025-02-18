@@ -183,9 +183,7 @@ export const ConfigItemSkeleton = ({
 
 export const RepoSkeleton = () => {
     return (
-        <div
-            className="flex items-center justify-between p-3 border-b animate-pulse"
-        >
+        <div className="flex items-center justify-between p-3 border-b animate-pulse">
             <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-neutral-700 rounded-md" />
                 <div className="h-4 bg-neutral-700 rounded w-40" />
@@ -239,5 +237,64 @@ export const NextJsProjectWarningCard = () => {
                 </ul>
             </CardContent>
         </Card>
+    );
+};
+
+export const SelectedTemplateSkeleton = () => {
+    return (
+        <div className="max-w-7xl mx-auto text-white px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col lg:flex-row lg:min-h-screen gap-8">
+                <div className="w-full lg:w-[40%] p-4 lg:p-8 lg:top-[115px] flex-shrink-0 lg:sticky lg:h-fit">
+                    <div className="space-y-6 lg:space-y-8">
+                        <div className="h-6 w-24 bg-neutral-800 rounded animate-pulse" />
+                        <div className="space-y-2">
+                            <div className="h-4 w-48 bg-neutral-800 rounded animate-pulse" />
+                            <div className="h-8 w-full bg-neutral-800 rounded animate-pulse" />
+                        </div>
+                        <div className="h-20 w-full bg-neutral-800 rounded animate-pulse" />
+                        <div className="flex flex-col sm:flex-row gap-2">
+                            <div className="h-10 w-24 bg-neutral-800 rounded animate-pulse" />
+                            <div className="h-10 w-24 bg-neutral-800 rounded animate-pulse" />
+                        </div>
+                        <div className="grid gap-4 pt-6 lg:pt-8 border-t border-neutral-800">
+                            <div className="flex justify-between">
+                                <div className="h-4 w-20 bg-neutral-800 rounded animate-pulse" />
+                                <div className="h-4 w-20 bg-neutral-800 rounded animate-pulse" />
+                            </div>
+                            <div className="flex justify-between">
+                                <div className="h-4 w-20 bg-neutral-800 rounded animate-pulse" />
+                                <div className="h-4 w-20 bg-neutral-800 rounded animate-pulse" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="w-full lg:w-[60%] p-4 lg:p-8">
+                    <div className="h-[300px] w-full bg-neutral-800 rounded-lg animate-pulse" />
+                    <div className="mt-8 space-y-4">
+                        <div className="h-4 w-full bg-neutral-800 rounded animate-pulse" />
+                        <div className="h-4 w-full bg-neutral-800 rounded animate-pulse" />
+                        <div className="h-4 w-2/3 bg-neutral-800 rounded animate-pulse" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export const ReadmeSkeleton = () => {
+    return (
+        <div className="space-y-4">
+            <div className="h-8 w-3/4 bg-neutral-800 rounded animate-pulse" />
+            <div className="space-y-2">
+                <div className="h-4 w-full bg-neutral-800 rounded animate-pulse" />
+                <div className="h-4 w-full bg-neutral-800 rounded animate-pulse" />
+                <div className="h-4 w-2/3 bg-neutral-800 rounded animate-pulse" />
+            </div>
+            <div className="space-y-2 pt-4">
+                <div className="h-4 w-full bg-neutral-800 rounded animate-pulse" />
+                <div className="h-4 w-5/6 bg-neutral-800 rounded animate-pulse" />
+                <div className="h-4 w-3/4 bg-neutral-800 rounded animate-pulse" />
+            </div>
+        </div>
     );
 };
