@@ -1,6 +1,15 @@
 import { Copy } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
+import Convert from 'ansi-to-html';
+
+// Initialize ANSI converter
+const convert = new Convert({
+    fg: '#FFF',
+    bg: '#000',
+    newline: true,
+    escapeXML: true
+});
 
 export function Logs({ logs }: { logs: string[] }) {
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -20,8 +29,24 @@ export function Logs({ logs }: { logs: string[] }) {
             toast.success("Successfully copied to clipboard");
         } catch (err) {
             console.error("Failed to copy text: ", err);
-            toast.error("Faield to copy to clipboard");
+            toast.error("Failed to copy to clipboard");
         }
+    };
+
+    const processLine = (line: string) => {
+        // Convert ANSI escape sequences to HTML
+        const htmlContent = convert.toHtml(line);
+        return htmlContent;
+    };
+
+    const getLineClass = (line: string) => {
+        const lowerLine = line.toLowerCase();
+        if (lowerLine.includes("error")) {
+            return "bg-red-900/50 hover:bg-red-900/80";
+        } else if (lowerLine.includes("warning")) {
+            return "bg-yellow-500/20 hover:bg-yellow-500/30";
+        }
+        return "hover:bg-neutral-800";
     };
 
     return (
@@ -29,40 +54,25 @@ export function Logs({ logs }: { logs: string[] }) {
             <div className="w-full relative border-t border-neutral-800 mx-auto bg-neutral-950 overflow-hidden">
                 <div
                     ref={scrollRef}
-                    className="h-96  overflow-y-scroll overflow-x-hidden"
+                    className="h-96 overflow-y-scroll overflow-x-hidden"
                 >
-                    <div className="font-mono  py-4 text-sm leading-6 cursor-default">
+                    <div className="font-mono py-4 text-sm leading-6 cursor-default">
                         {logs
-                            .filter((line) => (line.length !== 0 ? line : null))
+                            .filter(line => line.length !== 0)
                             .map((line, index) => (
                                 <div
                                     key={`${index}-${line}`}
-                                    className={`flex ${
-                                        line.toLowerCase().includes("error")
-                                            ? "bg-red-900/50 hover:bg-red-900/80"
-                                            : line
-                                                  .toLowerCase()
-                                                  .includes("warning")
-                                            ? "bg-yellow-500/20 hover:bg-yellow-500/30"
-                                            : "hover:bg-neutral-800"
-                                    }  py-0.25  `}
+                                    className={`flex ${getLineClass(line)} py-0.25`}
                                 >
                                     <span className="text-neutral-500 w-12 flex-shrink-0 text-right pr-4">
                                         {index + 1}
                                     </span>
-                                    <span
-                                        className={` ${
-                                            line.toLowerCase().includes("error")
-                                                ? "text-red-400"
-                                                : line
-                                                      .toLowerCase()
-                                                      .includes("warning")
-                                                ? "text-yellow-400"
-                                                : "text-white"
-                                        } flex-1`}
-                                    >
-                                        {line}
-                                    </span>
+                                    <span 
+                                        className="flex-1"
+                                        dangerouslySetInnerHTML={{ 
+                                            __html: processLine(line)
+                                        }}
+                                    />
                                 </div>
                             ))}
                     </div>

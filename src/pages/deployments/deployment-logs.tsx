@@ -15,25 +15,18 @@ import { runLua } from "@/lib/ao-vars";
 import { TESTING_FETCH } from "@/lib/utils";
 
 const DeploymentLogs = () => {
-    // hooks and global state
     const { deployments } = useGlobalState();
     const globalState = useGlobalState();
     const [searchParams] = useSearchParams();
 
-    // repo and deployment variable
     const repo = searchParams.get("repo");
     const deployment = deployments.find((project) => project.Name === repo);
-
-    // states
     const [buildOutput, setBuildOutput] = useState<string[]>([]);
 
-    // error states
     const [logError, setLogError] = useState<string>("");
 
-    // loading states
     const [isFetchingLogs, setIsFetchingLogs] = useState<boolean>(false);
 
-    // useEffect
     useEffect(() => {
         if (!deployment) return;
         const owner = deployment?.RepoUrl.split("/").reverse()[1];
@@ -58,16 +51,13 @@ const DeploymentLogs = () => {
                         buildOutput: result,
                     });
 
-                    // if (result && typeof result === "string") {
-                    // 	setBuildOutput(result);
-                    // }
+                  
                 } catch (error) {
                     console.error("Error fetching logs from database:", error);
                 }
             }
         };
 
-        // Then try to get latest logs from backend
         const fetchLatestLogs = async () => {
             setIsFetchingLogs(true);
             try {
@@ -98,7 +88,6 @@ const DeploymentLogs = () => {
                 setBuildOutput(trimmedLogs.logs);
                 const safeLogsData = trimmedLogs.logs.join("\n");
 
-                // Update logs in the database
                 if (globalState.managerProcess) {
                     await runLua(
                         `
@@ -112,8 +101,7 @@ const DeploymentLogs = () => {
                 }
             } catch (error) {
                 console.error("Error fetching latest logs:", error);
-                // If fetching latest logs fails, we'll keep using the database logs
-                // that were already set by fetchLogsFromDB
+             
                 setLogError(
                     "Failed to fetch latest build logs. Showing last known logs.",
                 );
@@ -125,31 +113,7 @@ const DeploymentLogs = () => {
         fetchLogsFromDB();
         fetchLatestLogs();
 
-        // Fetch ArNS info
-        // connect()
-        // 	.dryrun({
-        // 		process: deployment?.ArnsProcess,
-        // 		tags: [{ name: "Action", value: "Info" }],
-        // 	})
-        // 	.then((r) => {
-        // 		if (r.Messages && r.Messages.length > 0) {
-        // 			const d = JSON.parse(r.Messages[0].Data);
-        // 			setAntName(d.Name);
-        // 		} else {
-        // 			console.error("No messages received or messages array is empty");
-        // 			// Keep the last known antName value
-        // 			setError(
-        // 				"Failed to fetch latest ArNS information. Using last known value.",
-        // 			);
-        // 		}
-        // 	})
-        // 	.catch((error) => {
-        // 		console.error("Error during dryrun:", error);
-        // 		// Keep the last known antName value
-        // 		setError(
-        // 			"Failed to fetch latest ArNS information. Using last known value.",
-        // 		);
-        // 	});
+
     }, [deployment, globalState.managerProcess]);
 
     return (
