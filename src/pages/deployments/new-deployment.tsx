@@ -1,7 +1,7 @@
 import Layout from "@/layouts/layout";
 import { TemplateSelection } from "../../components/ui/template";
 import ConfiguringDeploymentProject from "../../components/configuring-deployment";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { Steps } from "@/types";
 import RepoProvider from "./repo-provider";
 import ConfigureProtocolLandProject from "../../components/configuring-pl-deployment";
@@ -15,28 +15,22 @@ const NewDeployment = () => {
         name: "project name",
         url: "demo-url",
     });
+
     const { managerProcess } = useDeploymentManager();
-
-    useEffect(() => {
-        console.log(managerProcess);
-    }, [managerProcess]);
-
     const [step, setStep] = useState<Steps>("importing");
-
-    useEffect(() => {
-        console.log(selectedRepoUrl);
-    }, [selectedRepoUrl]);
 
     return (
         <Layout>
-            <div className="md:container px-4 text-white p-10">
-                <Steps
-                    step={step}
-                    setSelectedRepo={setSelectedRepoUrl}
-                    selectedRepo={selectedRepoUrl}
-                    setStep={setStep}
-                />
-            </div>
+            {managerProcess && (
+                <div className="md:container px-4 text-white p-10">
+                    <Steps
+                        step={step}
+                        setSelectedRepo={setSelectedRepoUrl}
+                        selectedRepo={selectedRepoUrl}
+                        setStep={setStep}
+                    />
+                </div>
+            )}
         </Layout>
     );
 };
@@ -59,7 +53,7 @@ const Steps = ({
     switch (step) {
         case "importing":
             return (
-                <>
+                <div className="">
                     <h1 className="text-2xl lg:text-4xl font-bold mb-4">
                         Let's Deploy your project
                     </h1>
@@ -76,7 +70,7 @@ const Steps = ({
                         />
                         <TemplateSelection />
                     </div>
-                </>
+                </div>
             );
         case "configuring":
             return (

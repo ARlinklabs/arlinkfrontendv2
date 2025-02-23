@@ -65,6 +65,7 @@ const Projects = () => {
                 {projectData.map((project, index) => {
                     return (
                         <motion.div
+                            key={project.headline}
                             initial={{
                                 opacity: 0,
                                 y: 20,

@@ -24,7 +24,6 @@ const DeploymentLogs = () => {
     const [buildOutput, setBuildOutput] = useState<string[]>([]);
 
     const [logError, setLogError] = useState<string>("");
-
     const [isFetchingLogs, setIsFetchingLogs] = useState<boolean>(false);
 
     useEffect(() => {

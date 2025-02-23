@@ -40,8 +40,14 @@ import {
 } from "../pages/utilts";
 import NewDeploymentCard from "@/components/shared/new-deployment-card";
 import { BuildDeploymentSetting } from "@/components/shared/build-settings";
-import { NextJsProjectWarningCard } from "@/components/skeletons";
-import { createGitHubWebhook , deleteGitHubWebhook } from "@/actions/github/Webhook";
+import {
+    DeploymentLimitReached,
+    NextJsProjectWarningCard,
+} from "@/components/skeletons";
+import {
+    createGitHubWebhook,
+    deleteGitHubWebhook,
+} from "@/actions/github/Webhook";
 
 const ConfiguringDeploymentProject = ({
     repoUrl,
@@ -80,6 +86,11 @@ const ConfiguringDeploymentProject = ({
     const [isRootDirectoryDrawerOpen, setIsRootDirectoryDrawerOpen] =
         useState(false);
 
+    // disabled deployment?
+    const [disabledDeployment, setDisabledDeployment] =
+        useState<boolean>(false);
+    const [checkedLimit, setCheckedLimit] = useState<boolean>(false);
+
     async function handleSelectRootDir(path: string) {
         setRootDirectory(path);
         const configPath = path.replace("./", "");
@@ -88,9 +99,7 @@ const ConfiguringDeploymentProject = ({
             extractRepoName(repoUrl),
             configPath,
         );
-        console.log({
-            config,
-        });
+
         const { buildSettings, configFailed, framework } =
             handleConfigurationAndBuild({
                 error: config.error,
@@ -165,7 +174,6 @@ const ConfiguringDeploymentProject = ({
     }
 
     const handleConfigurationAndBuild = (config: Config, deno?: boolean) => {
-        console.log({ bc: config.buildCommand, deno });
         let configState = {
             configFailed: {
                 error: false,
@@ -223,11 +231,6 @@ const ConfiguringDeploymentProject = ({
             configState.buildSettings = {
                 buildCommand: deno ? config.buildCommand : "npm run build",
                 installCommand: deno ? "npm --version" : "pnpm install",
-                // outPutDir: config.outputDir
-                //     ? config.outputDir === ".next"
-                //         ? "./out"
-                //         : config.outputDir
-                //     : "./dist",
                 outPutDir: config.outputDir
                     ? config.outputDir === ".next"
                         ? "./out"
@@ -238,7 +241,6 @@ const ConfiguringDeploymentProject = ({
                 enabled: false,
             };
         }
-        console.log(config.outputDir);
         configState.framework = deno
             ? {
                   name: "deno",
@@ -274,7 +276,6 @@ const ConfiguringDeploymentProject = ({
             // Fetch repository configuration
             setProjectName(defaultProjectName);
             const config = await getRepoConfig(owner, repo);
-            console.log(config);
             setCustomArnsName(defaultProjectName);
 
             const { buildSettings, configFailed, framework } =
@@ -299,6 +300,22 @@ const ConfiguringDeploymentProject = ({
 
         handleInit();
     }, [repoUrl]);
+
+    useEffect(() => {
+        const checkDisabledDeployment = async () => {
+            console.log("refreshing data");
+            await refresh();
+            setCheckedLimit(true);
+            console.log("New deployment data received");
+        };
+        checkDisabledDeployment();
+    }, []);
+
+    useEffect(() => {
+        if (deployments.length > 3) {
+            setDisabledDeployment(true);
+        }
+    }, [deployments, checkedLimit]);
 
     const handleBuildSettings = ({
         installCommand,
@@ -464,9 +481,6 @@ const ConfiguringDeploymentProject = ({
                         pollingIntervalId = null;
                     }
                     setIsFetchingLogs(false);
-                    if (!isPollingActive) {
-                        setDeploymentFailed(true);
-                    }
                     return;
                 }
 
@@ -536,7 +550,6 @@ const ConfiguringDeploymentProject = ({
                     console.log(error);
                 }
             }
-            console.log("webhook created");
 
             // 2. If webhook creation succeeds, proceed with deployment
             const deploymentData = {
@@ -750,9 +763,11 @@ const ConfiguringDeploymentProject = ({
             >
                 <ChevronLeft size={18} /> Go back
             </button>
+
             <h1 className="md:text-2xl text-xl font-bold mb-6">
                 Set up ur deployment process
             </h1>
+            {disabledDeployment && <DeploymentLimitReached />}
             <div
                 className={`rounded-lg ${
                     deploymentStarted ? "opacity-70" : "opacity-100"
@@ -778,7 +793,7 @@ const ConfiguringDeploymentProject = ({
                             Projects name
                         </label>
                         <Input
-                            disabled={deploymentStarted}
+                            disabled={deploymentStarted || disabledDeployment}
                             id="name"
                             value={projectName}
                             onChange={(e) => setProjectName(e.target.value)}
@@ -807,7 +822,9 @@ const ConfiguringDeploymentProject = ({
                             </Skeleton>
                         ) : (
                             <Select
-                                disabled={deploymentStarted}
+                                disabled={
+                                    deploymentStarted || disabledDeployment
+                                }
                                 value={selectedBranch}
                                 onValueChange={(value) =>
                                     setSelectedBranch(value)
@@ -848,13 +865,21 @@ const ConfiguringDeploymentProject = ({
                                 id="directory"
                                 value={rootDirectory}
                                 readOnly
-                                disabled={fetchingSubDir || deploymentStarted}
+                                disabled={
+                                    fetchingSubDir ||
+                                    deploymentStarted ||
+                                    disabledDeployment
+                                }
                                 className="bg-[#0D0D0D] p-4 placeholder:text-neutral-500 rounded-md border-[#383838] text-white"
                             />
                             <Button
                                 className="absolute h-8 right-1 top-1/2 rounded-sm -translate-y-1/2 font-semibold"
                                 onClick={fetchRepoStructure}
-                                disabled={fetchingSubDir || deploymentStarted}
+                                disabled={
+                                    fetchingSubDir ||
+                                    deploymentStarted ||
+                                    disabledDeployment
+                                }
                             >
                                 {fetchingSubDir ? (
                                     <Loader2 className="animate-spin" />
@@ -913,18 +938,26 @@ const ConfiguringDeploymentProject = ({
                     <BuildDeploymentSetting
                         buildSettings={buildSettings}
                         onSettingChange={handleSettingChange}
-                        disabled={deploymentStarted}
+                        disabled={deploymentStarted || disabledDeployment}
                     />
                 </div>
             </div>
 
-            <Button
-                className="w-full bg-white hover:bg-neutral-200 text-black"
-                onClick={deployProject}
-                disabled={deploymentStarted}
-            >
-                Deploy now
-            </Button>
+            {!checkedLimit ? (
+                <div className="w-full rounded-md h-[40px] bg-neutral-800 animate-pulse"></div>
+            ) : disabledDeployment ? (
+                <p className="w-full rounded-md h-[40px] bg-neutral-800 flex items-center justify-center">
+                    You have hit the free limit and cannot deploy
+                </p>
+            ) : (
+                <Button
+                    className="w-full bg-white hover:bg-neutral-200 text-black"
+                    onClick={deployProject}
+                    disabled={deploymentStarted || disabledDeployment}
+                >
+                    Deploy now
+                </Button>
+            )}
 
             {deploymentStarted && (
                 <DeploymentLogs

@@ -127,9 +127,6 @@ db:exec[[
 )
 `;
 
-// dummy value
-// deploy -> 200 value, set a dummy value
-
 export default function useDeploymentManager() {
     const globalState = useGlobalState();
     const { connected } = useConnection();
@@ -144,10 +141,8 @@ export default function useDeploymentManager() {
                     globalState.setManagerProcess(id);
                 } else {
                     console.log("No manager process found, spawning new one");
-                    //@ts-ignore
                     spawnProcess("ARlink-Manager").then(async (newId) => {
                         await runLua(setupCommands, newId);
-                        // console.log("deployment manager id", newId);
                         globalState.setManagerProcess(newId);
                     });
                 }
@@ -161,8 +156,6 @@ export default function useDeploymentManager() {
 
     async function refresh() {
         if (!globalState.managerProcess) return;
-
-        // console.log("fetching deployments");
         const result = await connect().dryrun({
             process: globalState.managerProcess,
             tags: [{ name: "Action", value: "ARlink.GetDeployments" }],
@@ -171,7 +164,6 @@ export default function useDeploymentManager() {
 
         try {
             if (result.Error) return alert(result.Error);
-            // console.log("result", result);
             const { Messages } = result;
             const deployments = JSON.parse(Messages[0].Data);
             globalState.setDeployments(deployments);
@@ -187,7 +179,6 @@ export default function useDeploymentManager() {
         refresh,
     };
 }
-// keep it as local host if NODE_ENV is test
 
 export async function getManagerProcessFromAddress(address: string) {
     const client = new GraphQLClient(
@@ -235,7 +226,6 @@ export async function getDeploymentHistory(
     const ao = connect();
 
     try {
-        // Send get deployment history message
         const message = await ao.message({
             process: TARGET_PROCESS,
             tags: [
@@ -250,15 +240,12 @@ export async function getDeploymentHistory(
 
         console.log("Message sent with ID:", message);
 
-        // Wait for and get the response
         const { Messages, Error } = await ao.result({
             message: message,
             process: TARGET_PROCESS,
         });
 
-        // Log the response messages
         if (Messages && Messages.length > 0) {
-            // Parse the JSON data from the response
             const historyData = JSON.parse(Messages[0].Data);
             return {
                 messageId: null,

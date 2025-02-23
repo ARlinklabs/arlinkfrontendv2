@@ -25,7 +25,9 @@ const Dashboardcomp = () => {
     const [sortBy, setSortBy] = useState("activity");
     const [isFetchingDeployments, setIsFetchingDeployments] =
         useState<boolean>(true);
+
     const { managerProcess, deployments } = useDeploymentManager();
+
     const [cardsLimit, setCardsLimit] = useState(0);
     const navigate = useNavigate();
     const [managerProcessExists, setManagerProcessExists] =

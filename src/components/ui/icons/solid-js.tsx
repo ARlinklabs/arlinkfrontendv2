@@ -53,9 +53,9 @@ const SolidJsIcon = ({ className }: { className: string }) => {
                     y2="40.6401"
                     gradientUnits="userSpaceOnUse"
                 >
-                    <stop offset="0.1" stop-color="#76B3E1" />
-                    <stop offset="0.3" stop-color="#DCF2FD" />
-                    <stop offset="1" stop-color="#76B3E1" />
+                    <stop offset="0.1" stopColor="#76B3E1" />
+                    <stop offset="0.3" stopColor="#DCF2FD" />
+                    <stop offset="1" stopColor="#76B3E1" />
                 </linearGradient>
                 <linearGradient
                     id="paint1_linear_790_3419"
@@ -65,9 +65,9 @@ const SolidJsIcon = ({ className }: { className: string }) => {
                     y2="66.8666"
                     gradientUnits="userSpaceOnUse"
                 >
-                    <stop stop-color="#76B3E1" />
-                    <stop offset="0.5" stop-color="#4377BB" />
-                    <stop offset="1" stop-color="#1F3B77" />
+                    <stop stopColor="#76B3E1" />
+                    <stop offset="0.5" stopColor="#4377BB" />
+                    <stop offset="1" stopColor="#1F3B77" />
                 </linearGradient>
                 <linearGradient
                     id="paint2_linear_790_3419"
@@ -77,9 +77,9 @@ const SolidJsIcon = ({ className }: { className: string }) => {
                     y2="94.9169"
                     gradientUnits="userSpaceOnUse"
                 >
-                    <stop stop-color="#315AA9" />
-                    <stop offset="0.5" stop-color="#518AC8" />
-                    <stop offset="1" stop-color="#315AA9" />
+                    <stop stopColor="#315AA9" />
+                    <stop offset="0.5" stopColor="#518AC8" />
+                    <stop offset="1" stopColor="#315AA9" />
                 </linearGradient>
                 <linearGradient
                     id="paint3_linear_790_3419"
@@ -89,9 +89,9 @@ const SolidJsIcon = ({ className }: { className: string }) => {
                     y2="164.728"
                     gradientUnits="userSpaceOnUse"
                 >
-                    <stop stop-color="#4377BB" />
-                    <stop offset="0.5" stop-color="#1A336B" />
-                    <stop offset="1" stop-color="#1A336B" />
+                    <stop stopColor="#4377BB" />
+                    <stop offset="0.5" stopColor="#1A336B" />
+                    <stop offset="1" stopColor="#1A336B" />
                 </linearGradient>
             </defs>
         </svg>

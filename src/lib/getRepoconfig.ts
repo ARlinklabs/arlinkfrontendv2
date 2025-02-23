@@ -1,8 +1,13 @@
-// Move getDefaultConfig before it's used
+import { useGlobalState } from "@/store/useGlobalState";
 import { PackageConfig } from "@/types";
 import { Octokit } from "@octokit/rest";
 
-const octokit = new Octokit();
+function getOctokit() {
+    const token = useGlobalState.getState().githubToken;
+    return new Octokit({
+        auth: token,
+    });
+}
 
 interface FrameworkConfig {
     framework: "next" | "vite" | "create-react-app" | "gatsby" | "unknown";
@@ -66,6 +71,7 @@ export async function getRepoConfig(
         errorType: "server" | "static" | "not-found" | null;
     }
 > {
+    const octokit = getOctokit();
     try {
         const branches = ["main", "master"];
         let packageJson: any = null;
@@ -236,6 +242,7 @@ export async function getRepoReadme(
     error: boolean;
     errorType: "server" | "not-found" | null;
 }> {
+    const octokit = getOctokit();
     try {
         const branches = ["main", "master"];
         const readmePath = path ? `${path}/README.md` : "README.md";

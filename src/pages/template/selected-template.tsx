@@ -12,6 +12,7 @@ import {
     SelectedTemplateSkeleton,
 } from "@/components/skeletons";
 import { Helmet } from "react-helmet-async";
+import useDeploymentManager from "@/hooks/use-deployment-manager";
 
 interface TemplateDetails extends Template {
     stats?: {
@@ -26,6 +27,7 @@ const SelectedTemplate = () => {
     const { templates } = useTemplateStore();
     const [fetchingReadme, setFetchingReadme] = useState<boolean>(false);
     const [error, setError] = useState<string>("");
+    const { managerProcess } = useDeploymentManager();
     const [readmeContent, setReadmeContent] = useState<string>("");
     const [currentTemplate, setCurrentTemplate] =
         useState<TemplateDetails | null>(null);
@@ -193,12 +195,16 @@ const SelectedTemplate = () => {
                             </p>
 
                             <div className="flex flex-col sm:flex-row gap-2">
-                                <Link
-                                    to={`/templates/clone/${currentTemplate?.framework}/${currentTemplate?.name}/${currentTemplate?.id}`}
-                                    className="w-full flex justify-center items-center px-3 py-1 rounded-md font-semibold sm:w-auto bg-white text-black hover:bg-neutral-200"
-                                >
-                                    Deploy
-                                </Link>
+                                {!managerProcess ? (
+                                    <div className="flex justify-center items-center px-3 py-1 rounded-md font-semibold sm:w-auto bg-neutral-800 animate-pulse text-black h-[40px] min-w-[100px] "></div>
+                                ) : (
+                                    <Link
+                                        to={`/templates/clone/${currentTemplate?.framework}/${currentTemplate?.name}/${currentTemplate?.id}`}
+                                        className="w-full flex justify-center items-center px-3 py-1 rounded-md font-semibold sm:w-auto bg-white text-black hover:bg-neutral-200"
+                                    >
+                                        Deploy
+                                    </Link>
+                                )}
                                 <Link
                                     to={currentTemplate.demoUrl}
                                     target="_blank"

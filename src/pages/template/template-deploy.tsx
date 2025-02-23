@@ -11,6 +11,7 @@ const TemplateDeploy = () => {
     const { owner, repoName } = useParams();
     const { githubToken } = useGlobalState();
     const selectedUrl = `https://github.com/${owner}/${repoName}`;
+
     if (!githubToken) {
         return (
             <div className="flex flex-col mt-8 items-center justify-center min-h-[80vh] px-4">

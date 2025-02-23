@@ -1,6 +1,6 @@
 // src/hooks/useGlobalState.ts
-import type { TDeployment } from '@/types';
-import { create } from 'zustand';
+import type { TDeployment } from "@/types";
+import { create } from "zustand";
 
 export type Store = {
     managerProcess: string;
@@ -9,7 +9,7 @@ export type Store = {
     setManagerProcess: (managerProcess: string) => void;
     setDeployments: (deployments: TDeployment[]) => void;
     setGithubToken: (token: string | null) => void; // Add setGithubToken function
-}
+};
 
 export const useGlobalState = create<Store>()((set) => ({
     managerProcess: "",
@@ -17,5 +17,7 @@ export const useGlobalState = create<Store>()((set) => ({
     githubToken: null, // Initialize githubToken state
     setManagerProcess: (managerProcess: string) => set({ managerProcess }),
     setDeployments: (deployments: TDeployment[]) => set({ deployments }),
-    setGithubToken: (token: string | null) => set({ githubToken: token }) // Implement setGithubToken
+    setGithubToken: (token: string | null) => set({ githubToken: token }), // Implement setGithubToken
 }));
+
+export const githubToken = useGlobalState.getState().githubToken;

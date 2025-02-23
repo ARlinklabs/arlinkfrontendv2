@@ -194,6 +194,24 @@ export const RepoSkeleton = () => {
     );
 };
 
+export const DeploymentLimitReached = () => {
+    return (
+        <Card className="w-full mb-4 mx-auto bg-yellow-950/30 border-red-500/50 shadow-lg shadow-yellow-500/10">
+            <CardHeader className="pb-2 pt-2">
+                <CardTitle className="flex items-center text-red-300">
+                    <AlertTriangle className="w-5 h-5 mr-2  text-red-400" />
+                    <h3 className="leading-none">DEPLOYMENT LIMIT REACHED</h3>
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm">
+                <p className="text-red-200">
+                    You have exceeded the free limit of the arlink deployment
+                </p>
+            </CardContent>
+        </Card>
+    );
+};
+
 export const NextJsProjectWarningCard = () => {
     return (
         <Card className="w-full mb-4 mx-auto bg-yellow-950/30 border-yellow-500/50 shadow-lg shadow-yellow-500/10">

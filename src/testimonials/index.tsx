@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, useAnimationControls } from "framer-motion";
 import AnimatedDescription from "@/components/landing/effects/animated-description";
 

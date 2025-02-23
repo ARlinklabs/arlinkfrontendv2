@@ -14,12 +14,6 @@ export default function DeploymentPage() {
     const [deployment, setDeployment] = useState<TDeployment | null>(null);
 
     useEffect(() => {
-        deployments.forEach((deployment) => {
-            console.log({ ...deployment, repo });
-        });
-    }, []);
-
-    useEffect(() => {
         if (!repo) {
             toast.error("No repository specified");
             navigate("/dashboard");
