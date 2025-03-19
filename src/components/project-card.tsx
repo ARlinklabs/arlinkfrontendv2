@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -25,14 +27,15 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { toast } from "sonner";
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import { useGlobalState } from "@/store/useGlobalState";
 import useDeploymentManager from "@/hooks/use-deployment-manager";
 import { performDeleteDeployment, deleteFromServer } from "@/actions/deploy";
@@ -95,21 +98,19 @@ export function ProjectCard({ project }: ProjectCardProps) {
     }
 
     return (
-        <Link
-            to={`/deployment?repo=${project.name}`}
-            className="inline-block w-full group"
-        >
-            <Card className="w-full bg-[#0d0d0d] group-hover:border-neutral-600 text-white border-neutral-800 p-4 transition-all">
+        <div className="inline-block w-full group">
+            <Card
+                className="w-full bg-[#0d0d0d] group-hover:border-neutral-600 text-white border-neutral-800 p-4 transition-all"
+                onClick={() => navigate(`/deployment?repo=${project.name}`)}
+                role="button"
+                tabIndex={0}
+            >
                 <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                         <div className="md:w-12 w-10 flex items-center justify-center md:h-12 h-10 bg-neutral-800/70 border border-neutral-800 rounded-lg">
                             <img
-                                src={`/logos/${
-                                    detectFrameworkImage(project.outputDir).svg
-                                }`}
-                                alt={`${
-                                    detectFrameworkImage(project.outputDir).name
-                                } logo`}
+                                src={`/logos/${detectFrameworkImage(project.outputDir).svg}`}
+                                alt={`${detectFrameworkImage(project.outputDir).name} logo`}
                                 className="md:w-8 md:h-8 w-6 h-6"
                             />
                         </div>
@@ -121,34 +122,39 @@ export function ProjectCard({ project }: ProjectCardProps) {
                             </h2>
 
                             {project.UnderName ? (
-                                <a
-                                    href={`https://${project.UnderName}_arlink.arweave.net`}
-                                    className="md:text-xs text-[10px] text-nowrap block text-neutral-500 hover:underline hover:text-neutral-400 transition-colors"
-                                    target="_blank"
-                                    rel="noreferrer"
+                                <Button
+                                    variant="link"
+                                    className="md:text-xs text-[10px] text-nowrap block text-neutral-500 hover:underline hover:text-neutral-400 transition-colors p-0 h-auto"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        window.open(
+                                            `https://${project.UnderName}_arlink.arweave.net`,
+                                            "_blank",
+                                        );
+                                    }}
                                 >
                                     {project.UnderName.toLowerCase().length > 12
-                                        ? `${project.UnderName.toLowerCase().slice(
-                                              0,
-                                              12,
-                                          )}...`
+                                        ? `${project.UnderName.toLowerCase().slice(0, 12)}...`
                                         : project.UnderName.toLowerCase()}
                                     _arlink.arweave.net
-                                </a>
+                                </Button>
                             ) : (
-                                <a
-                                    href={`https://${project.arnsProcess}`}
-                                    className="md:text-xs text-[10px] text-nowrap block text-neutral-500 hover:underline hover:text-neutral-400 transition-colors"
-                                    target="_blank"
-                                    rel="noreferrer"
+                                <Button
+                                    variant="link"
+                                    className="md:text-xs text-[10px] text-nowrap block text-neutral-500 hover:underline hover:text-neutral-400 transition-colors p-0 h-auto"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        window.open(
+                                            `https://${project.arnsProcess}`,
+                                            "_blank",
+                                        );
+                                    }}
                                 >
                                     {project.arnsProcess.toLowerCase().length >
                                     35
-                                        ? `${project.arnsProcess
-                                              .toLowerCase()
-                                              .slice(0, 35)}...`
+                                        ? `${project.arnsProcess.toLowerCase().slice(0, 35)}...`
                                         : project.arnsProcess.toLowerCase()}
-                                </a>
+                                </Button>
                             )}
                         </div>
                     </div>
@@ -210,10 +216,10 @@ export function ProjectCard({ project }: ProjectCardProps) {
                                                 <AlertDialogDescription>
                                                     This action is irreversible.
                                                     The data will be deleted
-                                                    from the our records 
-                                                    but  all deployments will
-                                                    remain permanently stored
-                                                    on Arweave
+                                                    from the our records but all
+                                                    deployments will remain
+                                                    permanently stored on
+                                                    Arweave
                                                 </AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
@@ -236,11 +242,16 @@ export function ProjectCard({ project }: ProjectCardProps) {
                 </div>
 
                 <div className="flex mt-4 items-center justify-between gap-2 md:text-sm text-xs">
-                    <a
-                        href={`https://github.com/${project.repo}`}
+                    <Button
+                        variant="outline"
                         className="flex w-fit gap-2 text-neutral-400 transition-all hover:text-white pr-4 p-[7px] items-center font-light bg-neutral-900 border-neutral-700/50 border rounded-full"
-                        target="_blank"
-                        rel="noreferrer"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(
+                                `https://github.com/${project.repo}`,
+                                "_blank",
+                            );
+                        }}
                     >
                         <img
                             src="/github-mark-white.svg"
@@ -249,12 +260,10 @@ export function ProjectCard({ project }: ProjectCardProps) {
                         />
                         <span className="font-medium">
                             {project.repo.toLowerCase().length > 20
-                                ? `${project.repo
-                                      .toLowerCase()
-                                      .slice(0, 20)}...`
+                                ? `${project.repo.toLowerCase().slice(0, 20)}...`
                                 : project.repo.toLowerCase()}
                         </span>
-                    </a>
+                    </Button>
                     <div className="flex items-center space-x-2 md:text-sm text-xs">
                         <div className="flex items-center space-x-2 rounded-full bg-neutral-800/30 px-3 py-1">
                             <GitBranch className="md:w-4 md:h-4 w-3 h-3 text-neutral-400" />
@@ -275,6 +284,6 @@ export function ProjectCard({ project }: ProjectCardProps) {
                     </span>
                 </div>
             </Card>
-        </Link>
+        </div>
     );
 }

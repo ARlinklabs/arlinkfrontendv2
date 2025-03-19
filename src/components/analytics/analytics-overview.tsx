@@ -28,7 +28,8 @@ const AnalyticsOverview = ({ processId }: { processId: string }) => {
 
     useEffect(() => {
         setFetchingAnalytics(true);
-        const data = async () => {
+        let intervalId: NodeJS.Timeout | null = null;
+        const fetchAnalyticsData = async () => {
             try {
                 console.log("fetching analytics...");
                 const data = await fetchAnalytics(processId);
@@ -41,7 +42,16 @@ const AnalyticsOverview = ({ processId }: { processId: string }) => {
                 setFetchingAnalytics(false);
             }
         };
-        data();
+        fetchAnalyticsData();
+        intervalId = setInterval(() => {
+            fetchAnalyticsData();
+        }, 10000);
+
+        return () => {
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+        };
     }, []);
 
     const firstRow: ChartDetailInterface[] = [

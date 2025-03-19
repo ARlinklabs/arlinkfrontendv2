@@ -42,7 +42,7 @@ const WorldMapCard = ({
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1 flex items-center justify-center p-4">
-                    <Suspense fallback={<div>Loading map...</div>}>
+                    <Suspense fallback={<div></div>}>
                         <WorldMap dots={processData} />
                     </Suspense>
                 </CardContent>
