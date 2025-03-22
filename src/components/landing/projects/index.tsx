@@ -19,14 +19,14 @@ const Projects = () => {
         },
         {
             headline: "Anon",
-            image: "anonn.png",
+            image: "anonn.webp",
             description:
                 "Anon lets you create dApps for AO effortlessly. Just describe your desired application in a prompt, and Anon will generate both the frontend and Lua code.",
             link: "https://anon-labs_arlink.ar.io/",
         },
         {
             headline: "ao-learn",
-            image: "ao-learn.png",
+            image: "ao-learn.webp",
             description:
                 "AO Learn is an on-chain machine learning framework built on AO. It enables developers to create, train, and deploy AI models directly on the AO network.",
             link: "https://aolearn_arlink.ar.io/",
