@@ -175,6 +175,7 @@ const Hero = () => {
                         className="rounded-md w-full h-auto"
                         alt="Dashboard preview"
                         loading="eager"
+                        //@ts-ignore
                         fetchpriority="high"
                     />
                 </motion.div>

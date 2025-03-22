@@ -39,8 +39,8 @@ const TemplateDeploy = lazy(() => import("./pages/template/template-deploy"));
 const CloneTemplate = lazy(() => import("./pages/template/clone-template"));
 const UploadTemplate = lazy(() => import("./pages/template/upload-template"));
 const Generate = lazy(() => import("./pages/6&iFtgG4Lr8Ul54+29"));
+const Arns = lazy(() => import("./pages/arns/"));
 
-// Loading component
 const Loading = () => <div className="text-center p-4"></div>;
 
 function Layout() {
@@ -117,6 +117,7 @@ const router = createBrowserRouter([
                     { path: "integration", element: <ComingSoon /> },
                     { path: "feedback", element: <ComingSoon /> },
                     { path: "support", element: <ComingSoon /> },
+                    { path: "/arns", element: <Arns /> },
                     { path: "*", element: <ComingSoon /> },
                 ],
             },

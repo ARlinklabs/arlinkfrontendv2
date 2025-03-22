@@ -57,6 +57,10 @@ export default function Navbar() {
             url: "/templates",
         },
         {
+            name: "Arns",
+            url: "/arns",
+        },
+        {
             name: "Discord",
             url: "https://discord.gg/PZjQH8DVTP",
         },
