@@ -26,7 +26,7 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
                 {connected ? (
                     children
                 ) : loading ? (
-                    <SkeletonLoader />
+                    <div />
                 ) : (
                     <div>
                         <p className="text-center pt-10">

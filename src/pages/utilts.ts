@@ -1,4 +1,9 @@
-import type { ArnsName, ProtocolLandRepo, Repository } from "@/types";
+import type {
+    ArnsName,
+    DomainTupleData,
+    ProtocolLandRepo,
+    Repository,
+} from "@/types";
 import { BUILDER_BACKEND } from "@/lib/utils";
 import { Octokit } from "@octokit/rest";
 import { index } from "arweave-indexer";
@@ -636,3 +641,89 @@ export function getCountryCode(countryName: string): string {
 
     return countryMap[normalizedCountry] || "";
 }
+export const arnsDummyData: DomainTupleData[] = [
+    {
+        name: "Arlink",
+        permaBuy: 18240,
+        lease: 5000,
+        available: true,
+    },
+    {
+        name: "zynthix",
+        permaBuy: 17500,
+        lease: 4800,
+        available: true,
+    },
+    {
+        name: "velorium",
+        permaBuy: 20000,
+        lease: 5500,
+        available: false,
+    },
+    {
+        name: "quantara",
+        permaBuy: 19000,
+        lease: 5200,
+        available: true,
+    },
+    {
+        name: "solvify",
+        permaBuy: 18500,
+        lease: 5100,
+        available: true,
+    },
+    {
+        name: "aetheris",
+        permaBuy: 19500,
+        lease: 5300,
+        available: false,
+    },
+    {
+        name: "novastra",
+        permaBuy: 18000,
+        lease: 4900,
+        available: true,
+    },
+    {
+        name: "fluxora",
+        permaBuy: 21000,
+        lease: 6000,
+        available: true,
+    },
+    {
+        name: "luminara",
+        permaBuy: 22000,
+        lease: 6200,
+        available: false,
+    },
+    {
+        name: "cryostar",
+        permaBuy: 23000,
+        lease: 6500,
+        available: true,
+    },
+    {
+        name: "orbique",
+        permaBuy: 24000,
+        lease: 6700,
+        available: true,
+    },
+    {
+        name: "vireon",
+        permaBuy: 25000,
+        lease: 7000,
+        available: false,
+    },
+    {
+        name: "xenithra",
+        permaBuy: 26000,
+        lease: 7200,
+        available: true,
+    },
+    {
+        name: "astrava",
+        permaBuy: 27000,
+        lease: 7500,
+        available: true,
+    },
+];

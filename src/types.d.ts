@@ -8,6 +8,13 @@ export type DeploymentRecord = {
 
 type VolatilityType = "up" | "down" | "neutral";
 
+export type DomainTupleData = {
+    name: string;
+    available: boolean;
+    lease: number;
+    permaBuy: number;
+};
+
 export interface AnalyticsMetric {
     value: number;
     change: number;
