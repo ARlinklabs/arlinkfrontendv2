@@ -12,8 +12,8 @@ importers:
         specifier: ^4.0.6
         version: 4.0.6(@babel/core@7.26.0)(@types/react@18.3.17)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@ar.io/sdk':
-        specifier: ^3.8.3
-        version: 3.8.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+        specifier: ^3.8.4
+        version: 3.8.4(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       '@arweave-wallet-kit/browser-wallet-strategy':
         specifier: ^0.1.1
         version: 0.1.1(@arweave-wallet-kit/core@0.1.1)
@@ -212,6 +212,9 @@ importers:
       tailwindcss-animate:
         specifier: ^1.0.7
         version: 1.0.7(tailwindcss@3.4.17)
+      use-debounce:
+        specifier: ^10.0.4
+        version: 10.0.4(react@18.3.1)
       vaul:
         specifier: ^1.1.2
         version: 1.1.2(@types/react-dom@18.3.5(@types/react@18.3.17))(@types/react@18.3.17)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -300,8 +303,8 @@ packages:
     resolution: {integrity: sha512-kJsoy4fAPTOhzVr7Vwq8s/AUg6BQiJDa7WOqRzev4zsuIS3+JCuIZ6vUd7UBsjnxtmguJJulMRs9qWCzVBt2XA==}
     engines: {node: '>=15.10.0'}
 
-  '@ar.io/sdk@3.8.3':
-    resolution: {integrity: sha512-qLNtmvTjwcJpP+Y9xmBMUQpab42yV/hRtxhCbJyiBKpifeAIvol2BQDxP7KligDEBsx+dgmj33cJGD+LKnqX7w==}
+  '@ar.io/sdk@3.8.4':
+    resolution: {integrity: sha512-VVFynJEfv5PjBddxJFXlMO3vKynvZM+TsbkZ0NWk/+5nF04Q0W7iqpsHEyACVfydJBNiYLtMLxYdT5ARv+OQFA==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -6346,6 +6349,12 @@ packages:
       '@types/react':
         optional: true
 
+  use-debounce@10.0.4:
+    resolution: {integrity: sha512-6Cf7Yr7Wk7Kdv77nnJMf6de4HuDE4dTxKij+RqE9rufDsI6zsbjyAxcH5y2ueJCQAnfgKbzXbZHYlkFwmBlWkw==}
+    engines: {node: '>= 16.0.0'}
+    peerDependencies:
+      react: '*'
+
   use-sidecar@1.1.3:
     resolution: {integrity: sha512-Fedw0aZvkhynoPYlA5WXrMCAMm+nSWdZt6lzJQ7Ok8S6Q+VsHmHpRWndVRJ8Be0ZbkfPc5LRYH+5XrzXcEeLRQ==}
     engines: {node: '>=10'}
@@ -6686,7 +6695,7 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
-  '@ar.io/sdk@3.8.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
+  '@ar.io/sdk@3.8.4(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
     dependencies:
       '@dha-team/arbundles': 1.0.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       '@permaweb/aoconnect': 0.0.57
@@ -14234,6 +14243,10 @@ snapshots:
       tslib: 2.8.1
     optionalDependencies:
       '@types/react': 18.3.17
+
+  use-debounce@10.0.4(react@18.3.1):
+    dependencies:
+      react: 18.3.1
 
   use-sidecar@1.1.3(@types/react@18.3.17)(react@18.3.1):
     dependencies:

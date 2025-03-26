@@ -2,6 +2,7 @@ import { ExternalLink, Search } from "lucide-react";
 import { SetStateAction, useRef, useEffect } from "react";
 import { EarthIcon } from "@/components/ui/earth-icon";
 import { Input } from "@/components/ui/input";
+import { checkArNSAvailability } from "@/actions/arns/arnslater";
 
 const DomainGreet = ({
     active,
@@ -20,6 +21,10 @@ const DomainGreet = ({
         if (!inputRef.current) return;
         inputRef.current.focus();
     }, []);
+
+    const handleArnsValue = (value: string) => {
+        checkArNSAvailability(value);
+    };
 
     return (
         <section

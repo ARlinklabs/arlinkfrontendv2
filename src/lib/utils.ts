@@ -212,3 +212,46 @@ export const countryCoordinates: Record<string, { lat: number; lng: number }> =
         "costa rica": { lat: 9.7489, lng: -83.7534 },
         panama: { lat: 8.538, lng: -80.7821 },
     };
+
+export function generateWordSuggestions(baseWord: string): string[] {
+    const prefixes = ["get", "go", "try", "my", "the", "best", "pro", "real"];
+    const suffixes = [
+        "ly",
+        "ify",
+        "ster",
+        "hub",
+        "zone",
+        "matic",
+        "io",
+        "ify",
+        "up",
+    ];
+    const variations: string[] = [];
+
+    prefixes.forEach((prefix) => variations.push(`${prefix}${baseWord}`));
+
+    suffixes.forEach((suffix) => variations.push(`${baseWord}${suffix}`));
+
+    if (baseWord.length > 3) {
+        variations.push(baseWord.slice(0, -1));
+    }
+
+    for (let i = 0; i < baseWord.length; i++) {
+        variations.push(baseWord.slice(0, i) + baseWord[i] + baseWord.slice(i));
+    }
+
+    if (baseWord.length > 1) {
+        for (let i = 0; i < baseWord.length - 1; i++) {
+            const swapped =
+                baseWord.slice(0, i) +
+                baseWord[i + 1] +
+                baseWord[i] +
+                baseWord.slice(i + 2);
+            variations.push(swapped);
+        }
+    }
+
+    variations.push(`${baseWord}${Math.floor(Math.random() * 100)}`);
+
+    return [...new Set(variations)].slice(0, 5).sort(() => Math.random() - 0.5);
+}

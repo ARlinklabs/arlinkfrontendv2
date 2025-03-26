@@ -646,13 +646,13 @@ export const arnsDummyData: DomainTupleData[] = [
         name: "Arlink",
         permaBuy: 18240,
         lease: 5000,
-        available: true,
+        available: false,
     },
     {
         name: "zynthix",
         permaBuy: 17500,
         lease: 4800,
-        available: true,
+        available: false,
     },
     {
         name: "velorium",
@@ -664,13 +664,13 @@ export const arnsDummyData: DomainTupleData[] = [
         name: "quantara",
         permaBuy: 19000,
         lease: 5200,
-        available: true,
+        available: false,
     },
     {
         name: "solvify",
         permaBuy: 18500,
         lease: 5100,
-        available: true,
+        available: false,
     },
     {
         name: "aetheris",
@@ -682,13 +682,13 @@ export const arnsDummyData: DomainTupleData[] = [
         name: "novastra",
         permaBuy: 18000,
         lease: 4900,
-        available: true,
+        available: false,
     },
     {
         name: "fluxora",
         permaBuy: 21000,
         lease: 6000,
-        available: true,
+        available: false,
     },
     {
         name: "luminara",
@@ -700,13 +700,13 @@ export const arnsDummyData: DomainTupleData[] = [
         name: "cryostar",
         permaBuy: 23000,
         lease: 6500,
-        available: true,
+        available: false,
     },
     {
         name: "orbique",
         permaBuy: 24000,
         lease: 6700,
-        available: true,
+        available: false,
     },
     {
         name: "vireon",
@@ -718,12 +718,12 @@ export const arnsDummyData: DomainTupleData[] = [
         name: "xenithra",
         permaBuy: 26000,
         lease: 7200,
-        available: true,
+        available: false,
     },
     {
         name: "astrava",
         permaBuy: 27000,
         lease: 7500,
-        available: true,
+        available: false,
     },
 ];

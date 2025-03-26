@@ -99,28 +99,28 @@ const TopPart = () => {
                     cy="180.5"
                     r="180.139"
                     stroke="#27272A"
-                    stroke-width="0.722"
+                    strokeWidth="0.722"
                 />
                 <circle
                     cx="180.5"
                     cy="180.5"
                     r="72.0556"
                     stroke="#27272A"
-                    stroke-width="0.2888"
+                    strokeWidth="0.2888"
                 />
                 <circle
                     cx="180.5"
                     cy="180.5"
                     r="108.083"
                     stroke="#27272A"
-                    stroke-width="0.4332"
+                    strokeWidth="0.4332"
                 />
                 <circle
                     cx="180.5"
                     cy="180.5"
                     r="144.111"
                     stroke="#27272A"
-                    stroke-width="0.5776"
+                    strokeWidth="0.5776"
                 />
             </mask>
             <g mask="url(#mask0_2012_113)">
@@ -142,7 +142,7 @@ const TopPart = () => {
                 <path
                     d="M141 47.312C141 39.0277 147.716 32.312 156 32.312H204C212.284 32.312 219 39.0277 219 47.312V95.312C219 103.596 212.284 110.312 204 110.312H156C147.716 110.312 141 103.596 141 95.312V47.312Z"
                     stroke="url(#paint0_linear_2012_113)"
-                    stroke-width="2"
+                    strokeWidth="2"
                 />
                 <g clip-path="url(#clip0_2012_113)">
                     <path

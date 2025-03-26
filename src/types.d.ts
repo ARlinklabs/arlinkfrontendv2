@@ -10,7 +10,7 @@ type VolatilityType = "up" | "down" | "neutral";
 
 export type DomainTupleData = {
     name: string;
-    available: boolean;
+    available?: boolean;
     lease: number;
     permaBuy: number;
 };
