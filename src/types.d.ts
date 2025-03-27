@@ -6,6 +6,11 @@ export type DeploymentRecord = {
     AssignedUndername?: string; // Optional, as it's not present in all records
 };
 
+type ArnsData = {
+    name: string;
+    available: boolean;
+};
+
 type VolatilityType = "up" | "down" | "neutral";
 
 export type DomainTupleData = {

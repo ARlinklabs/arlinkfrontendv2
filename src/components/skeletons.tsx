@@ -484,3 +484,31 @@ const AnalyticsBarChart = ({
         </div>
     );
 };
+
+export const BuyArnsSkeleton = () => {
+    return (
+        <div className="container relative flex items-start mt-[20vh] justify-center h-[calc(100dvh-200px)]">
+            <div className="w-[400px] relative">
+                <div className="h-4 w-24 bg-neutral-800/60 rounded animate-pulse absolute -top-[30px] left-0"></div>
+
+                <div className="h-10 w-full bg-neutral-800/60 rounded-lg mb-4 animate-pulse"></div>
+
+                <div className="p-4 bg-[#0d0d0d]/50 border border-neutral-800/40 rounded-lg space-y-8">
+                    <div className="flex flex-col items-center gap-2">
+                        <div className="h-4 w-32 bg-neutral-800/60 rounded-md animate-pulse"></div>
+                        <div className="h-8 w-48 bg-neutral-800/60 rounded-md animate-pulse"></div>
+                    </div>
+
+                    <div className="flex items-center justify-center">
+                        <div className="flex flex-col items-center gap-1">
+                            <div className="h-12 w-24 bg-neutral-800/60 rounded animate-pulse"></div>
+                            <div className="h-3 w-12 bg-neutral-800/40 rounded animate-pulse"></div>
+                        </div>
+                    </div>
+
+                    <div className="h-10 w-full bg-neutral-800/60 rounded animate-pulse"></div>
+                </div>
+            </div>
+        </div>
+    );
+};

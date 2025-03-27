@@ -1,6 +1,5 @@
 import Layout from "@/layouts/layout";
-import { arnsDummyData } from "@/pages/utilts";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     Card,
@@ -10,24 +9,101 @@ import {
     CardHeader,
 } from "../ui/card";
 import { CardTitle } from "../ui/card-hover-effect";
-import { DomainTupleData } from "@/types";
+import { ArnsData, DomainTupleData } from "@/types";
 import { Button } from "../ui/button";
 import { Slider } from "../ui/slider";
 import { ChevronLeft, Info } from "lucide-react";
 import { Link } from "react-router-dom";
+import { checkArNSAvailability, getArNSPrice } from "@/actions/arns/arnslater";
+import { Skeleton } from "../ui/skeleton";
+import { BuyArnsSkeleton } from "../skeletons";
 
 interface BuyArnsProps {
     arnsName: string;
 }
 
+type AvailableArns = ArnsData & {
+    permaBuy: number;
+    lease: number;
+};
+
 const BuyArns = ({ arnsName }: BuyArnsProps) => {
-    const arns = useMemo(() => {
-        return arnsDummyData.find((data) => data.name === arnsName);
+    const [checking, setChecking] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>("");
+    const [arns, setArns] = useState<AvailableArns | null>(null);
+
+    const checkingArNSAvailability = async () => {
+        const { available, errorMessage, name } =
+            await checkArNSAvailability(arnsName);
+        if (errorMessage) {
+            setError(errorMessage);
+            return;
+        }
+
+        if (!available)
+            return {
+                available: false,
+                name: null,
+            };
+        return {
+            available,
+            name,
+        };
+    };
+
+    const fetchPrice = async () => {
+        const value = await getArNSPrice(arnsName);
+        if (value.error) {
+            setChecking(false);
+            return;
+        }
+        const { lease, permabuy } = value;
+        if (!lease || !permabuy)
+            return {
+                lease: null,
+                permabuy: null,
+            };
+        return {
+            lease: lease.priceInArio.valueOf(),
+            permabuy: permabuy.priceInArio.valueOf(),
+        };
+    };
+
+    useEffect(() => {
+        fetchData();
     }, []);
 
-    if (!arns) {
-        return <div>This arns is not available</div>;
+    const fetchData = async () => {
+        setChecking(true);
+        try {
+            const arnsAvailablePromise = checkingArNSAvailability();
+            const arnsAvailablePricePromise = fetchPrice();
+            const [arnsAvailable, arnsAvailablePrice] = await Promise.all([
+                arnsAvailablePromise,
+                arnsAvailablePricePromise,
+            ]);
+            if (!arnsAvailable || !arnsAvailablePrice) return;
+            if (!arnsAvailablePrice.permabuy && !arnsAvailablePrice.lease)
+                return;
+            let data: AvailableArns = {
+                name: arnsAvailable.name ?? arnsName,
+                available: arnsAvailable.available,
+                permaBuy: arnsAvailablePrice.permabuy?.valueOf(),
+                lease: arnsAvailablePrice.lease?.valueOf(),
+            };
+            setArns(data);
+        } catch (error) {
+            console.log(error);
+        } finally {
+            setChecking(false);
+        }
+    };
+
+    if (checking) {
+        return <BuyArnsSkeleton />;
     }
+
+    if (!arns) return;
 
     return (
         <Layout>
@@ -66,7 +142,7 @@ const BuyArns = ({ arnsName }: BuyArnsProps) => {
     );
 };
 
-const PermanentBuyTabContent = ({ name, permaBuy, lease }: DomainTupleData) => {
+const PermanentBuyTabContent = ({ name, permaBuy, lease }: AvailableArns) => {
     return (
         <Card className="p-4 bg-[#0d0d0d]/50 hover:bg-[#0d0d0d]/50  space-y-8 hover:border-neutral-800">
             <CardHeader className="text-center tracking-tighter p-0">

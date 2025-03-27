@@ -1,18 +1,12 @@
 import { getArNSPrice } from "@/actions/arns/arnslater";
 import { EarthIcon } from "../ui/earth-icon";
-import { DomainTupleData } from "@/types";
+import { ArnsData, DomainTupleData } from "@/types";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Separator } from "../ui/separator";
 import { Skeleton } from "../ui/skeleton";
 
-const DomainTuple = ({
-    name,
-    available,
-}: {
-    name: string;
-    available: boolean;
-}) => {
+const DomainTuple = ({ name, available }: ArnsData) => {
     const [leasePrice, setLeasePrice] = useState<number | null>(null);
     const [permaBuyPrice, setPermaBuyPrice] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
