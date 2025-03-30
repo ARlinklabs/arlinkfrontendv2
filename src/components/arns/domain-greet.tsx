@@ -3,6 +3,7 @@ import { SetStateAction, useRef, useEffect } from "react";
 import { EarthIcon } from "@/components/ui/earth-icon";
 import { Input } from "@/components/ui/input";
 import { checkArNSAvailability } from "@/actions/arns/arnslater";
+import { Link } from "react-router-dom";
 
 const DomainGreet = ({
     active,
@@ -57,10 +58,13 @@ const DomainGreet = ({
                     </div>
                 </div>
                 <div className="flex gap-6">
-                    <div className="text-center flex justify-center items-center gap-2 text-neutral-500 hover:text-white hover:underline text-sm cursor-pointer">
+                    <Link
+                        to="/arns/dashboard"
+                        className="text-center flex justify-center items-center gap-2 text-neutral-500 hover:text-white hover:underline text-sm cursor-pointer"
+                    >
                         <EarthIcon className="size-4" />
                         Manage Arns
-                    </div>
+                    </Link>
                     <div className="text-center flex justify-center items-center gap-2 text-neutral-500 hover:text-white hover:underline text-sm cursor-pointer">
                         Learn more
                         <ExternalLink className="size-4" />

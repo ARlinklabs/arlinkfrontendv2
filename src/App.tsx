@@ -40,6 +40,7 @@ const CloneTemplate = lazy(() => import("./pages/template/clone-template"));
 const UploadTemplate = lazy(() => import("./pages/template/upload-template"));
 const Generate = lazy(() => import("./pages/6&iFtgG4Lr8Ul54+29"));
 const Arns = lazy(() => import("./pages/arns/"));
+const ArnsDashboard = lazy(() => import("./pages/arns/dashboard"));
 
 const Loading = () => <div className="text-center p-4"></div>;
 
@@ -118,6 +119,7 @@ const router = createBrowserRouter([
                     { path: "feedback", element: <ComingSoon /> },
                     { path: "support", element: <ComingSoon /> },
                     { path: "/arns", element: <Arns /> },
+                    { path: "/arns/dashboard", element: <ArnsDashboard /> },
                     { path: "*", element: <ComingSoon /> },
                 ],
             },

@@ -361,3 +361,15 @@ export interface ChartDetailInterface {
     };
     data: any;
 }
+
+export interface ArnsTableRow {
+    name: string;
+    role: string;
+    processId: string;
+    targetId: string;
+    expiry: string;
+}
+
+interface ArnsTableProps {
+    data: ArnsTableRow[];
+}

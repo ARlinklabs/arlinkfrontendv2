@@ -1,0 +1,87 @@
+import { useState } from "react";
+import { Copy, Check } from "lucide-react";
+import { ArnsTableProps } from "@/types";
+
+export default function ArnsTable({ data }: ArnsTableProps) {
+    const [copiedProcessId, setCopiedProcessId] = useState<string | null>(null);
+    const [copiedTargetId, setCopiedTargetId] = useState<string | null>(null);
+
+    const copyToClipboard = async (
+        text: string,
+        type: "process" | "target",
+        id: string,
+    ) => {
+        await navigator.clipboard.writeText(text);
+
+        if (type === "process") {
+            setCopiedProcessId(id);
+            setTimeout(() => setCopiedProcessId(null), 2000);
+        } else {
+            setCopiedTargetId(id);
+            setTimeout(() => setCopiedTargetId(null), 2000);
+        }
+    };
+
+    return (
+        <div className="border h-[calc(100svh-260px)] border-[#373737] rounded-md overflow-hidden bg-[#0d0d0d] text-white">
+            <div className="grid grid-cols-5 bg-[#181819] font-semibold border-b border-[#373737] text-sm">
+                <div className="p-4">Arns Name</div>
+                <div className="p-4">Role</div>
+                <div className="p-4">Process ID</div>
+                <div className="p-4">Target ID</div>
+                <div className="p-4">Expiry</div>
+            </div>
+
+            {data.map((row, index) => (
+                <div
+                    key={index}
+                    className={`grid grid-cols-5 font-medium ${index !== data.length && "border-b"} border-[#373737] text-sm hover:bg-[#121212] transition-colors`}
+                >
+                    <div className="p-4">{row.name}</div>
+                    <div className="p-4">{row.role}</div>
+                    <div className="p-4 flex items-center">
+                        <span>{row.processId}</span>
+                        <button
+                            className="ml-2 p-1 hover:bg-[#212121] rounded-md transition-colors"
+                            onClick={() =>
+                                copyToClipboard(
+                                    row.processId,
+                                    "process",
+                                    row.name,
+                                )
+                            }
+                            aria-label="Copy process ID"
+                        >
+                            {copiedProcessId === row.name ? (
+                                <Check size={14} className="text-green-500" />
+                            ) : (
+                                <Copy size={14} className="text-[#818181]" />
+                            )}
+                        </button>
+                    </div>
+                    <div className="p-4 flex items-center">
+                        <span>{row.targetId}</span>
+                        <button
+                            className="ml-2 p-1 hover:bg-[#212121] rounded-md transition-colors"
+                            onClick={() =>
+                                copyToClipboard(
+                                    row.targetId,
+                                    "target",
+                                    row.name,
+                                )
+                            }
+                            aria-label="Copy target ID"
+                        >
+                            {copiedTargetId === row.name ? (
+                                <Check size={14} className="text-green-500" />
+                            ) : (
+                                <Copy size={14} className="text-[#818181]" />
+                            )}
+                        </button>
+                    </div>
+                    <div className="p-4">{row.expiry}</div>
+                </div>
+            ))}
+        </div>
+    );
+}
