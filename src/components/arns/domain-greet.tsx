@@ -45,7 +45,7 @@ const DomainGreet = ({
                             ref={inputRef}
                             value={value}
                             className="text-center border border-none w-36 focus-visible:ring-offset-0 focus:ring-0 bg-transparent focus-visible:ring-0 placeholder:text-neutral-400"
-                            placeholder="Search for Arns..."
+                            placeholder="Search for ARNS..."
                             onClick={() => {
                                 setActive(true);
                             }}

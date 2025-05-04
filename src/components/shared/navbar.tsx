@@ -57,7 +57,7 @@ export default function Navbar() {
             url: "/templates",
         },
         {
-            name: "Arns",
+            name: "ARNS",
             url: "/arns",
         },
         {

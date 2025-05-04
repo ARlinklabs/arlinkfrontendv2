@@ -135,7 +135,7 @@ const DomainCommandPallete = ({
                             />
                         ) : (
                             <div className="text-white transition-colors p-2 px-4 flex items-start cursor-pointer justify-between gap-48">
-                                Not available check below the suggested ArNS
+                                ARNS not available. Please choose from these suggested alternatives
                             </div>
                         )}
                     </div>

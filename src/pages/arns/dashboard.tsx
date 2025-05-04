@@ -1,9 +1,9 @@
 import { Input } from "@/components/ui/input";
 import Layout from "@/layouts/layout";
-import { Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Search  } from "lucide-react";
+import { useMemo, useState, useEffect } from "react";
 import {
-    Select,
+    Select, 
     SelectContent,
     SelectItem,
     SelectTrigger,
@@ -13,156 +13,69 @@ import { ArnsTableRow } from "@/types";
 import ArnsTable from "@/components/arns/arns-table";
 import { useSearchParams } from "react-router-dom";
 import SelectedArns from "@/components/arns/selected-arns";
+import { getWalletOwnedNamesindash } from "@/actions/arns/arnslater";
+import { useActiveAddress } from "arweave-wallet-kit";
+import { ArnsTableSkeleton } from "@/components/skeletons";
 
-export const tableData: ArnsTableRow[] = [
-    {
-        name: "Arlink",
-        role: "Owner",
-        processId: "Qweryt..sdalj",
-        targetId: "Teqsjdl..sdalj",
-        expiry: "Arlink",
-    },
-    {
-        name: "Zythia",
-        role: "Owner",
-        processId: "Qweryt..sdalj",
-        targetId: "Teqsjdl..sdalj",
-        expiry: "Arlink",
-    },
-    {
-        name: "Swagger",
-        role: "Owner",
-        processId: "Qweryt..sdalj",
-        targetId: "Teqsjdl..sdalj",
-        expiry: "Arlink",
-    },
-    {
-        name: "Elysia",
-        role: "Owner",
-        processId: "Qweryt..sdalj",
-        targetId: "Teqsjdl..sdalj",
-        expiry: "Arlink",
-    },
-    {
-        name: "Nest Js",
-        role: "Owner",
-        processId: "Qweryt..sdalj",
-        targetId: "Teqsjdl..sdalj",
-        expiry: "Arlink",
-    },
-    {
-        name: "Next Js",
-        role: "Owner",
-        processId: "Qweryt..sdalj",
-        targetId: "Teqsjdl..sdalj",
-        expiry: "Arlink",
-    },
-    {
-        name: "Vite Js",
-        role: "Owner",
-        processId: "Qweryt..sdalj",
-        targetId: "Teqsjdl..sdalj",
-        expiry: "Arlink",
-    },
-    {
-        name: "React",
-        role: "Admin",
-        processId: "Asdfgh..lkjhg",
-        targetId: "Ytrewq..kjhgf",
-        expiry: "React",
-    },
-    {
-        name: "Vue",
-        role: "Admin",
-        processId: "Poiuyt..mnbvc",
-        targetId: "Lkjhgf..qwerty",
-        expiry: "Vue",
-    },
-    {
-        name: "Angular",
-        role: "Admin",
-        processId: "Mnbvcx..zxcvbn",
-        targetId: "Asdfgh..poiuyt",
-        expiry: "Angular",
-    },
-    {
-        name: "Svelte",
-        role: "User",
-        processId: "Zxcvbn..asdfgh",
-        targetId: "Qwerty..mnbvcx",
-        expiry: "Svelte",
-    },
-    {
-        name: "Solid",
-        role: "User",
-        processId: "Trewql..zxcvbn",
-        targetId: "Plmokn..yuihjk",
-        expiry: "Solid",
-    },
-    {
-        name: "Remix",
-        role: "User",
-        processId: "Yuihjk..lkjhgf",
-        targetId: "Poiuyt..mnbvcx",
-        expiry: "Remix",
-    },
-    {
-        name: "Nuxt",
-        role: "User",
-        processId: "Lkjhgf..qwerty",
-        targetId: "Mnbvcx..asdfgh",
-        expiry: "Nuxt",
-    },
-    {
-        name: "Astro",
-        role: "User",
-        processId: "Asdfgh..poiuyt",
-        targetId: "Qwerty..zxcvbn",
-        expiry: "Astro",
-    },
-    {
-        name: "Electron",
-        role: "User",
-        processId: "Poiuyt..mnbvcx",
-        targetId: "Lkjhgf..qwerty",
-        expiry: "Electron",
-    },
-    {
-        name: "Capacitor",
-        role: "User",
-        processId: "Zxcvbn..asdfgh",
-        targetId: "Plmokn..yuihjk",
-        expiry: "Capacitor",
-    },
-    {
-        name: "Ionic",
-        role: "User",
-        processId: "Trewql..zxcvbn",
-        targetId: "Plmokn..yuihjk",
-        expiry: "Ionic",
-    },
-    {
-        name: "Expo",
-        role: "User",
-        processId: "Yuihjk..lkjhgf",
-        targetId: "Poiuyt..mnbvcx",
-        expiry: "Expo",
-    },
-];
+
+
+const shorten = (str: string, chars = 3) =>
+    str && str.length > chars * 2 + 3
+        ? `${str.slice(0, chars)}...${str.slice(-chars)}`
+        : str;
 
 const ArnsDashboard = () => {
     const [searchTerm, setSearchTerm] = useState<string>("");
+    const [arnsData, setArnsData] = useState<ArnsTableRow[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const activeAddress = useActiveAddress();
+
+    useEffect(() => {
+        if (!activeAddress) {
+            setLoading(false);
+            setArnsData([]);
+            return;
+        }
+        setLoading(true);
+        getWalletOwnedNamesindash(activeAddress)
+            .then((data) => {
+                const mapped = data.map((item) => ({
+                    name: item.name,
+                    role: "Owner", // Adjust if you have role info
+                    processId: shorten(item.processId),
+                    targetId: item.type ?? "", // Ensure string
+                    expiry: item.endTimestamp
+                        ? new Date(item.endTimestamp).toLocaleDateString()
+                        : "",
+                    undernameLimit: typeof item.undernameLimit === 'number' ? item.undernameLimit : undefined,
+                }));
+                setArnsData(mapped);
+                setError(null); // Clear error if fetch succeeds
+                setLoading(false);
+            })
+            .catch(() => {
+                // setError("Failed to fetch data");
+                setLoading(false);
+            });
+    }, [activeAddress]);
+
     const filteredData = useMemo(() => {
-        return tableData.filter((row) =>
+        return arnsData.filter((row) =>
             row.name.toLowerCase().includes(searchTerm.toLowerCase()),
         );
-    }, [searchTerm]);
+    }, [searchTerm, arnsData]);
+
     const [searchParams] = useSearchParams();
     const name = searchParams.get("name");
     if (name) {
-        return <SelectedArns name={name} />;
+        // Find the already-fetched arns data for this name
+        const selectedArns = arnsData.find((row) => row.name === name);
+        return <SelectedArns name={name} arns={selectedArns} />;
     }
 
+ 
     return (
         <Layout className="container">
             <header className="mt-[60px] flex items-center justify-between">
@@ -175,7 +88,6 @@ const ArnsDashboard = () => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-
                 <Select>
                     <SelectTrigger className="w-[180px] bg-arlink-bg-secondary-color">
                         <SelectValue placeholder="Sort by Activity" />
@@ -187,8 +99,21 @@ const ArnsDashboard = () => {
                     </SelectContent>
                 </Select>
             </header>
-            <div className="w-ful mt-[50px]">
-                <ArnsTable data={filteredData} />
+            <div className="w-full mt-[50px]">
+                {!activeAddress ? (
+                    <div>Please connect your wallet to manage your ArNS names.</div>
+                ) : loading ? (
+                    <ArnsTableSkeleton />
+                ) : error ? (
+                    <div>{error}</div>
+                ) : arnsData.length === 0 ? (
+                    <div className="text-center text-neutral-400 py-12">
+                        <div className="mb-2">It looks like you do not own any ArNS names yet...</div>
+                        <a href="/arns" className="text-blue-400 underline">Buy your first ArNS name</a>
+                    </div>
+                ) : (
+                    <ArnsTable data={filteredData} />
+                )}
             </div>
         </Layout>
     );

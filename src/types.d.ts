@@ -368,6 +368,7 @@ export interface ArnsTableRow {
     processId: string;
     targetId: string;
     expiry: string;
+    undernameLimit?: number;
 }
 
 interface ArnsTableProps {

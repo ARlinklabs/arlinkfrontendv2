@@ -13,10 +13,11 @@ import { ArnsData, DomainTupleData } from "@/types";
 import { Button } from "../ui/button";
 import { Slider } from "../ui/slider";
 import { ChevronLeft, Info } from "lucide-react";
-import { Link } from "react-router-dom";
-import { checkArNSAvailability, getArNSPrice } from "@/actions/arns/arnslater";
+import { Link, useNavigate } from "react-router-dom";
+import { checkArNSAvailability, getArNSPrice, buyArNS } from "@/actions/arns/arnslater";
 import { Skeleton } from "../ui/skeleton";
 import { BuyArnsSkeleton } from "../skeletons";
+import { toast } from "sonner";
 
 interface BuyArnsProps {
     arnsName: string;
@@ -31,6 +32,8 @@ const BuyArns = ({ arnsName }: BuyArnsProps) => {
     const [checking, setChecking] = useState<boolean>(true);
     const [error, setError] = useState<string | null>("");
     const [arns, setArns] = useState<AvailableArns | null>(null);
+    const [isBuying, setIsBuying] = useState<boolean>(false);
+    const navigate = useNavigate();
 
     const checkingArNSAvailability = async () => {
         const { available, errorMessage, name } =
@@ -99,6 +102,149 @@ const BuyArns = ({ arnsName }: BuyArnsProps) => {
         }
     };
 
+    const handleBuy = async (type: "lease" | "permabuy", years?: number) => {
+        try {
+            setIsBuying(true);
+            const result = await buyArNS(arnsName, type, years);
+            
+            if (result.success) {
+                toast.success("Purchase Successful", {
+                    description: `Transaction ID: ${result.transactionId}`,
+                });
+                setTimeout(() => {
+                    navigate("/arns/dashboard");
+                }, 1500);
+            } else {
+                toast.error("Purchase Failed", {
+                    description: result.error || "Unknown error occurred",
+                });
+            }
+        } catch (error) {
+            toast.error("Error", {
+                description: error instanceof Error ? error.message : "Unknown error occurred",
+            });
+        } finally {
+            setIsBuying(false);
+        }
+    };
+
+    const PermanentBuyTabContent = ({ name, permaBuy, lease }: AvailableArns) => {
+        const formattedPrice = permaBuy.toLocaleString('en-US', {
+            maximumFractionDigits: 1,
+            minimumFractionDigits: 1
+        });
+        return (
+            <Card className="p-8 bg-[#0d0d0d]/50 hover:bg-[#0d0d0d]/50 space-y-12 hover:border-neutral-800">
+                <CardHeader className="text-center tracking-tighter p-0">
+                    <CardDescription className="text-lg">Registration method</CardDescription>
+                    <CardTitle className="text-5xl leading-[0.8] tracking-tighter">
+                        Permabuy  {name}
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="flex items-center justify-center p-0">
+                    <div className="text-8xl font-semibold flex flex-col items-center gap-3">
+                        {formattedPrice}
+                        <small className="text-lg text-neutral-700">ARIO</small>
+                    </div>
+                </CardContent>
+                <CardFooter className="p-0">
+                    <Button 
+                        className="w-full font-semibold glow-btn"
+                        onClick={() => handleBuy("permabuy")}
+                        disabled={isBuying}
+                    >
+                        {isBuying ? "Processing..." : "Buy Now"}
+                    </Button>
+                </CardFooter>
+            </Card>
+        );
+    };
+
+    const LeaseBuyTabContent = ({ name, lease }: DomainTupleData) => {
+        const [selectedYear, setSelectedYear] = useState<number>(1);
+        const date = new Date().getFullYear();
+        const totalPrice = lease * selectedYear;
+        const formattedPrice = totalPrice.toLocaleString('en-US', {
+            maximumFractionDigits: 1,
+            minimumFractionDigits: 1
+        });
+        return (
+            <Card className="hover:border-neutral-800 bg-[#0d0d0d]/50 hover:bg-[#0d0d0d]/50 p-8 space-y-12">
+                <CardHeader className="text-center tracking-tighter p-0">
+                    <CardDescription className="text-lg">Registration method</CardDescription>
+                    <CardTitle className="text-5xl leading-[0.8] tracking-tighter">
+                        Lease {name}
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col p-0">
+                    <div className="pb-3 text-sm text-neutral-400">
+                        Select a year
+                    </div>
+                    <div className="flex flex-col items-center gap-2">
+                        <Slider
+                            max={4}
+                            onValueChange={(value) => {
+                                const year = value[0];
+                                setSelectedYear(year + 1);
+                            }}
+                        />
+                        <div className="flex w-full px-2">
+                            <div
+                                className={`${selectedYear === 1 ? "text-white" : "text-neutral-600"}  transition-all text-left flex-1`}
+                            >
+                                1
+                            </div>
+                            <div
+                                className={`${selectedYear === 2 ? "text-white" : "text-neutral-600"} flex-1 transition-all translate-x-4 -ml-1`}
+                            >
+                                2
+                            </div>
+                            <div
+                                className={`${selectedYear === 3 ? "text-white" : "text-neutral-600"} transition-all text-center flex-1`}
+                            >
+                                3
+                            </div>
+                            <div
+                                className={`${selectedYear === 4 ? "text-white" : "text-neutral-600"} transition-all -mr-1 text-right -translate-x-4 flex-1`}
+                            >
+                                4
+                            </div>
+                            <div
+                                className={`${selectedYear === 5 ? "text-white" : "text-neutral-600"} transition-all text-right flex-1`}
+                            >
+                                5
+                            </div>
+                        </div>
+                    </div>
+                </CardContent>
+                <CardFooter className="flex p-0 justify-between items-end">
+                    <div className="flex flex-col">
+                        <span className="text-sm text-neutral-400">
+                            until {date + selectedYear}
+                        </span>
+                        <div className="text-white text-3xl font-semibold flex items-end">
+                            {formattedPrice}
+                            <span className="text-xs text-neutral-400 ml-2 mb-1">
+                                ARIO
+                            </span>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Info className="text-neutral-500 hover:text-white size-5" />
+                        <Button 
+                            size="sm" 
+                            className="px-6 glow-btn"
+                            onClick={() => handleBuy("lease", selectedYear)}
+                            disabled={isBuying}
+                        >
+                            {isBuying ? "Processing..." : "Buy"}
+                        </Button>
+                    </div>
+                </CardFooter>
+            </Card>
+        );
+    };
+
     if (checking) {
         return <BuyArnsSkeleton />;
     }
@@ -108,7 +254,7 @@ const BuyArns = ({ arnsName }: BuyArnsProps) => {
     return (
         <Layout>
             <div className="container relative flex items-start mt-[20vh] justify-center h-[calc(100dvh-200px)]">
-                <Tabs defaultValue="permanent" className="w-[400px] relative">
+                <Tabs defaultValue="permanent" className="w-[800px] relative">
                     <Link
                         to={"/arns"}
                         className="flex items-center gap-1 group text-xs absolute -top-[30px] left-0"
@@ -139,105 +285,6 @@ const BuyArns = ({ arnsName }: BuyArnsProps) => {
                 </Tabs>
             </div>
         </Layout>
-    );
-};
-
-const PermanentBuyTabContent = ({ name, permaBuy, lease }: AvailableArns) => {
-    return (
-        <Card className="p-4 bg-[#0d0d0d]/50 hover:bg-[#0d0d0d]/50  space-y-8 hover:border-neutral-800">
-            <CardHeader className="text-center tracking-tighter p-0">
-                <CardDescription>Registration method</CardDescription>
-                <CardTitle className="text-3xl leading-[0.8] tracking-tighter">
-                    Permanent {name}
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="flex items-center justify-center p-0">
-                <div className="text-6xl font-semibold flex flex-col items-center gap-1">
-                    {permaBuy}
-                    <small className="text-sm text-neutral-700">ARIO</small>
-                </div>
-            </CardContent>
-            <CardFooter className="p-0">
-                <Button className="w-full font-semibold glow-btn">
-                    Buy Now
-                </Button>
-            </CardFooter>
-        </Card>
-    );
-};
-
-const LeaseBuyTabContent = ({ name, lease }: DomainTupleData) => {
-    const [selectedYear, setSelectedYear] = useState<number>(1);
-    const date = new Date().getFullYear();
-    return (
-        <Card className="hover:border-neutral-800 bg-[#0d0d0d]/50 hover:bg-[#0d0d0d]/50  p-4 space-y-8">
-            <CardHeader className="text-center tracking-tighter p-0">
-                <CardDescription>Registration method</CardDescription>
-                <CardTitle className="text-3xl leading-[0.8] tracking-tighter">
-                    Lease {name}
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col p-0">
-                <div className="pb-3 text-sm text-neutral-400">
-                    Select a year
-                </div>
-                <div className="flex flex-col items-center gap-2">
-                    <Slider
-                        max={4}
-                        onValueChange={(value) => {
-                            const year = value[0];
-                            setSelectedYear(year + 1);
-                        }}
-                    />
-                    <div className="flex w-full px-2">
-                        <div
-                            className={`${selectedYear === 1 ? "text-white" : "text-neutral-600"}  transition-all text-left flex-1`}
-                        >
-                            1
-                        </div>
-                        <div
-                            className={`${selectedYear === 2 ? "text-white" : "text-neutral-600"} flex-1 transition-all translate-x-4 -ml-1`}
-                        >
-                            2
-                        </div>
-                        <div
-                            className={`${selectedYear === 3 ? "text-white" : "text-neutral-600"} transition-all text-center flex-1`}
-                        >
-                            3
-                        </div>
-                        <div
-                            className={`${selectedYear === 4 ? "text-white" : "text-neutral-600"} transition-all -mr-1 text-right -translate-x-4 flex-1`}
-                        >
-                            4
-                        </div>
-                        <div
-                            className={`${selectedYear === 5 ? "text-white" : "text-neutral-600"} transition-all text-right flex-1`}
-                        >
-                            5
-                        </div>
-                    </div>
-                </div>
-            </CardContent>
-            <CardFooter className="flex p-0 justify-between items-end">
-                <div className="flex flex-col">
-                    <span className="text-sm text-neutral-400">
-                        until {date + selectedYear}
-                    </span>
-                    <div className="text-white text-3xl font-semibold flex items-end">
-                        {lease * selectedYear}
-                        <span className="text-xs text-neutral-400 ml-2 mb-1">
-                            ARIO
-                        </span>
-                    </div>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Info className="text-neutral-500 hover:text-white size-5" />
-                    <Button size="sm" className="px-6 glow-btn">
-                        Buy
-                    </Button>
-                </div>
-            </CardFooter>
-        </Card>
     );
 };
 

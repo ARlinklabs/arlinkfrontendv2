@@ -488,27 +488,51 @@ const AnalyticsBarChart = ({
 export const BuyArnsSkeleton = () => {
     return (
         <div className="container relative flex items-start mt-[20vh] justify-center h-[calc(100dvh-200px)]">
-            <div className="w-[400px] relative">
+            <div className="w-[800px] relative">
                 <div className="h-4 w-24 bg-neutral-800/60 rounded animate-pulse absolute -top-[30px] left-0"></div>
 
                 <div className="h-10 w-full bg-neutral-800/60 rounded-lg mb-4 animate-pulse"></div>
 
-                <div className="p-4 bg-[#0d0d0d]/50 border border-neutral-800/40 rounded-lg space-y-8">
-                    <div className="flex flex-col items-center gap-2">
-                        <div className="h-4 w-32 bg-neutral-800/60 rounded-md animate-pulse"></div>
-                        <div className="h-8 w-48 bg-neutral-800/60 rounded-md animate-pulse"></div>
+                <div className="p-8 bg-[#0d0d0d]/50 border border-neutral-800/40 rounded-lg space-y-12">
+                    <div className="flex flex-col items-center gap-3">
+                        <div className="h-5 w-40 bg-neutral-800/60 rounded-md animate-pulse"></div>
+                        <div className="h-12 w-64 bg-neutral-800/60 rounded-md animate-pulse"></div>
                     </div>
 
                     <div className="flex items-center justify-center">
-                        <div className="flex flex-col items-center gap-1">
-                            <div className="h-12 w-24 bg-neutral-800/60 rounded animate-pulse"></div>
-                            <div className="h-3 w-12 bg-neutral-800/40 rounded animate-pulse"></div>
+                        <div className="flex flex-col items-center gap-3">
+                            <div className="h-20 w-40 bg-neutral-800/60 rounded animate-pulse"></div>
+                            <div className="h-5 w-16 bg-neutral-800/40 rounded animate-pulse"></div>
                         </div>
                     </div>
 
-                    <div className="h-10 w-full bg-neutral-800/60 rounded animate-pulse"></div>
+                    <div className="h-12 w-full bg-neutral-800/60 rounded animate-pulse"></div>
                 </div>
             </div>
         </div>
     );
 };
+
+export const ArnsTableSkeleton = () => (
+    <div className="border h-[calc(100svh-260px)] border-[#373737] rounded-md overflow-hidden bg-[#0d0d0d] text-white">
+        <div className="grid grid-cols-6 bg-[#181819] font-semibold border-b border-[#373737] text-sm">
+            <div className="p-4">ARNS Name</div>
+            <div className="p-4">Role</div>
+            <div className="p-4">Process ID</div>
+            <div className="p-4">Type</div>
+            <div className="p-4">Undernames</div>
+            <div className="p-4">Expiry</div>
+        </div>
+        <div className="max-h-[calc(100svh-310px)] overflow-y-scroll pb-4">
+            {[...Array(10)].map((_, idx) => (
+                <div key={idx} className="grid grid-cols-6 font-medium border-b border-[#373737] text-sm">
+                    {[...Array(10)].map((_, i) => (
+                        <div key={i} className="p-4">
+                            <div className="h-4 w-full bg-[#383838] rounded animate-pulse" />
+                        </div>
+                    ))}
+                </div>
+            ))}
+        </div>
+    </div>
+);
