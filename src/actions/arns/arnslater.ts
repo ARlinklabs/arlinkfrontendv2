@@ -4,7 +4,9 @@ import {
     mARIOToken,
     ARIO_TESTNET_PROCESS_ID,
     ArconnectSigner,
+    ANT,
     type AoARIOWrite,
+    ARIO_MAINNET_PROCESS_ID,
 } from "@ar.io/sdk";
 import { connect } from "@permaweb/aoconnect";
 import Arweave from "arweave";
@@ -21,6 +23,13 @@ const arioRead = ARIO.init({
             GATEWAY_URL: "https://arweave.net",
         }),
     }),
+});
+
+
+const ant = ANT.init({
+    // @ts-ignore
+    signer: new ArconnectSigner(window.arweaveWallet, Arweave.init({})),
+    processId: ARIO_MAINNET_PROCESS_ID
 });
 
 const arioWrite = ARIO.init({
@@ -134,7 +143,7 @@ export async function getWalletOwnedNamesindash(walletAddress: string): Promise<
     undernameLimit?: number;
   }[]
 > {
-    const registryUrl = 'https://cu138.ao-testnet.xyz/dry-run?process-id=i_le_yKKPVstLTDSmkHRqf-wYphMnwB9OhleiTgMkWc';
+    const registryUrl = 'https://cu.ardrive.io/dry-run?process-id=i_le_yKKPVstLTDSmkHRqf-wYphMnwB9OhleiTgMkWc';
     const namesUrl = 'https://cu.ardrive.io/dry-run?process-id=qNvAoz0TgcH7DMg8BCVn8jF32QH5L6T29VjHxhHqqGE';
     const headers = {
         'accept': '*/*',
@@ -248,42 +257,196 @@ export async function getArNSRecordInfo(name: string) {
     }
 }
 
+export async function getArNSstate(processId: string) {
+    const ant = ANT.init({
+        // @ts-ignore
+        signer: new ArconnectSigner(window.arweaveWallet, Arweave.init({})),
+        processId: processId
+    });
+    const state = await ant.getState();
+    return state;
+}
 
-
-
-
-
-
-
-
-
-
-// // for dash table need to get arns name , role , pid and expiry date , we can get all this through  get own arns fn and then  we egt state of the proocess 
-
-// // on the name page we need to get the state of the process to get all initial data info 
-// const ant = ANT.init({
-//     signer: new ArConnectSigner(window.arweaveWallet, Arweave.init({})),
-//     processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM'
-//   });
+export async function getpriceinfo(name: string, qty: number, adress: string) {
+    const pricemrio = await fetch(`https://payment.ardrive.io/v1/arns/price/Increase-Undername-Limit/${name}?increaseQty=${qty}&currency=usd&userAddress=${adress}`);
+    const pricemriojson = await pricemrio.json();
+    
   
-// const state = await ant.getState();
+    const priceario = pricemriojson.mARIO.priceInARIO;
+    
+    return {
+        priceario,
+        priceusd: pricemriojson.fiatEstimate.quotedPaymentAmount
+    };
+}
 
-// //manage undernames buttton will give the user a slider tro but more names 
+export async function setLogo(processId: string, logoTxId: string) {
+    try {
+        const ant = ANT.init({
+            // @ts-ignore
+            signer: new ArconnectSigner(window.arweaveWallet, Arweave.init({})),
+            processId: processId
+        });
 
-// // to set logo 
-// const { id: txId } = await ant.setLogo(
-//     { txId: 'U7RXcpaVShG4u9nIcPVmm2FJSM5Gru9gQCIiRaIPV7f' },
-//     // optional tags
-//     { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
-//   );
+        const { id } = await ant.setLogo(
+            { txId: logoTxId },
+            { tags: [{ name: 'App-Name', value: 'ArNS-App' }] }
+        );
 
-// /// set  description
-// const { id: txId } = await ant.setDescription(
-//     { description: 'A friendly description of this ANT' },
-//     // optional tags
-//     { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+        return {
+            success: true,
+            transactionId: id
+        }; 
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+        return {
+            success: false,
+            error: errorMessage
+        };
+    }
+}
 
-//   );
+export async function setDescription(processId: string, description: string) {
+    try {
+        const ant = ANT.init({
+            // @ts-ignore
+            signer: new ArconnectSigner(window.arweaveWallet, Arweave.init({})),
+            processId: processId
+        });
+
+        const { id } = await ant.setDescription(
+            { description },
+            { tags: [{ name: 'App-Name', value: 'ArNS-App' }] }
+        );
+
+        return {
+            success: true,
+            transactionId: id
+        };
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+        return {
+            success: false,
+            error: errorMessage
+        };
+    }
+}
+
+export async function setTicker(processId: string, ticker: string) {
+    try {
+        const ant = ANT.init({
+            // @ts-ignore
+            signer: new ArconnectSigner(window.arweaveWallet, Arweave.init({})),
+            processId: processId
+        });
+
+        const { id } = await ant.setTicker(
+            { ticker },
+            { tags: [{ name: 'App-Name', value: 'ArNS-App' }] }
+        );
+
+        return {
+            success: true,
+            transactionId: id
+        };
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+        return {
+            success: false,
+            error: errorMessage
+        };
+    }
+}
+
+interface SetTtlResult {
+    success: boolean;
+    transactionId?: string;
+    error?: string;
+}
+
+export async function setTtl(
+    processId: string,
+    transactionId: string,
+    ttlSeconds: number
+): Promise<SetTtlResult> {
+    try {
+        const ant = ANT.init({
+            // @ts-ignore
+            signer: new ArconnectSigner(window.arweaveWallet, Arweave.init({})),
+            processId: processId
+        });
+
+        const { id } = await ant.setBaseNameRecord(
+            {
+                transactionId,
+                ttlSeconds
+            },
+            { tags: [{ name: 'App-Name', value: 'ArNS-App' }] }
+        );
+
+        return {
+            success: true,
+            transactionId: id
+        };
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+        return {
+            success: false,
+            error: errorMessage
+        };
+    }
+}
+
+interface PrimaryNameResult {
+    success: boolean;
+    transactionId?: string;
+    error?: string;
+}
+
+export async function makePrimaryNameRequest(name: string): Promise<PrimaryNameResult> {
+    try {
+        // Initialize ARIO for mainnet
+        const ario = ARIO.mainnet({ 
+            // @ts-ignore
+            signer: new ArconnectSigner(window.arweaveWallet, Arweave.init({}))
+        });
+
+        // Request primary name
+        const { id: requestTxId } = await ario.requestPrimaryName({
+            name
+        });
+
+        // Initialize ANT for approval
+        const ant = ANT.init({
+            // @ts-ignore
+            signer: new ArconnectSigner(window.arweaveWallet, Arweave.init({})),
+            processId: ARIO_MAINNET_PROCESS_ID
+        });
+
+        // Get the wallet address
+        const address = await window.arweaveWallet.getActiveAddress();
+
+        // Approve the primary name request
+        const { id: approvalTxId } = await ant.approvePrimaryNameRequest({
+            name,
+            address, // Use the current wallet address
+            arioProcessId: ARIO_MAINNET_PROCESS_ID
+        });
+
+        return {
+            success: true,
+            transactionId: approvalTxId
+        };
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+        return {
+            success: false,
+            error: errorMessage
+        };
+    }
+}
+
+
 
 // // extend lease 
 // const ario = ARIO.mainnet({ signer: new ArweaveSigner(jwk) });
@@ -295,15 +458,6 @@ export async function getArNSRecordInfo(name: string) {
 //   // optional additional tags
 //   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
 // );
-
-// // set ttl 
-// // get the ant for the base name
-// const arnsRecord = await ario.getArNSRecord({ name: 'ardrive' });
-// const ant = await ANT.init({ processId: arnsName.processId });
-// const { id: txId } = await ant.setBaseNameRecord({
-//   transactionId: '432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
-//   ttlSeconds: 3600,
-// });
 
 // // ardrive.ar.io will now resolve to the provided 432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM transaction id
 

@@ -81,29 +81,6 @@ export default function ArnsTable({ data }: ArnsTableProps) {
                         </div>
                         <div className="p-4 flex items-center">
                             <span>{row.targetId}</span>
-                            <button
-                                className="ml-2 p-1 hover:bg-[#212121] rounded-md transition-colors"
-                                onClick={() =>
-                                    copyToClipboard(
-                                        row.targetId,
-                                        "type",
-                                        row.name,
-                                    )
-                                }
-                                aria-label="Copy target ID"
-                            >
-                                {copiedTargetId === row.name ? (
-                                    <Check
-                                        size={14}
-                                        className="text-green-500"
-                                    />
-                                ) : (
-                                    <Copy
-                                        size={14}
-                                        className="text-[#818181]"
-                                    />
-                                )}
-                            </button>
                         </div>
                         <div className="p-4">{row.undernameLimit ?? '-'}</div>
                         <div className="p-4 flex items-center justify-between">

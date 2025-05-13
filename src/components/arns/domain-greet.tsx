@@ -66,8 +66,15 @@ const DomainGreet = ({
                         Manage Arns
                     </Link>
                     <div className="text-center flex justify-center items-center gap-2 text-neutral-500 hover:text-white hover:underline text-sm cursor-pointer">
-                        Learn more
-                        <ExternalLink className="size-4" />
+                        <a 
+                            href="https://ar.io/arns" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2"
+                        >
+                            Learn more
+                            <ExternalLink className="size-4" />
+                        </a>
                     </div>
                 </div>
             </div>
