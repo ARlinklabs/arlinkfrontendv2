@@ -12,6 +12,8 @@ import { EditArnsModal } from "./edit-arns-modal";
 import { TtlEditModal } from "./ttl-edit-modal";
 import { toast } from "@/components/ui/use-toast";
 import { makePrimaryNameRequest } from "@/actions/arns/arnslater";
+import { IncreaseUndernamesModal } from "./increase-undernames-modal";
+import { ExtendLeaseModal } from "./extend-lease-modal";
 
 
 const SelectedArns = ({ name: nameProp, arns: arnsProp }: { name: string; arns?: any }) => {
@@ -312,6 +314,9 @@ const ArnsStats = ({
         transactionId: string;
     } | null>(null);
 
+    const [undernamesModal, setUndernamesModal] = useState(false);
+    const [extendLeaseModal, setExtendLeaseModal] = useState(false);
+
     const handleTtlEdit = (currentTtl: number, transactionId: string) => {
         setTtlModal({
             isOpen: true,
@@ -321,6 +326,20 @@ const ArnsStats = ({
     };
 
     const handleTtlSuccess = () => {
+        // Refresh the ArNS state data
+        if (arns?.processId) {
+            getArNSstate(arns.processId).then(setArnsState);
+        }
+    };
+
+    const handleUndernamesSuccess = () => {
+        // Refresh the ArNS state data
+        if (arns?.processId) {
+            getArNSstate(arns.processId).then(setArnsState);
+        }
+    };
+
+    const handleExtendLeaseSuccess = () => {
         // Refresh the ArNS state data
         if (arns?.processId) {
             getArNSstate(arns.processId).then(setArnsState);
@@ -339,7 +358,10 @@ const ArnsStats = ({
                         <span className="text-lg">
                             {arns.undernameLimit ?? "N/A"}
                         </span>
-                        <button className="bg-white text-black rounded-md px-4 py-2 text-sm font-medium">
+                        <button 
+                            className="bg-white text-black rounded-md px-4 py-2 text-sm font-medium"
+                            onClick={() => setUndernamesModal(true)}
+                        >
                             Manage
                         </button>
                     </div>
@@ -355,7 +377,10 @@ const ArnsStats = ({
                                 ? new Date(Number(arns.endTimestamp)).toLocaleDateString('en-GB')
                                 : "N/A"}
                         </span>
-                        <button className="bg-white text-black rounded-md px-4 py-2 text-sm font-medium">
+                        <button 
+                            className="bg-white text-black rounded-md px-4 py-2 text-sm font-medium"
+                            onClick={() => setExtendLeaseModal(true)}
+                        >
                             Extend Lease
                         </button>
                     </div>
@@ -424,6 +449,23 @@ const ArnsStats = ({
                     onSuccess={handleTtlSuccess}
                 />
             )}
+
+            {/* Undernames Modal */}
+            <IncreaseUndernamesModal
+                isOpen={undernamesModal}
+                onClose={() => setUndernamesModal(false)}
+                arnsName={arns.name}
+                onSuccess={handleUndernamesSuccess}
+            />
+
+            {/* Extend Lease Modal */}
+            <ExtendLeaseModal
+                isOpen={extendLeaseModal}
+                onClose={() => setExtendLeaseModal(false)}
+                arnsName={arns.name}
+                currentExpiry={Number(arns.endTimestamp)}
+                onSuccess={handleExtendLeaseSuccess}
+            />
         </>
     );
 };

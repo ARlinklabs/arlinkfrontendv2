@@ -7,9 +7,11 @@ import {
     ANT,
     type AoARIOWrite,
     ARIO_MAINNET_PROCESS_ID,
+    
 } from "@ar.io/sdk";
 import { connect } from "@permaweb/aoconnect";
 import Arweave from "arweave";
+import { lowerCaseDomain } from "../../lib/utils";
 
 // Create separate instances for read and write operations
 const arioRead = ARIO.init({
@@ -271,12 +273,13 @@ export async function getpriceinfo(name: string, qty: number, adress: string) {
     const pricemrio = await fetch(`https://payment.ardrive.io/v1/arns/price/Increase-Undername-Limit/${name}?increaseQty=${qty}&currency=usd&userAddress=${adress}`);
     const pricemriojson = await pricemrio.json();
     
-  
-    const priceario = pricemriojson.mARIO.priceInARIO;
+    // Convert mARIO to ARIO using the correct format
+    const marioValue = parseInt(pricemriojson.mARIO);
+    const priceario = Number(new mARIOToken(marioValue).toARIO());
+    console.log(priceario);
     
     return {
-        priceario,
-        priceusd: pricemriojson.fiatEstimate.quotedPaymentAmount
+        priceario
     };
 }
 
@@ -290,7 +293,7 @@ export async function setLogo(processId: string, logoTxId: string) {
 
         const { id } = await ant.setLogo(
             { txId: logoTxId },
-            { tags: [{ name: 'App-Name', value: 'ArNS-App' }] }
+            { tags: [{ name: 'App-Name', value: 'Arlink' }] }
         );
 
         return {
@@ -316,7 +319,7 @@ export async function setDescription(processId: string, description: string) {
 
         const { id } = await ant.setDescription(
             { description },
-            { tags: [{ name: 'App-Name', value: 'ArNS-App' }] }
+            { tags: [{ name: 'App-Name', value: 'Arlink' }] }
         );
 
         return {
@@ -342,7 +345,7 @@ export async function setTicker(processId: string, ticker: string) {
 
         const { id } = await ant.setTicker(
             { ticker },
-            { tags: [{ name: 'App-Name', value: 'ArNS-App' }] }
+            { tags: [{ name: 'App-Name', value: 'Arlink' }] }
         );
 
         return {
@@ -381,7 +384,7 @@ export async function setTtl(
                 transactionId,
                 ttlSeconds
             },
-            { tags: [{ name: 'App-Name', value: 'ArNS-App' }] }
+            { tags: [{ name: 'App-Name', value: 'Arlink' }] }
         );
 
         return {
@@ -446,34 +449,59 @@ export async function makePrimaryNameRequest(name: string): Promise<PrimaryNameR
     }
 }
 
+export async function IncreaseUndername(namee: string, qtyy: number) {
+    try {
+        const ario = ARIO.init({signer : new ArconnectSigner(window.arweaveWallet, Arweave.init({}))})
 
+        const normalizedName = lowerCaseDomain(namee);
+        const { id: txId } = await ario.increaseUndernameLimit(
+            {
+                name: normalizedName,
+                increaseCount: qtyy,
+                fundFrom: 'balance'
+            },
+            { tags: [{ name: 'App-Name', value: 'Arlink' }] }
+        );
 
-// // extend lease 
-// const ario = ARIO.mainnet({ signer: new ArweaveSigner(jwk) });
-// const { id: txId } = await ario.extendLease(
-//   {
-//     name: 'ar-io',
-//     years: 1,
-//   },
-//   // optional additional tags
-//   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
-// );
+        return {
+            success: true,
+            transactionId: txId
+        };
+    } catch (error) {
+        console.error('Error increasing undername limit:', error);
+        const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+        return {
+            success: false,
+            error: errorMessage
+        };
+    }
+}
 
-// // ardrive.ar.io will now resolve to the provided 432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM transaction id
+/**
+ * Alternative version compatible with both parameter formats
+ * Can accept either (name, qty) or an object with configuration
+ */
+export async function flexibleIncreaseUndername(
+    nameOrConfig: string | { name: string; qty: number; },
+    maybeQty?: number
+): Promise<{
+    success: boolean;
+    transactionId?: string;
+    error?: string;
+}> {
+    // Handle different parameter formats
+    let name: string;
+    let qty: number;
+    
+    if (typeof nameOrConfig === 'string') {
+        name = nameOrConfig;
+        qty = maybeQty as number;
+    } else {
+        name = nameOrConfig.name;
+        qty = nameOrConfig.qty;
+    }
 
-// ///to set primary anme first make prmary name  , first request a primanry anme then aprove the primary anme request
-
-// // to request a primary namr 
-// const ario = ARIO.mainnet({ signer: new ArweaveSigner(jwk) });
-// const { id: txId } = await ario.requestPrimaryName({
-//   name: 'arns',
-// });
-
-// // them apprive primary anme request 
-// const { id: txId } = await ant.approvePrimaryNameRequest({
-//     name: 'arns',
-//     address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3', // must match the request initiator address
-//     arioProcessId: ARIO_MAINNET_PROCESS_ID, // the ARIO process id to use for the request
-//   });
+    return IncreaseUndername(name, qty);
+}
 
 

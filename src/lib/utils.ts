@@ -255,3 +255,7 @@ export function generateWordSuggestions(baseWord: string): string[] {
 
     return [...new Set(variations)].slice(0, 5).sort(() => Math.random() - 0.5);
 }
+
+export function lowerCaseDomain(domain: string): string {
+    return domain.toLowerCase();
+}
