@@ -58,7 +58,10 @@ export async function setUndername(
     manifestId: string,
     undername: string,
 ) {
-    const ao = connect();
+    const ao = connect({
+        CU_URL: "https://cu.ardrive.io",
+        MODE: "legacy",
+    });
     const msgtags = [
         { name: "Action", value: "Set-Record" },
         { name: "Sub-Domain", value: undername },

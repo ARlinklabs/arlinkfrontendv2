@@ -345,7 +345,10 @@ export default function DeploymentOverview({
         fetchLatestLogs();
 
         // Fetch ArNS info
-        connect()
+        connect({
+            CU_URL: "https://cu.ardrive.io",
+            MODE: "legacy",
+        })
             .dryrun({
                 process: deployment?.ArnsProcess,
                 tags: [{ name: "Action", value: "Info" }],

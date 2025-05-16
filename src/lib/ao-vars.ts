@@ -3,7 +3,7 @@ import { connect, createDataItemSigner } from "@permaweb/aoconnect";
 export const AppVersion = "1.0.0";
 export const AOModule = "u1Ju_X8jiuq4rX9Nh-ZGRQuYQZgV2MKLMT3CZsykk54"; // sqlite
 export const AOScheduler = "_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA";
-export const CU_URL = "https://cu6.ao-testnet.xyz";
+export const CU_URL = "https://cu.ardrive.io";
 
 const CommonTags = [
     { name: "App-Name", value: "ARlink" },
@@ -17,8 +17,9 @@ export async function spawnProcess(
     tags?: Tag[],
     newProcessModule?: string,
 ) {
-    const ao = connect({
+    const ao = connect({    
         CU_URL,
+        MODE: "legacy",
     });
 
     if (tags) {
@@ -40,6 +41,7 @@ export async function spawnProcess(
 export async function runLua(code: string, process: string, tags?: Tag[]) {
     const ao =  connect({
         CU_URL,
+        MODE: "legacy",
     });
 
     if (tags) {
@@ -73,7 +75,10 @@ export async function runLua(code: string, process: string, tags?: Tag[]) {
 }
 
 export async function getResults(process: string, cursor = "") {
-    const ao = connect();
+    const ao = connect({
+        CU_URL,
+        MODE: "legacy",
+    });
 
     const r = await ao.results({
         process,
@@ -92,7 +97,10 @@ export async function getResults(process: string, cursor = "") {
 }
 
 export async function monitor(process: string) {
-    const ao = connect();
+    const ao = connect({
+        CU_URL,
+        MODE: "legacy",
+    });
 
     const r = await ao.monitor({
         process,
@@ -103,7 +111,10 @@ export async function monitor(process: string) {
 }
 
 export async function unmonitor(process: string) {
-    const ao = connect();
+    const ao = connect({
+        CU_URL,
+        MODE: "legacy",
+    });
 
     const r = await ao.unmonitor({
         process,
@@ -144,7 +155,10 @@ export async function readHandler(args: {
     tags?: Tag[];
     data?: any;
 }): Promise<any> {
-    const ao = connect();
+    const ao = connect({
+        CU_URL,
+        MODE: "legacy",
+    });
     const tags = [{ name: "Action", value: args.action }];
     if (args.tags) tags.push(...args.tags);
     let data = JSON.stringify(args.data || {});
@@ -178,7 +192,10 @@ export async function setArnsName(
     manifestId: string,
     undername = "@",
 ) {
-    const ao = connect();
+    const ao = connect({
+        CU_URL,
+        MODE: "legacy",
+    });
     const msgtags = [
         { name: "Action", value: "Set-Record" },
         { name: "Sub-Domain", value: undername },

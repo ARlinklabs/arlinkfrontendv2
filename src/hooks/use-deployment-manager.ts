@@ -135,7 +135,10 @@ export default function useDeploymentManager() {
     const { connected } = useConnection();
     const address = useActiveAddress();
     //@ts-ignore
-    const ao = connect();
+    const ao = connect({
+        CU_URL: "https://cu.ardrive.io",
+        MODE: "legacy",
+    });
 
     useEffect(() => {
         if (connected && address) {
@@ -163,7 +166,10 @@ export default function useDeploymentManager() {
         if (!globalState.managerProcess) return;
 
         // console.log("fetching deployments");
-        const result = await connect().dryrun({
+        const result = await connect({
+            CU_URL: "https://cu.ardrive.io",
+            MODE: "legacy",
+        }).dryrun({
             process: globalState.managerProcess,
             tags: [{ name: "Action", value: "ARlink.GetDeployments" }],
             Owner: address,
