@@ -13,7 +13,7 @@ A React + Vite template powered by shadcn/ui.
 - **Tailwind Prettier Plugin** - A Prettier plugin for formatting Tailwind CSS cl
 - **ESLint** - A pluggable linting utility for JavaScript and TypeScript.
 - **PostCSS** - A tool for transforming CSS with JavaScr
-- **Autoprefixer** - A PostCSS plugino parse CSS and add vendor prefixes.
+- **Autoprefixer** - A PostCSS plugino parse CSS and add vendor pixes.
 - **shadcn/ui** - Beautifully designed components that you can copy and paste into your 
 
 ## ⚙️ Prerequisites
