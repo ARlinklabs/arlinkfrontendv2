@@ -207,10 +207,12 @@ export async function getManagerProcessFromAddress(address: string) {
     tags: [
       { name: "App-Name", values: ["ARlink"] }
       { name: "Name", values: ["ARlink-Manager"] }
-    ]
+    ],
+    sort:HEIGHT_ASC
   ) {
     edges {
       node {
+        block{height}
         id
       }
     }

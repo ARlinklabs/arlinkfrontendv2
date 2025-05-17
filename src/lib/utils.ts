@@ -1,8 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { connect, createDataItemSigner } from "@permaweb/aoconnect";
-import { ANT, ARIO, ArconnectSigner } from "@ar.io/sdk/web";
-import Arweave from "arweave";
+import { ANT, AOProcess, ARIO, ArconnectSigner , ARIO_MAINNET_PROCESS_ID } from "@ar.io/sdk/web";
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
@@ -86,10 +85,20 @@ export async function setUndername(
 export async function getPrimaryname(walletaddy: string) {
     try {
         // Initialize Arweave
-        const arweave = Arweave.init({});
+      
 
         // step 1 init ario
         const ario = ARIO.init({
+            process: new AOProcess({
+                processId: ARIO_MAINNET_PROCESS_ID,
+                // @ts-ignore
+                ao: connect({
+                    MU_URL: "https://mu-testnet.xyz",
+                    CU_URL: "https://cu.ardrive.io",
+                    GRAPHQL_URL: "https://arweave.net/graphql",
+                    GATEWAY_URL: "https://arweave.net",
+                }),
+            }),
             signer: new ArconnectSigner(window.arweaveWallet),
         });
 
