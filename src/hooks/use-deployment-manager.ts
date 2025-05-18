@@ -167,7 +167,7 @@ export default function useDeploymentManager() {
 
         // console.log("fetching deployments");
         const result = await connect({
-            CU_URL: "https://cu.ardrive.io",
+            CU_URL: "https://cu.arnode.asia",
             MODE: "legacy",
         }).dryrun({
             process: globalState.managerProcess,
@@ -240,7 +240,10 @@ export async function getDeploymentHistory(
     managerProcess: string,
 ): Promise<GetDemploymentHistoryReturnType> {
     const TARGET_PROCESS = managerProcess;
-    const ao = connect();
+    const ao = connect({
+        CU_URL: "https://cu.ardrive.io",
+        MODE: "legacy",
+    });
 
     try {
         // Send get deployment history message
