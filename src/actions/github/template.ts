@@ -30,7 +30,10 @@ export async function forkRepository(
 }
 
 export async function submitTemplate(template: TemplateSubmission) {
-    const ao = connect();
+    const ao = connect({
+        CU_URL: "https://cu.ardrive.io",
+        MODE: "legacy",
+    });
 
     try {
         const message = await ao.message({
@@ -76,7 +79,10 @@ export async function submitTemplate(template: TemplateSubmission) {
     }
 }
 export async function getAllTemplates() {
-    const ao = connect();
+    const ao = connect({
+        CU_URL: "https://cu.ardrive.io",
+        MODE: "legacy",
+    });
 
     try {
         const response = await ao.dryrun({
@@ -162,7 +168,10 @@ interface SubmissionCodeResponse {
 }
 
 export async function generateSubmissionCode(): Promise<SubmissionCodeResponse> {
-    const ao = connect();
+    const ao = connect({
+        CU_URL: "https://cu.ardrive.io",
+        MODE: "legacy",
+    });
 
     try {
         const message = await ao.message({
@@ -214,7 +223,10 @@ interface TemplateDetailsRequest {
 
 // Get specific template details using dryrun
 export async function getTemplateDetails(details: TemplateDetailsRequest) {
-    const ao = connect();
+    const ao = connect({
+        CU_URL: "https://cu.ardrive.io",
+        MODE: "legacy",
+    });
 
     try {
         const response = await ao.dryrun({

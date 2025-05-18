@@ -83,7 +83,10 @@ export async function getProjectPID(
     managerProcess: string = REGISTRY_PROCESS,
 ): Promise<GetProcessPIDResponse> {
     const TARGET_PROCESS = managerProcess;
-    const ao = connect();
+    const ao = connect({
+        CU_URL: "https://cu.ardrive.io",
+        MODE: "legacy",
+    });
 
     try {
         const message = await ao.message({
@@ -186,7 +189,10 @@ export async function registerProject(
     walletAddress: string,
 ): Promise<RegisterProjectReturnType> {
     const TARGET_PROCESS = REGISTRY_PROCESS;
-    const ao = connect();
+    const ao = connect({
+        CU_URL: "https://cu.ardrive.io",
+        MODE: "legacy",
+    });
 
     try {
         // Send registration message
@@ -258,7 +264,10 @@ export const checkProcessId = async (
 export async function getAnalytics(
     processId: string,
 ): Promise<AnalyticsResponse> {
-    const ao = connect();
+    const ao = connect({
+        CU_URL: "https://cu.ardrive.io",
+        MODE: "legacy",
+    });
 
     try {
         const message = await ao.message({

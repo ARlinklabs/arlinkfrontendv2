@@ -14,7 +14,7 @@ const Hero = () => {
     ];
 
     const connecting = async () => {
-        await connect();
+        await connect()
     };
 
     const descriptionLines = [

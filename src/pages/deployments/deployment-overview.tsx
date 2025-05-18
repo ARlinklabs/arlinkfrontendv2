@@ -101,7 +101,10 @@ export default function DeploymentOverview({
 
         const getFallbackArNSName = async () => {
             try {
-                const response = await connect().dryrun({
+                const response = await connect({
+                    CU_URL: "https://cu.ardrive.io",
+                    MODE: "legacy",
+                }).dryrun({
                     process: deployment?.ArnsProcess,
                     tags: [{ name: "Action", value: "Info" }],
                 });
