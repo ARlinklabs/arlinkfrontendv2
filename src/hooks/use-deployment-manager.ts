@@ -167,7 +167,7 @@ export default function useDeploymentManager() {
 
         // console.log("fetching deployments");
         const result = await connect({
-            CU_URL: "https://cu.arnode.asia",
+            CU_URL: "https://cu.ardrive.io",
             MODE: "legacy",
         }).dryrun({
             process: globalState.managerProcess,
