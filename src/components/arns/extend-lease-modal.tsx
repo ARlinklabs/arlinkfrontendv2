@@ -184,8 +184,8 @@ export function ExtendLeaseModal({
                             <p className="text-sm text-neutral-400 mb-2">Estimated Cost</p>
                             <p className="text-2xl font-medium">
                                 {purchaseType === "lease" 
-                                    ? priceInfo.lease.priceInArio.toFixed(2)
-                                    : priceInfo.permabuy.priceInArio.toFixed(2)} ARIO
+                                    ? Number(priceInfo.lease.priceInArio).toFixed(2)
+                                    : Number(priceInfo.permabuy.priceInArio).toFixed(2)} ARIO
                             </p>
                         </div>
                     )}
