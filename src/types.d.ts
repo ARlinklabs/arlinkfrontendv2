@@ -6,7 +6,19 @@ export type DeploymentRecord = {
     AssignedUndername?: string; // Optional, as it's not present in all records
 };
 
+type ArnsData = {
+    name: string;
+    available: boolean;
+};
+
 type VolatilityType = "up" | "down" | "neutral";
+
+export type DomainTupleData = {
+    name: string;
+    available?: boolean;
+    lease: number;
+    permaBuy: number;
+};
 
 export interface AnalyticsMetric {
     value: number;
@@ -348,4 +360,17 @@ export interface ChartDetailInterface {
         value: number;
     };
     data: any;
+}
+
+export interface ArnsTableRow {
+    name: string;
+    role: string;
+    processId: string;
+    targetId: string;
+    expiry: string;
+    undernameLimit?: number;
+}
+
+interface ArnsTableProps {
+    data: ArnsTableRow[];
 }

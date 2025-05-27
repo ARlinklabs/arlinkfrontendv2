@@ -6,33 +6,52 @@ import {
     Outlet,
     useNavigate,
 } from "react-router-dom";
-import Home from "@/pages/index";
-import Dashboard from "@/pages/dashboard";
-import Deployment from "@/pages/deployments/deployment";
+import { lazy, Suspense, useEffect } from "react";
 import Navbar from "./components/shared/navbar";
 import { Toaster } from "./components/ui/sonner";
-import DeploymentLogs from "./pages/deployments/deployment-logs";
-import { useEffect } from "react";
-import ComingSoon from "./components/coming-soon";
-import NewDeployment from "./pages/deployments/new-deployment";
-import DeploymentSetting from "./pages/deployments/deployment-settings";
-import DeploymentCard from "./pages/deployments/deployment-card";
-import Analytics from "./pages/deployments/analytics";
-import DeploymentHistory from "./pages/deployments/deployment-history";
-import TemplateDashboard from "./pages/template/template-dashboard";
-import SelectedTemplate from "./pages/template/selected-template";
-import TemplateDeploy from "./pages/template/template-deploy";
-import CloneTemplate from "./pages/template/clone-template";
-import UploadTemplate from "./pages/template/upload-template";
-import Generate from "./pages/6&iFtgG4Lr8Ul54+29";
 
-// Layout component remains the same
+// Lazy-loaded components
+const Home = lazy(() => import("@/pages/index"));
+const Dashboard = lazy(() => import("@/pages/dashboard"));
+const Deployment = lazy(() => import("@/pages/deployments/deployment"));
+const DeploymentLogs = lazy(
+    () => import("./pages/deployments/deployment-logs"),
+);
+const ComingSoon = lazy(() => import("./components/coming-soon"));
+const NewDeployment = lazy(() => import("./pages/deployments/new-deployment"));
+const DeploymentSetting = lazy(
+    () => import("./pages/deployments/deployment-settings"),
+);
+const DeploymentCard = lazy(
+    () => import("./pages/deployments/deployment-card"),
+);
+const Analytics = lazy(() => import("./pages/deployments/analytics"));
+const DeploymentHistory = lazy(
+    () => import("./pages/deployments/deployment-history"),
+);
+const TemplateDashboard = lazy(
+    () => import("./pages/template/template-dashboard"),
+);
+const SelectedTemplate = lazy(
+    () => import("./pages/template/selected-template"),
+);
+const TemplateDeploy = lazy(() => import("./pages/template/template-deploy"));
+const CloneTemplate = lazy(() => import("./pages/template/clone-template"));
+const UploadTemplate = lazy(() => import("./pages/template/upload-template"));
+const Generate = lazy(() => import("./pages/6&iFtgG4Lr8Ul54+29"));
+const Arns = lazy(() => import("./pages/arns/"));
+const ArnsDashboard = lazy(() => import("./pages/arns/dashboard"));
+
+const Loading = () => <div className="text-center p-4"></div>;
+
 function Layout() {
     return (
         <div className="bg-random">
             <Navbar />
             <main className="max-w-[1440px] mx-auto">
-                <Outlet />
+                <Suspense fallback={<Loading />}>
+                    <Outlet />
+                </Suspense>
             </main>
         </div>
     );
@@ -52,41 +71,27 @@ const router = createBrowserRouter([
         element: <Root />,
         children: [
             {
-                path: "/",
-                element: <Home />,
+                index: true,
+                element: (
+                    <Suspense fallback={<Loading />}>
+                        <Home />
+                    </Suspense>
+                ),
             },
             {
                 path: "/",
                 element: <Layout />,
                 children: [
-                    {
-                        path: "dashboard",
-                        element: <Dashboard />,
-                    },
-                    {
-                        path: "deployment",
-                        element: <Deployment />,
-                    },
-                    {
-                        path: "deployment/logs",
-                        element: <DeploymentLogs />,
-                    },
-                    {
-                        path: "deployment/card",
-                        element: <DeploymentCard />,
-                    },
+                    { path: "dashboard", element: <Dashboard /> },
+                    { path: "deployment", element: <Deployment /> },
+                    { path: "deployment/logs", element: <DeploymentLogs /> },
+                    { path: "deployment/card", element: <DeploymentCard /> },
                     {
                         path: "deployment/history",
                         element: <DeploymentHistory />,
                     },
-                    {
-                        path: "templates",
-                        element: <TemplateDashboard />,
-                    },
-                    {
-                        path: "6&iFtgG4Lr8Ul54+29",
-                        element: <Generate />,
-                    },
+                    { path: "templates", element: <TemplateDashboard /> },
+                    { path: "6&iFtgG4Lr8Ul54+29", element: <Generate /> },
                     {
                         path: "templates/:framework/:name/:id",
                         element: <SelectedTemplate />,
@@ -99,42 +104,23 @@ const router = createBrowserRouter([
                         path: "/deploy/:owner/:repoName",
                         element: <TemplateDeploy />,
                     },
-                    {
-                        path: "templates/upload",
-                        element: <UploadTemplate />,
-                    },
+                    { path: "templates/upload", element: <UploadTemplate /> },
                     {
                         path: "templates/deploy/:owner/:repoName",
                         element: <TemplateDeploy />,
                     },
-                    {
-                        path: "deployment/analytics",
-                        element: <Analytics />,
-                    },
+                    { path: "deployment/analytics", element: <Analytics /> },
                     {
                         path: "deployment/settings",
                         element: <DeploymentSetting />,
                     },
-                    {
-                        path: "deploy",
-                        element: <NewDeployment />,
-                    },
-                    {
-                        path: "integration",
-                        element: <ComingSoon />,
-                    },
-                    {
-                        path: "feedback",
-                        element: <ComingSoon />,
-                    },
-                    {
-                        path: "support",
-                        element: <ComingSoon />,
-                    },
-                    {
-                        path: "*",
-                        element: <ComingSoon />,
-                    },
+                    { path: "deploy", element: <NewDeployment /> },
+                    { path: "integration", element: <ComingSoon /> },
+                    { path: "feedback", element: <ComingSoon /> },
+                    { path: "support", element: <ComingSoon /> },
+                    { path: "/arns", element: <Arns /> },
+                    { path: "/arns/dashboard", element: <ArnsDashboard /> },
+                    { path: "*", element: <ComingSoon /> },
                 ],
             },
         ],

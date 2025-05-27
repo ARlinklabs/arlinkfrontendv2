@@ -25,7 +25,7 @@
                         height="82.1983"
                         rx="16.4073"
                         stroke="url(#paint1_linear_2382_4870)"
-                        stroke-width="2.18765"
+                        strokeWidth="2.18765"
                     />
                     <g clip-path="url(#clip0_2382_4870)">
                         <mask
@@ -97,7 +97,7 @@
                         rx="16.4073"
                         transform="rotate(8.84855 128.197 55.5611)"
                         stroke="url(#paint2_linear_2382_4870)"
-                        stroke-width="2.18765"
+                        strokeWidth="2.18765"
                     />
                     <g opacity="0.6" filter="url(#filter3_f_2382_4870)">
                         <path

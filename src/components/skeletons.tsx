@@ -15,6 +15,7 @@ import {
     Package,
     AlertTriangle,
     ExternalLink,
+    ArrowLeftFromLine,
 } from "lucide-react";
 import { CardTitle } from "./ui/card-hover-effect";
 import { cn } from "@/lib/utils";
@@ -481,6 +482,131 @@ const AnalyticsBarChart = ({
                     </div>
                 ))}
             </section>
+        </div>
+    );
+};
+
+export const BuyArnsSkeleton = () => {
+    return (
+        <div className="container relative flex items-start mt-[20vh] justify-center h-[calc(100dvh-200px)]">
+            <div className="w-[800px] relative">
+                <div className="h-4 w-24 bg-neutral-800/60 rounded animate-pulse absolute -top-[30px] left-0"></div>
+
+                <div className="h-10 w-full bg-neutral-800/60 rounded-lg mb-4 animate-pulse"></div>
+
+                <div className="p-8 bg-[#0d0d0d]/50 border border-neutral-800/40 rounded-lg space-y-12">
+                    <div className="flex flex-col items-center gap-3">
+                        <div className="h-5 w-40 bg-neutral-800/60 rounded-md animate-pulse"></div>
+                        <div className="h-12 w-64 bg-neutral-800/60 rounded-md animate-pulse"></div>
+                    </div>
+
+                    <div className="flex items-center justify-center">
+                        <div className="flex flex-col items-center gap-3">
+                            <div className="h-20 w-40 bg-neutral-800/60 rounded animate-pulse"></div>
+                            <div className="h-5 w-16 bg-neutral-800/40 rounded animate-pulse"></div>
+                        </div>
+                    </div>
+
+                    <div className="h-12 w-full bg-neutral-800/60 rounded animate-pulse"></div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export const ArnsTableSkeleton = () => (
+    <div className="border h-[calc(100svh-260px)] border-[#373737] rounded-md overflow-hidden bg-[#0d0d0d] text-white">
+        <div className="grid grid-cols-6 bg-[#181819] font-semibold border-b border-[#373737] text-sm">
+            <div className="p-4">ARNS Name</div>
+            <div className="p-4">Role</div>
+            <div className="p-4">Process ID</div>
+            <div className="p-4">Type</div>
+            <div className="p-4">Undernames</div>
+            <div className="p-4">Expiry</div>
+        </div>
+        <div className="max-h-[calc(100svh-310px)] overflow-y-scroll pb-4">
+        {[...Array(10)].map((_, idx) => (
+    <div key={idx} className="grid grid-cols-6 font-medium border-b border-[#373737] text-sm">
+        {[...Array(6)].map((_, i) => (  // Changed from 10 to 6
+            <div key={i} className="p-6">
+                <div className="h-4 w-full bg-[#383838] rounded animate-pulse" />
+            </div>
+        ))}
+    </div>
+))}
+
+ </div>
+    </div>
+);
+
+export const ArnsDetailsSkeleton = () => {
+    return (
+        <div className="container">
+            <div className="mt-[20px]">
+                <div className="flex items-center gap-1 text-neutral-400 text-sm mb-4">
+                    <ArrowLeftFromLine className="w-4 h-4" />
+                    <span className="hidden sm:inline">Back</span>
+                </div>
+                <div className="flex mt-[60px] justify-between items-center mb-8">
+                    <div>
+                        <Skeleton className="h-10 w-48 mb-2 bg-neutral-800" />
+                        <div className="flex items-center">
+                            <Skeleton className="h-4 w-64 bg-neutral-800" />
+                        </div>
+                    </div>
+                    <Skeleton className="h-10 w-32 bg-neutral-800" />
+                </div>
+            </div>
+
+            {/* Stats Section */}
+            <header className="bg-[#0d0d0d] border-[#373737] border rounded-lg mb-8 grid grid-cols-3 divide-x divide-[#373737]">
+                {[...Array(3)].map((_, i) => (
+                    <div key={i} className="p-6">
+                        <div className="flex items-center mb-4">
+                            <Clock className="w-5 h-5 mr-2 text-neutral-600" />
+                            <Skeleton className="h-6 w-24 bg-neutral-800" />
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <Skeleton className="h-6 w-20 bg-neutral-800" />
+                            <Skeleton className="h-9 w-24 bg-neutral-800" />
+                        </div>
+                    </div>
+                ))}
+            </header>
+
+            {/* Details Section */}
+            <div className="bg-[#0d0d0d] border-[#373737] border rounded-lg overflow-hidden mb-8">
+                {[...Array(3)].map((_, i) => (
+                    <div key={i} className="border-b border-[#373737] p-4 flex justify-between items-center">
+                        <Skeleton className="h-5 w-24 bg-neutral-800" />
+                        <div className="flex items-center flex-1 justify-between">
+                            <Skeleton className="h-5 w-48 bg-neutral-800" />
+                            <div className="flex items-center gap-2">
+                                <Skeleton className="h-5 w-5 bg-neutral-800" />
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Additional Information Section */}
+            <div className="bg-[#0d0d0d] border-[#373737] border rounded-lg overflow-hidden">
+                <h2 className="text-xl font-medium p-4 border-b border-[#373737]">Additional Information</h2>
+                <div className="divide-y divide-[#373737]">
+                    {[...Array(3)].map((_, i) => (
+                        <div key={i} className="border-b border-[#373737] p-4 flex justify-between items-center">
+                            <Skeleton className="h-5 w-24 bg-neutral-800" />
+                            <div className="flex items-center flex-1 justify-between">
+                                <Skeleton className="h-5 w-48 bg-neutral-800" />
+                                <div className="flex items-center gap-2">
+                                    <Skeleton className="h-5 w-5 bg-neutral-800" />
+                                    <Skeleton className="h-5 w-5 bg-neutral-800" />
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
         </div>
     );
 };

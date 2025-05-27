@@ -1,4 +1,5 @@
 import { InteractiveGrid } from "../ui";
+
 import { motion } from "framer-motion";
 import { ArIo } from "@/components/ui/icons/ario";
 import { useConnection } from "arweave-wallet-kit";
@@ -170,9 +171,12 @@ const Hero = () => {
                 >
                     <div className="bg-gradient-to-b from-transparent to-[#09090b] via-[#09090b]/80 z-40 inset-0 rounded-xl absolute" />
                     <img
-                        src="/dashboard.png"
+                        src="/dashboard.webp"
                         className="rounded-md w-full h-auto"
                         alt="Dashboard preview"
+                        loading="eager"
+                        //@ts-ignore
+                        fetchpriority="high"
                     />
                 </motion.div>
             </div>

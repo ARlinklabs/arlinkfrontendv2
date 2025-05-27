@@ -4,7 +4,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function Layout({ children }: { children?: React.ReactNode }) {
+type LayoutProps = {
+    children: React.ReactNode;
+    className?: string;
+};
+
+export default function Layout({ children, className }: LayoutProps) {
     const { connected } = useConnection();
     const [loading, setLoading] = useState<boolean>(true);
 
@@ -21,12 +26,12 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
     }, [connected]);
 
     return (
-        <div className="">
+        <div className={className}>
             <div className="w-full">
                 {connected ? (
                     children
                 ) : loading ? (
-                    <SkeletonLoader />
+                    <div />
                 ) : (
                     <div>
                         <p className="text-center pt-10">

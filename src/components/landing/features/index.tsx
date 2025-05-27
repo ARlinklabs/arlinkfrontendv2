@@ -353,7 +353,7 @@ const GradientFrame = () => {
                         height="249.775"
                         rx="13.125"
                         stroke="url(#paint1_linear_2_430)"
-                        stroke-width="1.75"
+                        strokeWidth="1.75"
                     />
                 </g>
             </g>
@@ -441,7 +441,7 @@ const PermanenetStorageIcon = () => {
                     rx="31.3957"
                     transform="rotate(-6.61862 4.08239 30.0528)"
                     stroke="url(#paint1_linear_4_72)"
-                    stroke-width="3.11111"
+                    strokeWidth="3.11111"
                 />
                 <g filter="url(#filter1_d_4_72)">
                     <path
@@ -482,7 +482,7 @@ const PermanenetStorageIcon = () => {
                     rx="31.5783"
                     transform="rotate(9.21951 206.419 169.813)"
                     stroke="url(#paint4_linear_4_72)"
-                    stroke-width="2.74594"
+                    strokeWidth="2.74594"
                 />
             </g>
             <defs>
@@ -630,7 +630,7 @@ export const Orbit = () => {
                     <path
                         d="M295.581 87.8515V87.8515C291.71 49.4989 247.363 30.324 216.655 53.7254L87.7624 151.95C57.0545 175.351 12.7071 156.176 8.83594 117.824V117.824C4.96476 79.471 44.5556 51.5225 79.297 68.0828L225.12 137.592C259.861 154.152 299.452 126.204 295.581 87.8515Z"
                         stroke="url(#paint0_linear_2376_2621)"
-                        stroke-width="16"
+                        strokeWidth="16"
                     />
                 </g>
                 <g filter="url(#filter1_b_2376_2621)">
@@ -649,7 +649,7 @@ export const Orbit = () => {
                         rx="30.5631"
                         transform="matrix(0.994329 0.10635 -0.102738 0.994708 257.558 21.8345)"
                         stroke="url(#paint1_linear_2376_2621)"
-                        stroke-width="1.77778"
+                        strokeWidth="1.77778"
                     />
                     <g opacity="0.6" filter="url(#filter2_f_2376_2621)">
                         <path
@@ -678,7 +678,7 @@ export const Orbit = () => {
                         rx="30.5631"
                         transform="matrix(0.994329 0.10635 -0.102738 0.994708 33.1038 128.092)"
                         stroke="url(#paint2_linear_2376_2621)"
-                        stroke-width="1.77778"
+                        strokeWidth="1.77778"
                     />
                     <g opacity="0.6" filter="url(#filter4_f_2376_2621)">
                         <path
@@ -894,7 +894,7 @@ const ArlinkLogo = () => {
                     rx="21.375"
                     transform="rotate(-7.68963 1.87748 17.352)"
                     stroke="url(#paint0_linear_2362_1460)"
-                    stroke-width="2.25"
+                    strokeWidth="2.25"
                 />
                 <g filter="url(#filter1_f_2362_1460)">
                     <path
@@ -1013,7 +1013,7 @@ export const GithubLogo = () => {
                     rx="15"
                     transform="rotate(6 9.6649 2.05779)"
                     stroke="url(#paint0_linear_2362_1636)"
-                    stroke-width="2"
+                    strokeWidth="2"
                 />
                 <g opacity="0.6" filter="url(#filter1_f_2362_1636)">
                     <path
@@ -1118,7 +1118,7 @@ export const RocketLogo = () => {
                     rx="15"
                     transform="rotate(-6 1.59905 9.28721)"
                     stroke="url(#paint0_linear_2376_2164)"
-                    stroke-width="2"
+                    strokeWidth="2"
                 />
                 <g opacity="0.6" filter="url(#filter1_f_2376_2164)">
                     <path
