@@ -2,11 +2,12 @@ import {
     ARIO,
     AOProcess,
     mARIOToken,
-    ARIO_TESTNET_PROCESS_ID,
+   
     ArconnectSigner,
     ANT,
     type AoARIOWrite,
     ARIO_MAINNET_PROCESS_ID,
+    
     
 } from "@ar.io/sdk";
 import { connect } from "@permaweb/aoconnect";
@@ -16,7 +17,7 @@ import { lowerCaseDomain } from "../../lib/utils";
 // Create separate instances for read and write operations
 const arioRead = ARIO.init({
     process: new AOProcess({
-        processId: ARIO_TESTNET_PROCESS_ID,
+        processId: ARIO_MAINNET_PROCESS_ID,
         // @ts-ignore
         ao: connect({
             MU_URL: "https://mu-testnet.xyz",
@@ -36,7 +37,7 @@ const ant = ANT.init({
 
 const arioWrite = ARIO.init({
     process: new AOProcess({
-        processId: ARIO_TESTNET_PROCESS_ID,
+        processId: ARIO_MAINNET_PROCESS_ID,
         // @ts-ignore
         ao: connect({
             MU_URL: "https://mu-testnet.xyz",
@@ -114,7 +115,7 @@ export async function buyArNS(name: string, type: "lease" | "permabuy", years?: 
                 name, 
                 type, 
                 years: type === "lease" ? years : 1,
-                processId: ARIO_TESTNET_PROCESS_ID
+                processId: ARIO_MAINNET_PROCESS_ID
             },
             {
                 tags: [{ name: 'App-Name', value: 'ArNS-App' }]
@@ -415,6 +416,7 @@ export async function makePrimaryNameRequest(name: string): Promise<PrimaryNameR
         });
 
         // Request primary name
+        // @ts-ignore
         const { id: requestTxId } = await ario.requestPrimaryName({
             name
         });
@@ -451,7 +453,8 @@ export async function makePrimaryNameRequest(name: string): Promise<PrimaryNameR
 
 export async function IncreaseUndername(namee: string, qtyy: number) {
     try {
-        const ario = ARIO.init({signer : new ArconnectSigner(window.arweaveWallet, Arweave.init({}))})
+        // @ts-ignore
+        const ario = ARIO.mainnet({signer : new ArconnectSigner(window.arweaveWallet, Arweave.init({}))})
 
         const normalizedName = lowerCaseDomain(namee);
         const { id: txId } = await ario.increaseUndernameLimit(
