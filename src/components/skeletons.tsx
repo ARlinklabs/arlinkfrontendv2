@@ -579,9 +579,9 @@ export const ArnsDetailsSkeleton = () => {
                 {[...Array(3)].map((_, i) => (
                     <div key={i} className="border-b border-[#373737] p-4 flex justify-between items-center">
                         <Skeleton className="h-5 w-24 bg-neutral-800" />
-                        <div className="flex items-center flex-1 justify-between">
+                        <div className="flex items-center flex-1 justify-between ml-8">
                             <Skeleton className="h-5 w-48 bg-neutral-800" />
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-4">
                                 <Skeleton className="h-5 w-5 bg-neutral-800" />
                             </div>
                         </div>
@@ -596,9 +596,9 @@ export const ArnsDetailsSkeleton = () => {
                     {[...Array(3)].map((_, i) => (
                         <div key={i} className="border-b border-[#373737] p-4 flex justify-between items-center">
                             <Skeleton className="h-5 w-24 bg-neutral-800" />
-                            <div className="flex items-center flex-1 justify-between">
+                            <div className="flex items-center flex-1 justify-between ml-8">
                                 <Skeleton className="h-5 w-48 bg-neutral-800" />
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-4">
                                     <Skeleton className="h-5 w-5 bg-neutral-800" />
                                     <Skeleton className="h-5 w-5 bg-neutral-800" />
                                 </div>

@@ -25,7 +25,8 @@
         /* Paths */
         "baseUrl": ".",
         "paths": {
-            "@/*": ["./src/*"]
+            "@/*": ["./src/*"],
+            "@/": ["./src/"]
         }
     },
     "include": ["src", "@/components/ui/accordion.tsx"]

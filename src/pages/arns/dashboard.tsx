@@ -83,7 +83,7 @@ const ArnsDashboard = () => {
                     <Search className="absolute left-3 top-1/2 h-[18px] md:h-[20px] w-[18px] md:w-[20px] transform -translate-y-1/2 text-neutral-600" />
                     <Input
                         className="pl-10 w-full rounded-md bg-arlink-bg-secondary-color hover:border-neutral-600 transition-colors placeholder:text-neutral-400 font-light border-[#383838] focus:ring-neutral-700 focus-visible:ring-neutral-700 text-sm md:text-base"
-                        placeholder="Search Repositories and Projects..."
+                        placeholder="Search your ArNS names..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />

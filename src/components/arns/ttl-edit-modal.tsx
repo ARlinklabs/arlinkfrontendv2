@@ -4,6 +4,8 @@ import { Slider } from "@/components/ui/slider";
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { setTtl } from "@/actions/arns/arnslater";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { InfoIcon } from "lucide-react";
 
 interface TtlEditModalProps {
     isOpen: boolean;
@@ -15,9 +17,9 @@ interface TtlEditModalProps {
 }
 
 const TTL_PRESETS = [
+    { label: "1 minute", value: 60 }, // 1 * 60
     { label: "15 minutes", value: 900 }, // 15 * 60
     { label: "1 hour", value: 3600 }, // 60 * 60
-    { label: "24 hours", value: 86400 }, // 24 * 60 * 60
 ];
 
 export function TtlEditModal({
@@ -77,7 +79,22 @@ export function TtlEditModal({
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>Edit TTL</DialogTitle>
+                    <div className="flex items-center gap-2">
+                        <DialogTitle>Edit TTL</DialogTitle>
+                        <TooltipProvider>
+                            <Tooltip delayDuration={0}>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6">
+                                        <InfoIcon className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-[250px] p-3">
+                                    <p className="text-sm">TTL is the time it takes for your website changes to be visible.</p>
+                                    
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    </div>
                 </DialogHeader>
                 <div className="grid gap-6 py-4">
                     <div className="space-y-4">
@@ -87,13 +104,13 @@ export function TtlEditModal({
                         <Slider
                             value={[ttlValue]}
                             onValueChange={([value]) => setTtlValue(value)}
-                            min={900}
+                            min={60}
                             max={86400}
-                            step={60}
+                            step={30}
                             className="w-full"
                         />
                         <div className="flex justify-between text-sm text-neutral-400">
-                            <span>15 min</span>
+                            <span>1 min</span>
                             <span>24 hours</span>
                         </div>
                     </div>
