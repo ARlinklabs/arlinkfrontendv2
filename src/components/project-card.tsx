@@ -73,19 +73,22 @@ export function ProjectCard({ project }: ProjectCardProps) {
         try {
             const ownerName = extractOwnerName(project.repoUrl);
             const repoProjectName = extractRepoName(project.repoUrl);
-            const deleteRes = await deleteFromServer({
+                   // technical debt need to fix error handling here 
+
+             await deleteFromServer({
                 ownerName,
                 repoProjectName,
             });
-            if (deleteRes) {
-                await performDeleteDeployment(
-                    project.name,
-                    globalState.managerProcess,
-                    refresh,
-                );
-                toast.success("Deployment deleted successfully");
-                navigate("/dashboard");
-            }
+            
+            // Always perform delete deployment after server delete completes
+           await performDeleteDeployment(
+                project.name,
+                globalState.managerProcess,
+                refresh,
+            );
+            
+            toast.success("Deployment deleted successfully");
+            navigate("/dashboard");
         } catch (error) {
             console.error("Error deleting deployment:", error);
             toast.error("An error occurred while deleting the deployment");

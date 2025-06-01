@@ -142,20 +142,20 @@ export default function DeploymentSetting() {
         try {
             const ownerName = extractOwnerName(deployment.RepoUrl);
             const repoProjectName = extractRepoName(deployment.RepoUrl);
-           
-            const deleted = await deleteFromServer({
+                await deleteFromServer({
                 ownerName,
                 repoProjectName,
             });
-            if (deleted) {
-                await performDeleteDeployment(
-                    deployment.Name,
-                    globalState.managerProcess,
-                    refresh,
-                );
-                toast.success("Deployment deleted successfully");
-                navigate("/dashboard");
-            }
+            
+            // Always perform delete deployment after server delete completes
+            await performDeleteDeployment(
+                deployment.Name,
+                globalState.managerProcess,
+                refresh,
+            );
+            
+            toast.success("Deployment deleted successfully");
+            navigate("/dashboard");
         } catch (error) {
             console.error("Error deleting deployment:", error);
             toast.error("An error occurred while deleting the deployment");
