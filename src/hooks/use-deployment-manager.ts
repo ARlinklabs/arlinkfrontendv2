@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useGlobalState } from "@/store/useGlobalState";
 import { useActiveAddress, useConnection } from "arweave-wallet-kit";
 import { runLua, spawnProcess } from "@/lib/ao-vars";
@@ -134,6 +134,11 @@ export default function useDeploymentManager() {
     const globalState = useGlobalState();
     const { connected } = useConnection();
     const address = useActiveAddress();
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const retryCountRef = useRef(0);
+    const maxRetries = 3;
+    
     //@ts-ignore
     const ao = connect({
         CU_URL: "https://cu.ardrive.io",
@@ -159,38 +164,104 @@ export default function useDeploymentManager() {
     }, [connected, address, globalState.setManagerProcess]);
 
     useEffect(() => {
-        refresh();
+        // Reset retry count when manager process changes
+        retryCountRef.current = 0;
+        
+        // Clear any existing timeout
+        if (refreshTimeoutRef.current) {
+            clearTimeout(refreshTimeoutRef.current);
+        }
+        
+        // Add a small delay when process is newly set to ensure it's ready
+        if (globalState.managerProcess) {
+            refreshTimeoutRef.current = setTimeout(() => {
+                refresh();
+            }, 1000); // 1 second delay for new processes
+        }
+        
+        return () => {
+            if (refreshTimeoutRef.current) {
+                clearTimeout(refreshTimeoutRef.current);
+            }
+        };
     }, [globalState.managerProcess]);
 
-    async function refresh() {
-        if (!globalState.managerProcess) return;
+    async function refresh(isRetry = false) {
+        if (!globalState.managerProcess || isRefreshing) return;
+        
+        // Prevent excessive retries
+        if (isRetry && retryCountRef.current >= maxRetries) {
+            console.warn("Max retries reached for deployment refresh");
+            setIsRefreshing(false);
+            return;
+        }
 
-        // console.log("fetching deployments");
-        const result = await connect({
-            CU_URL: "https://cu.ardrive.io",
-            MODE: "legacy",
-        }).dryrun({
-            process: globalState.managerProcess,
-            tags: [{ name: "Action", value: "ARlink.GetDeployments" }],
-            Owner: address,
-        });
+        setIsRefreshing(true);
 
         try {
-            if (result.Error) return alert(result.Error);
+            // console.log("fetching deployments");
+            const result = await connect({
+                CU_URL: "https://cu.ardrive.io",
+                MODE: "legacy",
+            }).dryrun({
+                process: globalState.managerProcess,
+                tags: [{ name: "Action", value: "ARlink.GetDeployments" }],
+                Owner: address,
+            });
+
+            if (result.Error) {
+                console.error("Deployment fetch error:", result.Error);
+                setIsRefreshing(false);
+                return;
+            }
+            
             // console.log("result", result);
             const { Messages } = result;
+            
+            if (!Messages || Messages.length === 0) {
+                throw new Error("No messages received from process");
+            }
+            
             const deployments = JSON.parse(Messages[0].Data);
             globalState.setDeployments(deployments);
-        } catch {
-            await runLua(setupCommands, globalState.managerProcess);
-            await refresh();
+            retryCountRef.current = 0; // Reset retry count on success
+            setIsRefreshing(false);
+            
+        } catch (error) {
+            console.warn("Refresh failed, attempting setup and retry:", error);
+            retryCountRef.current++;
+            
+            try {
+                await runLua(setupCommands, globalState.managerProcess);
+                
+                // Exponential backoff for retries
+                const delay = Math.min(500 * Math.pow(2, retryCountRef.current - 1), 5000);
+                
+                refreshTimeoutRef.current = setTimeout(() => {
+                    refresh(true);
+                }, delay);
+                
+            } catch (setupError) {
+                console.error("Setup commands failed:", setupError);
+                setIsRefreshing(false);
+            }
         }
     }
+
+    // Cleanup function
+    useEffect(() => {
+        return () => {
+            if (refreshTimeoutRef.current) {
+                clearTimeout(refreshTimeoutRef.current);
+            }
+        };
+    }, []);
 
     return {
         managerProcess: globalState.managerProcess,
         deployments: globalState.deployments,
-        refresh,
+        isRefreshing,
+        refresh: () => refresh(false),
     };
 }
 // keep it as local host if NODE_ENV is test

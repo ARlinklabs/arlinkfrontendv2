@@ -18,7 +18,6 @@ import { BUILDER_BACKEND, getTime } from "@/lib/utils";
 import { runLua } from "@/lib/ao-vars";
 import DeploymentLogs from "./shared/deploying-logs";
 import { setArnsName as setArnsNameWithProcessId } from "@/lib/ao-vars";
-import { canDeploy } from "@/lib/limitdeploy";
 
 const ConfigureProtocolLandProject = ({
     setStep,
