@@ -1,14 +1,8 @@
 import { Input } from "@/components/ui/input";
 import Layout from "@/layouts/layout";
-import { Search  } from "lucide-react";
+import { Search, Plus } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
-import {
-    Select, 
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+
 import { ArnsTableRow } from "@/types";
 import ArnsTable from "@/components/arns/arns-table";
 import { useSearchParams } from "react-router-dom";
@@ -16,6 +10,7 @@ import SelectedArns from "@/components/arns/selected-arns";
 import { getWalletOwnedNamesindash } from "@/actions/arns/arnslater";
 import { useActiveAddress } from "arweave-wallet-kit";
 import { ArnsTableSkeleton } from "@/components/skeletons";
+import { Link } from "react-router-dom";
 
 
 
@@ -78,7 +73,7 @@ const ArnsDashboard = () => {
  
     return (
         <Layout className="container">
-            <header className="mt-[60px] flex items-center justify-between">
+            <header className="mt-[60px] flex items-center justify-between gap-4">
                 <div className="relative w-full md:max-w-[600px]">
                     <Search className="absolute left-3 top-1/2 h-[18px] md:h-[20px] w-[18px] md:w-[20px] transform -translate-y-1/2 text-neutral-600" />
                     <Input
@@ -88,16 +83,16 @@ const ArnsDashboard = () => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <Select>
-                    <SelectTrigger className="w-[180px] bg-arlink-bg-secondary-color">
-                        <SelectValue placeholder="Sort by Activity" />
-                    </SelectTrigger>
-                    <SelectContent className="capitalize">
-                        <SelectItem value="date">date</SelectItem>
-                        <SelectItem value="expiry">expiry</SelectItem>
-                        <SelectItem value="name">name</SelectItem>
-                    </SelectContent>
-                </Select>
+                
+                {arnsData.length > 0 && (
+                    <Link 
+                        to="/arns"
+                        className="flex items-center gap-2 bg-white text-black rounded-md px-4 py-2 text-sm font-medium hover:bg-gray-100 transition-colors whitespace-nowrap"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Buy ArNS
+                    </Link>
+                )}
             </header>
             <div className="w-full mt-[50px]">
                 {!activeAddress ? (

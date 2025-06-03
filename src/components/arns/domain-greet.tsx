@@ -45,7 +45,7 @@ const DomainGreet = ({
                             ref={inputRef}
                             value={value}
                             className="text-center border border-none w-36 focus-visible:ring-offset-0 focus:ring-0 bg-transparent focus-visible:ring-0 placeholder:text-neutral-400"
-                            placeholder="Search for ARNS..."
+                            placeholder="Search for ArNS..."
                             onClick={() => {
                                 setActive(true);
                             }}
@@ -63,7 +63,7 @@ const DomainGreet = ({
                         className="text-center flex justify-center items-center gap-2 text-neutral-500 hover:text-white hover:underline text-sm cursor-pointer"
                     >
                         <EarthIcon className="size-4" />
-                        Manage Arns
+                        Manage ArNS
                     </Link>
                     <div className="text-center flex justify-center items-center gap-2 text-neutral-500 hover:text-white hover:underline text-sm cursor-pointer">
                         <a 

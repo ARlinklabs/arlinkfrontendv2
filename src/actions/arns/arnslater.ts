@@ -238,7 +238,7 @@ export async function getWalletOwnedNamesindash(walletAddress: string): Promise<
             } else {
                 return { name: processId, processId };
             }
-        });
+        }).filter(item => item.name !== item.processId);
     } catch (error) {
         console.error("Error fetching wallet owned names:", error);
         throw error; // Let the dashboard handle the error and loading state

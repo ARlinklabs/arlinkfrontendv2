@@ -374,3 +374,19 @@ export interface ArnsTableRow {
 interface ArnsTableProps {
     data: ArnsTableRow[];
 }
+
+export interface ArnsState {
+    Ticker?: string;
+    Description?: string;
+    Logo?: string;
+    Records?: {
+        "@"?: {
+            ttlSeconds?: number;
+            transactionId?: string;
+        };
+        [key: string]: {
+            ttlSeconds?: number;
+            transactionId?: string;
+        } | undefined;
+    };
+}

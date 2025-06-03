@@ -40,10 +40,11 @@ const DomainCommandPallete = ({
         console.log({ available, errorMessage });
         setAvailable(available);
         setChecking(false);
-        if (!available) {
-            console.log("Calling the suggested domains function..");
-            handleUnavailableCase();
-        }
+        
+        // Generate suggestions regardless of availability
+        console.log("Calling the suggested domains function..");
+        generateSuggestions();
+        
         if (errorMessage) {
             setError(errorMessage);
             return;
@@ -55,7 +56,7 @@ const DomainCommandPallete = ({
         inputRef.current.focus();
     }, []);
 
-    const handleUnavailableCase = async () => {
+    const generateSuggestions = async () => {
         setSuggestedDomainsLoader(true);
         setSuggestedDomains([]);
         try {
@@ -71,7 +72,7 @@ const DomainCommandPallete = ({
                     name: arns.name,
                     available: true,
                 }));
-            setSuggestedDomains(suggestedArnsArray);
+            setSuggestedDomains(suggestedArnsArray as { name: string; available: boolean }[]);
         } catch (error) {
             console.error(error);
         } finally {
@@ -135,16 +136,16 @@ const DomainCommandPallete = ({
                             />
                         ) : (
                             <div className="text-white transition-colors p-2 px-4 flex items-start cursor-pointer justify-between gap-48">
-                                ARNS not available. Please choose from these suggested alternatives
+                                {available ? "ARNS is available!" : "ARNS not available. Please choose from these suggested alternatives"}
                             </div>
                         )}
                     </div>
-                    {!available && !checking && (
+                    {!checking && (
                         <>
                             <Separator />
                             <div className="w-full max-h-[230px] overflow-y-scroll mt-2">
                                 <p className="text-xs ml-4 mb-2 text-neutral-500">
-                                    Suggested
+                                    {available ? "Similar Options" : "Suggested"}
                                 </p>
                                 {suggestedDomainsLoader ? (
                                     <div className="space-y-2">
