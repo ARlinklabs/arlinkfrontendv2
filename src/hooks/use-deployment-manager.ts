@@ -5,6 +5,7 @@ import { runLua, spawnProcess } from "@/lib/ao-vars";
 import { connect, createDataItemSigner } from "@permaweb/aoconnect";
 import { gql, GraphQLClient } from "graphql-request";
 import { GetDemploymentHistoryReturnType } from "@/types";
+import { executeWithRetry } from "@/lib/ao-vars";
 
 const setupCommands = `
     json = require "json"
@@ -139,11 +140,7 @@ export default function useDeploymentManager() {
     const retryCountRef = useRef(0);
     const maxRetries = 3;
     
-    //@ts-ignore
-    const ao = connect({
-        CU_URL: "https://cu.ardrive.io",
-        MODE: "legacy",
-    });
+    // Note: ao connection is now created per operation for cycling support
 
     useEffect(() => {
         if (connected && address) {
@@ -200,13 +197,12 @@ export default function useDeploymentManager() {
 
         try {
             // console.log("fetching deployments");
-            const result = await connect({
-                CU_URL: "https://cu.ardrive.io",
-                MODE: "legacy",
-            }).dryrun({
-                process: globalState.managerProcess,
-                tags: [{ name: "Action", value: "ARlink.GetDeployments" }],
-                Owner: address,
+            const result = await executeWithRetry(async (ao) => {
+                return await ao.dryrun({
+                    process: globalState.managerProcess,
+                    tags: [{ name: "Action", value: "ARlink.GetDeployments" }],
+                    Owner: address,
+                });
             });
 
             if (result.Error) {
@@ -311,58 +307,56 @@ export async function getDeploymentHistory(
     managerProcess: string,
 ): Promise<GetDemploymentHistoryReturnType> {
     const TARGET_PROCESS = managerProcess;
-    const ao = connect({
-        CU_URL: "https://cu.ardrive.io",
-        MODE: "legacy",
-    });
 
     try {
-        // Send get deployment history message
-        const message = await ao.message({
-            process: TARGET_PROCESS,
-            tags: [
-                {
-                    name: "Action",
-                    value: "ARlink.GetDeploymentHistoryByProjectName",
-                },
-                { name: "ProjectName", value: projectName },
-            ],
-            signer: createDataItemSigner(window.arweaveWallet),
-        });
+        return await executeWithRetry(async (ao) => {
+            // Send get deployment history message
+            const message = await ao.message({
+                process: TARGET_PROCESS,
+                tags: [
+                    {
+                        name: "Action",
+                        value: "ARlink.GetDeploymentHistoryByProjectName",
+                    },
+                    { name: "ProjectName", value: projectName },
+                ],
+                signer: createDataItemSigner(window.arweaveWallet),
+            });
 
-        console.log("Message sent with ID:", message);
+            console.log("Message sent with ID:", message);
 
-        // Wait for and get the response
-        const { Messages, Error } = await ao.result({
-            message: message,
-            process: TARGET_PROCESS,
-        });
+            // Wait for and get the response
+            const { Messages, Error } = await ao.result({
+                message: message,
+                process: TARGET_PROCESS,
+            });
 
-        // Log the response messages
-        if (Messages && Messages.length > 0) {
-            // Parse the JSON data from the response
-            const historyData = JSON.parse(Messages[0].Data);
-            return {
-                messageId: null,
-                history: historyData,
-                error: null,
-            };
-        }
+            // Log the response messages
+            if (Messages && Messages.length > 0) {
+                // Parse the JSON data from the response
+                const historyData = JSON.parse(Messages[0].Data);
+                return {
+                    messageId: null,
+                    history: historyData,
+                    error: null,
+                };
+            }
 
-        if (Error) {
-            console.error("Error received:", Error);
+            if (Error) {
+                console.error("Error received:", Error);
+                return {
+                    messageId: message,
+                    history: [],
+                    error: Error,
+                };
+            }
+
             return {
                 messageId: message,
                 history: [],
-                error: Error,
+                error: null,
             };
-        }
-
-        return {
-            messageId: message,
-            history: [],
-            error: null,
-        };
+        });
     } catch (error) {
         console.error("Failed to get deployment history:", error);
         throw error;
