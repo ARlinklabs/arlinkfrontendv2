@@ -307,64 +307,123 @@ const DeploymentHistoryCard = ({
 
             <div
                 key={`${deployment.DeploymentID}`}
-                className="p-4 sm:p-6 flex flex-col sm:flex-row rounded-md border border-neutral-900 bg-arlink-bg-secondary-color/80 hover:bg-arlink-bg-secondary-color items-start sm:items-center justify-between"
+                className="bg-black border border-[#323232] py-3 px-6 rounded-lg"
             >
-                {/* left - column */}
-                <div className="space-y-4 sm:space-y-6 w-full sm:w-auto">
-                    <div className="space-y-2">
-                        <h3 className="text-lg sm:text-xl flex flex-wrap items-center gap-2 sm:gap-4 font-semibold">
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                        <h3 className="text-xl font-medium">
                             {deployment.Name}
-                            {index === 0 && (
-                                <span className="inline-flex items-center text-sm gap-2">
-                                    <span className="size-2 inline-block rounded-full bg-cyan-200" />{" "}
-                                    Current
-                                </span>
-                            )}
                         </h3>
-                        <div className="flex flex-col text-sm text-neutral-500 mt-1">
-                            <div className="flex-center gap-2">
-                                <span className="text-white">Id</span>
-                                <span className="pl-4 text-wrap">
-                                    {deployment.DeploymentID}
-                                </span>
-                                <button
-                                    type="button"
-                                    aria-label="Copy deployment ID"
-                                    onClick={() => {
-                                        navigator.clipboard.writeText(deployment.DeploymentID)
-                                            .then(() => {
-                                                console.log("Deployment ID copied to clipboard");
-                                            })
-                                            .catch(err => {
-                                                console.error("Failed to copy: ", err);
-                                            });
-                                    }}
-                                >
-                                    <Copy size={14} />
-                                </button>
+                        {index === 0 && (
+                            <span className="inline-flex items-center text-xs gap-2 border border-[#10B981]/20 px-3 py-1 rounded-full bg-[#07DF98]/15">
+                                <span className="size-2 inline-block rounded-full bg-[#00B162]" />{" "}
+                                Current
+                            </span>
+                        )}
+                    </div>
+                    <div className="text-right flex flex-col gap-1">
+                        {deployment.Date && (
+                            <>
+                                <p className="text-xs text-neutral-300">
+                                    {
+                                        new Date(deployment.Date)
+                                            .toISOString()
+                                            .split("T")[0]
+                                    }
+                                </p>
+                                <p className="text-xs text-neutral-500">
+                                    {
+                                        new Date(deployment.Date)
+                                            .toTimeString()
+                                            .split(" ")[0]
+                                    }
+                                </p>
+                            </>
+                        )}
+                    </div>
+                </div>
+
+                <div className="space-y-2 mb-4">
+                    <div className="flex items-center justify-between">
+                        <div className="text-xs text-neutral-400 tracking-tighter">
+                            DEPLOYMENT ID
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="bg-neutral-900 rounded px-3 py-1.5 text-xs flex-1 min-w-[300px] text-right">
+                                {deployment.DeploymentID}
                             </div>
-                            <div className="flex-center gap-2">
-                                <span className="text-white">Live</span>{" "}
+                            <button
+                                type="button"
+                                aria-label="Copy deployment ID"
+                                className="p-1.5 hover:bg-neutral-800 rounded"
+                                onClick={() => {
+                                    navigator.clipboard
+                                        .writeText(deployment.DeploymentID)
+                                        .then(() => {
+                                            console.log(
+                                                "Deployment ID copied to clipboard",
+                                            );
+                                        })
+                                        .catch((err) => {
+                                            console.error(
+                                                "Failed to copy: ",
+                                                err,
+                                            );
+                                        });
+                                }}
+                            >
+                                <Copy size={16} />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                        <div className="text-xs text-neutral-400 tracking-tighter">LIVE URL</div>
+                        <div className="flex items-center gap-2">
+                            <div className="bg-neutral-900 rounded px-3 py-1.5 text-xs flex-1 min-w-[300px] text-right">
                                 <Link
                                     to={`https://${currentDeployment?.UnderName}_arlink.arweave.net`}
                                     className="hover:underline"
                                     target="_blank"
                                 >
-                                    https://
-                                    {currentDeployment?.UnderName}
+                                    https://{currentDeployment?.UnderName}
                                     _arlink.arweave.net
                                 </Link>
-                                <button
-                                    type="button"
-                                    aria-label="Copy deployment ID"
-                                >
-                                    <ExternalLink size={14} />
-                                </button>
                             </div>
+                            <button
+                                type="button"
+                                aria-label="Copy live URL"
+                                className="p-1.5 hover:bg-neutral-800 rounded"
+                                onClick={() => {
+                                    navigator.clipboard
+                                        .writeText(
+                                            `https://${currentDeployment?.UnderName}_arlink.arweave.net`,
+                                        )
+                                        .then(() => {
+                                            console.log(
+                                                "Live URL copied to clipboard",
+                                            );
+                                        })
+                                        .catch((err) => {
+                                            console.error(
+                                                "Failed to copy: ",
+                                                err,
+                                            );
+                                        });
+                                }}
+                            >
+                                <Copy size={16} />
+                            </button>
+                            
                         </div>
                     </div>
+                </div>
+                <Separator/>
+
+                {/* Hidden action buttons that will appear on hover or when needed */}
+                <div className="hidden mt-4 flex-wrap items-center gap-2">
                     {currentDeployment.ArnsProcess ? (
-                        <div className="flex flex-wrap items-center gap-2">
+                        <>
                             {index !== 0 && (
                                 <Dialog>
                                     <DialogTrigger>
@@ -456,7 +515,7 @@ const DeploymentHistoryCard = ({
                                     </DialogHeader>
                                 </DialogContent>
                             </Dialog>
-                        </div>
+                        </>
                     ) : (
                         index !== 0 && (
                             <Dialog>
@@ -514,43 +573,25 @@ const DeploymentHistoryCard = ({
                         )
                     )}
                 </div>
-                {/* right - column */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-8 mt-4 sm:mt-0">
-                    {/* first column */}
-                    <div className="space-y-4 sm:space-y-8 sm:text-normal text-sm flex flex-col items-start">
-                        <Link
-                            to={`${currentDeployment.RepoUrl}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center hover:underline cursor-pointer gap-2"
-                        >
-                            <Github size={20} /> Github
-                        </Link>
-                        <Link
-                            to={`https://arweave.net/${deployment.DeploymentID}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center hover:underline cursor-pointer gap-2"
-                        >
-                            <ExternalLink size={20} /> Visit
-                        </Link>
-                    </div>
-                    <div className="space-y-4 sm:space-y-8 flex flex-col items-start sm:items-end">
-                        <div className="flex items-center gap-2">
-                            <div className="flex items-center space-x-2 rounded-full bg-neutral-800/30 px-3 py-1">
-                                <GitBranch className="w-3 h-3 sm:w-4 sm:h-4 text-neutral-400" />
-                            </div>
-                            <div className="flex items-center space-x-2 rounded-full bg-neutral-800/30 px-3 py-1">
-                                <div className="w-2 h-2 rounded-full bg-neutral-400" />
-                                <span className="text-neutral-400 text-sm -translate-y-[1.5px]">
-                                    {currentDeployment.Branch}
-                                </span>
-                            </div>
-                        </div>
-                        <p className="font-semibold text-sm">
-                            {deployment.Date}
-                        </p>
-                    </div>
+
+                {/* Hidden links that will appear on hover or when needed */}
+                <div className="mt-4 flex items-center gap-6">
+                    <Link
+                        to={`${currentDeployment.RepoUrl}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center hover:underline cursor-pointer gap-2 text-sm text-neutral-400 hover:text-white"
+                    >
+                        <Github size={16} /> Github
+                    </Link>
+                    <Link
+                        to={`https://arweave.net/${deployment.DeploymentID}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center hover:underline cursor-pointer gap-2 text-sm text-neutral-400 hover:text-white"
+                    >
+                        <ExternalLink size={16} /> Visit
+                    </Link>
                 </div>
             </div>
         </>
