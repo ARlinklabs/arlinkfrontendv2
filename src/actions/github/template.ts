@@ -31,7 +31,7 @@ export async function forkRepository(
 
 export async function submitTemplate(template: TemplateSubmission) {
     const ao = connect({
-        CU_URL: "https://cu.ardrive.io",
+        CU_URL: "https://ur-cu.randao.net",
         MODE: "legacy",
     });
 
@@ -80,7 +80,7 @@ export async function submitTemplate(template: TemplateSubmission) {
 }
 export async function getAllTemplates() {
     const ao = connect({
-        CU_URL: "https://cu.ardrive.io",
+        CU_URL: "https://ur-cu.randao.net",
         MODE: "legacy",
     });
 
@@ -224,7 +224,7 @@ interface TemplateDetailsRequest {
 // Get specific template details using dryrun
 export async function getTemplateDetails(details: TemplateDetailsRequest) {
     const ao = connect({
-        CU_URL: "https://cu.ardrive.io",
+        CU_URL: "https://ur-cu.randao.net",
         MODE: "legacy",
     });
 

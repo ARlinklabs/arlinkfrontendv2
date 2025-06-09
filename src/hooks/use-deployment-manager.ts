@@ -140,7 +140,6 @@ export default function useDeploymentManager() {
     const retryCountRef = useRef(0);
     const maxRetries = 3;
     
-    // Note: ao connection is now created per operation for cycling support
 
     useEffect(() => {
         if (connected && address) {
