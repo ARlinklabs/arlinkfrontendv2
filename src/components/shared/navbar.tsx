@@ -88,10 +88,6 @@ export default function Navbar() {
             name: "Branch Status",
             url: `/deployment/branch-status?repo=${extractRepoName(repo || "")}`,
         },
-        {
-            name: "Logs",
-            url: `/deployment/logs?repo=${extractRepoName(repo || "")}`,
-        },
 
         {
             name: "Settings",
