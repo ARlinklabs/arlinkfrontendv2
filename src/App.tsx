@@ -14,9 +14,6 @@ import { Toaster } from "./components/ui/sonner";
 const Home = lazy(() => import("@/pages/index"));
 const Dashboard = lazy(() => import("@/pages/dashboard"));
 const Deployment = lazy(() => import("@/pages/deployments/deployment"));
-const DeploymentLogs = lazy(
-    () => import("./pages/deployments/deployment-logs"),
-);
 const ComingSoon = lazy(() => import("./components/coming-soon"));
 const NewDeployment = lazy(() => import("./pages/deployments/new-deployment"));
 const DeploymentSetting = lazy(
@@ -24,6 +21,9 @@ const DeploymentSetting = lazy(
 );
 const DeploymentCard = lazy(
     () => import("./pages/deployments/deployment-card"),
+);
+const DeploymentStatus = lazy(
+    () => import("./pages/deployments/deployment-status"),
 );
 const Analytics = lazy(() => import("./pages/deployments/analytics"));
 const DeploymentHistory = lazy(
@@ -84,11 +84,14 @@ const router = createBrowserRouter([
                 children: [
                     { path: "dashboard", element: <Dashboard /> },
                     { path: "deployment", element: <Deployment /> },
-                    { path: "deployment/logs", element: <DeploymentLogs /> },
                     { path: "deployment/card", element: <DeploymentCard /> },
                     {
                         path: "deployment/history",
                         element: <DeploymentHistory />,
+                    },
+                    {
+                        path: "deployment/branch-status",
+                        element: <DeploymentStatus />,
                     },
                     { path: "templates", element: <TemplateDashboard /> },
                     { path: "6&iFtgG4Lr8Ul54+29", element: <Generate /> },
