@@ -84,7 +84,8 @@ export async function getProjectPID(
 ): Promise<GetProcessPIDResponse> {
     const TARGET_PROCESS = managerProcess;
     const ao = connect({
-        CU_URL: "https://cu.ardrive.io",
+        CU_URL: "https://ur-cu.randao.net/",
+        // CU_URL: "https://cu.ardrive.io",
         MODE: "legacy",
     });
 
