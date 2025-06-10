@@ -26,17 +26,17 @@ export default function ArnsTable({ data }: ArnsTableProps) {
     };
 
     return (
-        <div className="border h-[calc(100svh-260px)] border-[#373737] rounded-md overflow-hidden bg-black text-white">
-            <div className="grid grid-cols-6 bg-[#181819] font-semibold border-b border-[#373737] text-sm">
-                <div className="p-4">ARNS Name</div>
-                <div className="p-4">Role</div>
-                <div className="p-4">Process ID</div>
-                <div className="p-4">Type</div>
-                <div className="p-4">Undernames</div>
-                <div className="p-4">Expiry</div>
+        <div className="border h-[calc(100svh-260px)] border-[#373737] rounded-md overflow-hidden bg-black ">
+            <div className="grid grid-cols-6 bg-[#181819] font-semibold border-b border-[#373737] text-sm text-neutral-200">
+                <div className="p-3">ARNS Name</div>
+                <div className="p-3">Role</div>
+                <div className="p-3">Process ID</div>
+                <div className="p-3">Type</div>
+                <div className="p-3">Undernames</div>
+                <div className="p-3">Expiry</div>
             </div>
 
-            <div className="max-h-[calc(100svh-310px)] overflow-y-scroll pb-4">
+            <div className="max-h-[calc(100svh-310px)] overflow-y-scroll pb-4 text-slate-300 ">
                 {data.map((row, index) => (
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
@@ -44,16 +44,16 @@ export default function ArnsTable({ data }: ArnsTableProps) {
                         exit={{ opacity: 0, y: -10 }}
                         transition={{ delay: index * 0.05 }}
                         key={index}
-                        className={`grid grid-cols-6 font-medium border-b border-[#373737] text-sm hover:bg-[#121212] transition-colors`}
+                        className={`grid grid-cols-6 font-normal border-b border-[#373737] text-sm hover:bg-[#121212] transition-colors`}
                     >
                         <Link
                             to={`?name=${row.name}`}
-                            className="p-4 hover:underline"
+                            className="p-3 hover:underline"
                         >
                             {row.name}
                         </Link>
-                        <div className="p-4">{row.role}</div>
-                        <div className="p-4 flex items-center">
+                        <div className="p-3">{row.role}</div>
+                        <div className="p-3 flex items-center">
                             <span>{row.processId}</span>
                             <button
                                 className="ml-2 p-1 hover:bg-[#212121] rounded-md transition-colors"
@@ -79,18 +79,18 @@ export default function ArnsTable({ data }: ArnsTableProps) {
                                 )}
                             </button>
                         </div>
-                        <div className="p-4 flex items-center">
+                        <div className="p-3 flex items-center">
                             <span>{row.targetId}</span>
                         </div>
-                        <div className="p-4">{row.undernameLimit ?? '-'}</div>
-                        <div className="p-4 flex items-center justify-between">
+                        <div className="p-3">{row.undernameLimit ?? "-"}</div>
+                        <div className="p-3 flex items-center justify-between">
                             <span>{row.expiry}</span>
                             <button
                                 onClick={() => navigate(`?name=${row.name}`)}
                                 className="hover:bg-[#232323] rounded-full p-1 transition ml-2"
                                 aria-label="View details"
                             >
-                                <Settings className="w-5 h-5 text-neutral-500 hover:text-neutral-300 cursor-pointer" />
+                                <Settings className="w-4 h-4 text-neutral-500 hover:text-neutral-300 cursor-pointer" />
                             </button>
                         </div>
                     </motion.div>
