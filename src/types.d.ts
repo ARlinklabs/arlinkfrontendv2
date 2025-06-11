@@ -20,6 +20,64 @@ export type DomainTupleData = {
     permaBuy: number;
 };
 
+export type BranchDeployment = {
+    branch: string;
+    commit: string;
+    txid: string;
+    undername: string;
+    url: string;
+    status: "deployed" | "building" | "failed";
+    lastDeployedAt: string;
+    deployCount: number;
+    resolvedCount?: number;
+    totalCount?: number;
+};
+
+export type ActiveBranchCard =
+    | {
+          name: string;
+          author: string;
+          updatedTime: string;
+          status: "building" | "deployed" | "failed";
+          showViewDeployment: boolean;
+          showComment: boolean;
+      }
+    | {
+          name: string;
+          author: string;
+          updatedTime: string;
+          status: "building" | "deployed" | "failed";
+          showResolvedStatus: true;
+          resolvedCount: number;
+          totalCount: number;
+      };
+
+export type BranchPreview = {
+    enabled: boolean;
+    allowedBranches: string[];
+    deployments: {
+        [branchName: string]: BranchDeployment;
+    };
+};
+
+export type ConfigResponse = {
+    owner: string;
+    repoName: string;
+    repository: string;
+    branch: string;
+    installCommand: string;
+    buildCommand: string;
+    outputDir: string;
+    protocolLand: boolean;
+    lastBuiltCommit: string;
+    maxDailyDeploys: number;
+    deployCount: number;
+    url: string;
+    arnsUnderName: string;
+    noSizeCheck: boolean;
+    branchPreview: BranchPreview;
+};
+
 export interface AnalyticsMetric {
     value: number;
     change: number;
@@ -384,9 +442,11 @@ export interface ArnsState {
             ttlSeconds?: number;
             transactionId?: string;
         };
-        [key: string]: {
-            ttlSeconds?: number;
-            transactionId?: string;
-        } | undefined;
+        [key: string]:
+            | {
+                  ttlSeconds?: number;
+                  transactionId?: string;
+              }
+            | undefined;
     };
 }
