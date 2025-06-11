@@ -10,6 +10,7 @@ import {
 import { useParams } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
 import { timeAgo, TESTING_FETCH } from "@/lib/utils";
+import DeploymentStatusSkeleton from "../../components/ DeploymentStatusSkeleton";
 import type {
     ConfigResponse,
     BranchDeployment,
@@ -28,7 +29,9 @@ export default function DeploymentStatus() {
 
     const fetchConfig = async () => {
         try {
-            const response = await fetch(`${TESTING_FETCH}/config/${owner}/${repo}`);
+            const response = await fetch(
+                `${TESTING_FETCH}/config/${owner}/${repo}`,
+            );
             const data = await response.json();
             setConfig(data);
         } catch (err) {
@@ -55,7 +58,10 @@ export default function DeploymentStatus() {
     }, []);
 
     useEffect(() => {
-        localStorage.setItem("selectedBranches", JSON.stringify(selectedBranches));
+        localStorage.setItem(
+            "selectedBranches",
+            JSON.stringify(selectedBranches),
+        );
     }, [selectedBranches]);
 
     useEffect(() => {
@@ -74,27 +80,32 @@ export default function DeploymentStatus() {
             prev.includes(branchName)
                 ? prev.filter((b) => b !== branchName)
                 : prev.length >= 4
-                ? (alert("Only 4 branches can be selected."), prev)
-                : [...prev, branchName]
+                  ? (alert("Only 4 branches can be selected."), prev)
+                  : [...prev, branchName],
         );
     };
 
     const handleDeployNow = async () => {
         if (!priorityBranch || !selectedBranches.includes(priorityBranch)) {
-            alert("Priority branch must be selected and among the selected branches.");
+            alert(
+                "Priority branch must be selected and among the selected branches.",
+            );
             return;
         }
 
         try {
-            await fetch(`${TESTING_FETCH}/branch-preview/${owner}/${repo}/settings`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    enabled: true,
-                    allowedBranches: selectedBranches,
-                    deployImmediately: [priorityBranch],
-                }),
-            });
+            await fetch(
+                `${TESTING_FETCH}/branch-preview/${owner}/${repo}/settings`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        enabled: true,
+                        allowedBranches: selectedBranches,
+                        deployImmediately: [priorityBranch],
+                    }),
+                },
+            );
             alert("Deployment triggered!");
             await fetchConfig();
         } catch (error) {
@@ -107,47 +118,47 @@ export default function DeploymentStatus() {
     const deployments = config?.branchPreview?.deployments || {};
     const noBranchesAvailable = availableBranches.length === 0;
 
-    const activeBranches: ActiveBranchCard[] = Object.entries(deployments).flatMap(
-        ([branchName, deployment]: [string, BranchDeployment]) => {
-            const base = {
-                name: branchName,
-                author: "vaishnavi-patil",
-                updatedTime: timeAgo(deployment.lastDeployedAt),
-                status: deployment.status,
-            };
+    const activeBranches: ActiveBranchCard[] = Object.entries(
+        deployments,
+    ).flatMap(([branchName, deployment]: [string, BranchDeployment]) => {
+        const base = {
+            name: branchName,
+            author: "vaishnavi-patil",
+            updatedTime: timeAgo(deployment.lastDeployedAt),
+            status: deployment.status,
+        };
 
-            const cards: ActiveBranchCard[] = [];
+        const cards: ActiveBranchCard[] = [];
 
-            if (["building", "deployed", "failed"].includes(deployment.status)) {
-                cards.push({
-                    ...base,
-                    showViewDeployment: deployment.status === "deployed",
-                    showComment: deployment.status === "failed",
-                });
-            }
-
-            if (
-                deployment.resolvedCount !== undefined &&
-                deployment.totalCount !== undefined
-            ) {
-                cards.push({
-                    ...base,
-                    showResolvedStatus: true,
-                    resolvedCount: deployment.resolvedCount,
-                    totalCount: deployment.totalCount,
-                });
-            }
-
-            return cards;
+        if (["building", "deployed", "failed"].includes(deployment.status)) {
+            cards.push({
+                ...base,
+                showViewDeployment: deployment.status === "deployed",
+                showComment: deployment.status === "failed",
+            });
         }
-    );
+
+        if (
+            deployment.resolvedCount !== undefined &&
+            deployment.totalCount !== undefined
+        ) {
+            cards.push({
+                ...base,
+                showResolvedStatus: true,
+                resolvedCount: deployment.resolvedCount,
+                totalCount: deployment.totalCount,
+            });
+        }
+
+        return cards;
+    });
 
     const isResolvedCard = (
-        branch: ActiveBranchCard
+        branch: ActiveBranchCard,
     ): branch is Extract<ActiveBranchCard, { showResolvedStatus: true }> =>
         "showResolvedStatus" in branch;
 
-    if (loading) return <div className="p-6 text-white">Loading deployment status...</div>;
+    if (loading) return <DeploymentStatusSkeleton />;
     if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
 
     return (
@@ -169,9 +180,12 @@ export default function DeploymentStatus() {
                         <div className="flex items-center space-x-3">
                             <Settings className="w-5 h-5 text-gray-400" />
                             <div>
-                                <h3 className="font-semibold">Branch Deployments</h3>
+                                <h3 className="font-semibold">
+                                    Branch Deployments
+                                </h3>
                                 <p className="text-sm text-gray-400">
-                                    Automatically deploy commits from selected branches to preview environments
+                                    Automatically deploy commits from selected
+                                    branches to preview environments
                                 </p>
                             </div>
                         </div>
@@ -192,16 +206,22 @@ export default function DeploymentStatus() {
                             <div className="bg-[#DF7F00]/10 border border-[#553700] rounded-lg p-3 mb-4 flex items-center space-x-4">
                                 <DollarSign className="text-[#CB9800] w-5 h-5" />
                                 <p className="text-[#CB9800] text-sm italic font-normal">
-                                    Each enabled branch creates preview deployments using build minutes and storage.
+                                    Each enabled branch creates preview
+                                    deployments using build minutes and storage.
                                 </p>
                             </div>
 
-                            <h3 className="font-semibold mb-2">Select Branches to Deploy</h3>
-                            <p className="text-sm text-gray-400 mb-4">{selectedBranches.length} selected</p>
+                            <h3 className="font-semibold mb-2">
+                                Select Branches to Deploy
+                            </h3>
+                            <p className="text-sm text-gray-400 mb-4">
+                                {selectedBranches.length} selected
+                            </p>
 
                             {noBranchesAvailable ? (
                                 <div className="text-sm text-red-400 italic">
-                                    🚫 No branches available for deployment in this repository.
+                                    🚫 No branches available for deployment in
+                                    this repository.
                                 </div>
                             ) : (
                                 <div className="space-y-2">
@@ -216,7 +236,11 @@ export default function DeploymentStatus() {
                                             </div>
                                             <div className="flex items-center space-x-3">
                                                 <button
-                                                    onClick={() => handleBranchToggle(branch)}
+                                                    onClick={() =>
+                                                        handleBranchToggle(
+                                                            branch,
+                                                        )
+                                                    }
                                                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${selectedBranches.includes(branch) ? "bg-blue-600" : "bg-gray-600"}`}
                                                 >
                                                     <span
@@ -227,9 +251,20 @@ export default function DeploymentStatus() {
                                                     type="radio"
                                                     name="priority"
                                                     value={branch}
-                                                    checked={priorityBranch === branch}
-                                                    onChange={() => setPriorityBranch(branch)}
-                                                    disabled={!selectedBranches.includes(branch)}
+                                                    checked={
+                                                        priorityBranch ===
+                                                        branch
+                                                    }
+                                                    onChange={() =>
+                                                        setPriorityBranch(
+                                                            branch,
+                                                        )
+                                                    }
+                                                    disabled={
+                                                        !selectedBranches.includes(
+                                                            branch,
+                                                        )
+                                                    }
                                                     className="accent-blue-600 w-4 h-4"
                                                 />
                                             </div>
@@ -257,10 +292,14 @@ export default function DeploymentStatus() {
                 <div>
                     <div className="flex items-center justify-between mb-6">
                         <div>
-                            <h2 className="text-xl font-semibold mb-1">Active Branches</h2>
+                            <h2 className="text-xl font-semibold mb-1">
+                                Active Branches
+                            </h2>
                             <p className="text-gray-400 flex items-center">
                                 Open branches on
-                                <span className="mx-1 bg-white text-black px-1 rounded text-xs font-mono">{repo}</span>
+                                <span className="mx-1 bg-white text-black px-1 rounded text-xs font-mono">
+                                    {repo}
+                                </span>
                                 that have been deployed
                             </p>
                         </div>
@@ -273,7 +312,8 @@ export default function DeploymentStatus() {
                                 </div>
                                 <span className="text-sm">Status</span>
                                 <span className="text-xs text-gray-400">
-                                    {activeBranches.length}/{availableBranches.length}
+                                    {activeBranches.length}/
+                                    {availableBranches.length}
                                 </span>
                             </div>
                             <div className="relative">
@@ -302,19 +342,26 @@ export default function DeploymentStatus() {
                                             className={`w-2.5 h-2.5 rounded-full -ml-2.5 mt-6 ${
                                                 branch.status === "deployed"
                                                     ? "bg-green-500"
-                                                    : branch.status === "building"
-                                                    ? "bg-yellow-500"
-                                                    : "bg-red-500"
+                                                    : branch.status ===
+                                                        "building"
+                                                      ? "bg-yellow-500"
+                                                      : "bg-red-500"
                                             }`}
                                         />
                                     </div>
                                     <div>
                                         <div className="flex items-center space-x-2">
-                                            <span className="font-medium">{branch.name}</span>
+                                            <span className="font-medium">
+                                                {branch.name}
+                                            </span>
                                         </div>
                                         <div className="text-sm text-gray-400 flex items-center space-x-2">
-                                            <span>updated {branch.updatedTime} by</span>
-                                            <span className="font-mono text-xs">{branch.author}</span>
+                                            <span>
+                                                updated {branch.updatedTime} by
+                                            </span>
+                                            <span className="font-mono text-xs">
+                                                {branch.author}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -322,20 +369,25 @@ export default function DeploymentStatus() {
                                 <div className="flex items-center space-x-3">
                                     {isResolvedCard(branch) && (
                                         <span className="text-white text-sm italic">
-                                            {branch.resolvedCount}/{branch.totalCount} resolved
+                                            {branch.resolvedCount}/
+                                            {branch.totalCount} resolved
                                         </span>
                                     )}
-                                    {"showViewDeployment" in branch && branch.showViewDeployment && (
-                                        <button className="text-gray-400 hover:text-white text-sm">
-                                            View Deployment Status
-                                        </button>
-                                    )}
-                                    {"showComment" in branch && branch.showComment && (
-                                        <button className="flex items-center space-x-1 text-gray-400 hover:text-white">
-                                            <MessageCircle className="w-4 h-4" />
-                                            <span className="text-sm">Comment</span>
-                                        </button>
-                                    )}
+                                    {"showViewDeployment" in branch &&
+                                        branch.showViewDeployment && (
+                                            <button className="text-gray-400 hover:text-white text-sm">
+                                                View Deployment Status
+                                            </button>
+                                        )}
+                                    {"showComment" in branch &&
+                                        branch.showComment && (
+                                            <button className="flex items-center space-x-1 text-gray-400 hover:text-white">
+                                                <MessageCircle className="w-4 h-4" />
+                                                <span className="text-sm">
+                                                    Comment
+                                                </span>
+                                            </button>
+                                        )}
                                     <button className="text-gray-400 hover:text-white">
                                         <MoreHorizontal className="w-4 h-4" />
                                     </button>
