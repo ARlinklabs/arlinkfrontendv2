@@ -21,6 +21,13 @@ import { extractGithubPath } from "../utilts";
 import { useDeploymentStore } from "@/store/use-deployment-store";
 import { Loader2 } from "lucide-react";
 import TwitterShareButton from "@/components/ui/twitter-share-button";
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Logs } from "@/components/ui/logs";
 
 interface DeploymentComponentProps {
     deployment: TDeployment;
@@ -51,6 +58,11 @@ export default function DeploymentOverview({
 
     // github path
     const githubUserPath = extractGithubPath(deployment.RepoUrl);
+
+    //build logs
+    const [buildLogs, setBuildLogs] = useState<string[]>([]);
+    const [isFetchingLogs, setIsFetchingLogs] = useState(false);
+    const [logError, setLogError] = useState("");
 
     const updateUnderName = async (underName: string) => {
         try {
@@ -379,6 +391,50 @@ export default function DeploymentOverview({
             });
     }, [globalState.managerProcess]);
 
+    //function to build logs
+    useEffect(() => {
+        if (!deployment) return;
+        const owner = deployment?.RepoUrl.split("/").reverse()[1];
+        const folderName = deployment?.RepoUrl.replace(/\.git|\/$/, "")
+            .split("/")
+            .pop();
+
+        const fetchLogs = async () => {
+            setIsFetchingLogs(true);
+            try {
+                const res = await axios.get(
+                    `${TESTING_FETCH}/logs/${owner}/${folderName}`,
+                );
+                const rawLogsData = res.data.replaceAll(/\\|\||\-/g, "");
+                const trimmedLogs = rawLogsData.split("\n").reduce(
+                    (
+                        acc: { started: boolean; logs: string[] },
+                        line: string,
+                    ) => {
+                        if (
+                            acc.started ||
+                            line.includes("Cloning repository...")
+                        ) {
+                            acc.started = true;
+                            acc.logs.push(line);
+                        }
+                        return acc;
+                    },
+                    { started: false, logs: [] as string[] },
+                );
+
+                setBuildLogs(trimmedLogs.logs);
+            } catch (error) {
+                console.error("Error fetching logs:", error);
+                setLogError("Failed to fetch logs");
+            } finally {
+                setIsFetchingLogs(false);
+            }
+        };
+
+        fetchLogs();
+    }, [deployment]);
+
     const updateArns = async () => {
         if (!deployment || !deploymentUrl) {
             toast.error("Deployment information is not available");
@@ -465,6 +521,43 @@ export default function DeploymentOverview({
                     <ConfigureProjectSkeleton />
                 ) : (
                     <ConfigureProject deployment={deployment} />
+                )}
+            </div>
+
+            <div className="mt-2 px-14 mb-20">
+                <h2 className="text-2xl font-semibold text-neutral-100 mb-4">
+                    Deployment Logs
+                </h2>
+                <Accordion type="single" collapsible className="w-full">
+                    <AccordionItem
+                        value="logs"
+                        className="rounded-lg bg-arlink-bg-secondary-color border overflow-hidden"
+                    >
+                        <AccordionTrigger className="p-4 w-full">
+                            <div className="flex items-center w-full justify-between">
+                                <span>Build logs</span>
+                                {isFetchingLogs && (
+                                    <div className="text-xs flex items-center gap-2">
+                                        <Loader2 className="text-neutral-600 animate-spin" />
+                                        <span className="text-neutral-200">
+                                            Fetching logs
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                            <Logs logs={buildLogs} />
+                        </AccordionContent>
+                    </AccordionItem>
+                </Accordion>
+
+                {logError && (
+                    <div className="mt-4 border border-red-500 px-4 py-2 rounded-md">
+                        <p className="text-md font-medium text-red-500">
+                            {logError}
+                        </p>
+                    </div>
                 )}
             </div>
         </Layout>

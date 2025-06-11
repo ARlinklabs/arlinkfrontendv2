@@ -77,8 +77,8 @@ const Dashboardcomp = () => {
     }, [projects, searchTerm, sortBy]);
 
     useEffect(() => {
-        setCardsLimit(Math.min(deployments.length, 12));
-    }, [deployments]);
+    setCardsLimit(12);
+}, [deployments]);
 
     useEffect(() => {
         let timeOutId: NodeJS.Timeout | null = null;
@@ -195,7 +195,7 @@ const Dashboardcomp = () => {
                     <NoDeploymentFoundCard />
                 )}
 
-                {cardsLimit < deployments.length && (
+                {cardsLimit < filteredAndSortedProjects.length && (
                     <Button
                         type="button"
                         variant={"outline"}

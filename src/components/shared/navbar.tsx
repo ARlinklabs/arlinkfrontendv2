@@ -7,6 +7,7 @@ import { getPrimaryname } from "@/lib/utils";
 import { Copy, LogOut, User, UserIcon, Wallet } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { url } from "inspector";
 
 export default function Navbar() {
     //@ts-ignore
@@ -84,8 +85,8 @@ export default function Navbar() {
             url: `/deployment/history?repo=${extractRepoName(repo || "")}`,
         },
         {
-            name: "Logs",
-            url: `/deployment/logs?repo=${extractRepoName(repo || "")}`,
+            name: "Branch Status",
+            url: `/deployment/branch-status?repo=${extractRepoName(repo || "")}`,
         },
 
         {

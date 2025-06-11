@@ -45,7 +45,6 @@ import {
     createGitHubWebhook,
     deleteGitHubWebhook,
 } from "@/actions/github/Webhook";
-import { canDeploy } from "@/lib/limitdeploy";
 
 const ConfiguringDeploymentProject = ({
     repoUrl,
