@@ -11,7 +11,7 @@ const CU_URLS = [
 ];
 
 let currentCuUrlIndex = 0;
-const REQUEST_TIMEOUT = 60000; // 60 seconds
+const REQUEST_TIMEOUT = 30000; // 30 seconds
 
 /**
  * Gets the next CU URL in rotation
