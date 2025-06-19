@@ -77,8 +77,11 @@ const Dashboardcomp = () => {
     }, [projects, searchTerm, sortBy]);
 
     useEffect(() => {
-        setCardsLimit(Math.min(deployments.length, 12));
-    }, [deployments]);
+        // Only set initial cardsLimit when deployments first loads or goes from empty to having items
+        if (cardsLimit === 0 && deployments.length > 0) {
+            setCardsLimit(Math.min(deployments.length, 12));
+        }
+    }, [deployments, cardsLimit]);
 
     useEffect(() => {
         let timeOutId: NodeJS.Timeout | null = null;
