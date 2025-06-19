@@ -1,7 +1,6 @@
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { useConnection, useActiveAddress } from "arweave-wallet-kit";
 import { useState, useEffect } from "react";
-import { getProfileByWalletAddress, type ProfileHeaderType } from "@/lib/Bazar";
 import { extractRepoName } from "@/pages/utilts";
 import { getPrimaryname } from "@/lib/utils";
 import { Copy, LogOut, User, UserIcon, Wallet } from "lucide-react";
@@ -15,7 +14,6 @@ export default function Navbar() {
 
     //@ts-ignore
     const [isNewDeployment, setIsNewDeployment] = useState(false);
-    const [, setProfile] = useState<ProfileHeaderType | null>(null);
     const [primaryName, setPrimaryName] = useState<string | null>(null);
     const [primaryLogo, setPrimaryLogo] = useState<string | null>(null);
     const [connectingToWallet, setConnectingToWallet] = useState(false);
@@ -97,23 +95,7 @@ export default function Navbar() {
     const location = useLocation();
     // const isDeployPage = location.pathname === "#/deploy";
 
-    useEffect(() => {
-        async function fetchProfile() {
-            if (address) {
-                try {
-                    const fetchedProfile = await getProfileByWalletAddress({
-                        address,
-                    });
-                    setProfile(fetchedProfile);
-                } catch (error) {
-                    console.error("Error fetching profile:", error);
-                }
-            }
-        }
-
-        fetchProfile();
-    }, [address]);
-
+    
     useEffect(() => {
         async function fetchPrimaryName() {
             if (address) {
