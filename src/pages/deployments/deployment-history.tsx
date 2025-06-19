@@ -62,7 +62,7 @@ import {
     extractRepoName,
     handleFetchExistingArnsName,
 } from "../utilts";
-import { useActiveAddress } from "arweave-wallet-kit";
+import { useActiveAddress } from "@arweave-wallet-kit/react";
 import { TransactionDialog } from "@/components/transactionBlock";
 import { revertNonArnsProject } from "@/actions/deploy";
 

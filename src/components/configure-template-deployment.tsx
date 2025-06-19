@@ -21,7 +21,7 @@ import axios, { isAxiosError } from "axios";
 import { AlertTriangle, ChevronDown, ChevronLeft, Loader2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import RootDirectoryDrawer from "./rootdir-drawer";
-import { useActiveAddress } from "arweave-wallet-kit";
+import { useActiveAddress } from "@arweave-wallet-kit/react";
 import { toast } from "sonner";
 import DomainSelection from "./shared/domain-selection";
 import useDeploymentManager from "@/hooks/use-deployment-manager";

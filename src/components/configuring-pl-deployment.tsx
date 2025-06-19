@@ -2,7 +2,7 @@ import useDeploymentManager, {
     historyTable,
 } from "@/hooks/use-deployment-manager";
 import { ArnsName, BuildSettings, Steps } from "@/types";
-import { useActiveAddress } from "arweave-wallet-kit";
+import { useActiveAddress } from "@arweave-wallet-kit/react";
 import { useState } from "react";
 import { ChevronLeft } from "lucide-react";
 import NewDeploymentCard from "@/components/shared/new-deployment-card";

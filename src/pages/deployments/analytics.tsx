@@ -4,7 +4,7 @@ import EnableAnalytics from "@/components/analytics/enable-analytics";
 import { AnalyticsDashboardSkeleton } from "@/components/skeletons";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGlobalState } from "@/store/useGlobalState";
-import { useActiveAddress } from "arweave-wallet-kit";
+import { useActiveAddress } from "@arweave-wallet-kit/react";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 

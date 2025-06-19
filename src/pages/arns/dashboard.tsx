@@ -8,7 +8,7 @@ import ArnsTable from "@/components/arns/arns-table";
 import { useSearchParams } from "react-router-dom";
 import SelectedArns from "@/components/arns/selected-arns";
 import { getWalletOwnedNamesindash } from "@/actions/arns/arnslater";
-import { useActiveAddress } from "arweave-wallet-kit";
+import { useActiveAddress } from "@arweave-wallet-kit/react";
 import { ArnsTableSkeleton } from "@/components/skeletons";
 import { Link } from "react-router-dom";
 

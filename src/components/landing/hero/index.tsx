@@ -2,7 +2,7 @@ import { InteractiveGrid } from "../ui";
 
 import { motion } from "framer-motion";
 import { ArIo } from "@/components/ui/icons/ario";
-import { useConnection } from "arweave-wallet-kit";
+import { useConnection } from "@arweave-wallet-kit/react";
 import { useNavigate } from "react-router-dom";
 
 const Hero = () => {

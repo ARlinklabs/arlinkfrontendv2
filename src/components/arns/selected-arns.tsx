@@ -2,7 +2,7 @@ import Layout from "@/layouts/layout";
 import { Calendar } from "@phosphor-icons/react";
 import { Clock, Copy, Edit, ArrowLeftFromLine } from "lucide-react";
 import { getWalletOwnedNamesindash, getArNSRecordInfo, getArNSstate } from "@/actions/arns/arnslater";
-import { useActiveAddress } from "arweave-wallet-kit";
+import { useActiveAddress } from "@arweave-wallet-kit/react";
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate, useSearchParams } from "react-router-dom";

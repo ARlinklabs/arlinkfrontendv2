@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useGlobalState } from "@/store/useGlobalState";
-import { useActiveAddress, useConnection } from "arweave-wallet-kit";
+import { useActiveAddress, useConnection } from "@arweave-wallet-kit/react";
 import { runLua, spawnProcess } from "@/lib/ao-vars";
 import { connect, createDataItemSigner } from "@permaweb/aoconnect";
 import { gql, GraphQLClient } from "graphql-request";

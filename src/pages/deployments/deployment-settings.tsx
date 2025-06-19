@@ -53,7 +53,7 @@ import {
     extractRepoName,
     handleFetchExistingArnsName,
 } from "../utilts";
-import { useActiveAddress } from "arweave-wallet-kit";
+import { useActiveAddress } from "@arweave-wallet-kit/react";
 import { Popover, PopoverContent } from "@/components/ui/popover";
 import { ArnsName } from "@/types";
 import {

@@ -7,7 +7,7 @@ import { Info, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
-import { useActiveAddress } from "arweave-wallet-kit";
+import { useActiveAddress } from "@arweave-wallet-kit/react";
 import { RepoSkeleton } from "@/components/skeletons";
 import { RepositoryItem } from "@/components/shared/repository-item";
 import useDeploymentManager from "@/hooks/use-deployment-manager";

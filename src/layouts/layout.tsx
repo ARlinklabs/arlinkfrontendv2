@@ -1,5 +1,5 @@
 import type React from "react";
-import { useConnection } from "arweave-wallet-kit";
+import { useConnection } from "@arweave-wallet-kit/react";
 import { Toaster } from "@/components/ui/toaster";
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";

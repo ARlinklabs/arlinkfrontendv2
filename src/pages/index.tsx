@@ -26,7 +26,7 @@ function LazySuspenseLandingPage() {
     );
 }
 
-import { useConnection } from "arweave-wallet-kit";
+import { useConnection } from "@arweave-wallet-kit/react";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
