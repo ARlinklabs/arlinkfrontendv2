@@ -14,6 +14,10 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <React.StrictMode>
    
         <ArweaveWalletKit
+        theme={{
+          displayTheme: "dark",
+        }}
+
       config={{
         permissions: [
           "ACCESS_ADDRESS",
