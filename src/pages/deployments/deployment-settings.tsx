@@ -1,7 +1,6 @@
 "use client";
 
 import {
-    Rocket,
     Trash2,
     RefreshCw,
     ArrowLeft,
@@ -10,7 +9,6 @@ import {
     Check,
     ChevronsUpDown,
     ExternalLink,
-    XCircle,
 } from "lucide-react";
 import {
     AlertDialog,
@@ -41,13 +39,7 @@ import { runLua, setArnsName as setArnsNameWithProcessId } from "@/lib/ao-vars";
 import { useEffect, useRef, useState } from "react";
 import useDeploymentManager from "@/hooks/use-deployment-manager";
 import axios, { isAxiosError } from "axios";
-import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Logs } from "@/components/ui/logs";
+
 import {
     extractOwnerName,
     extractRepoName,
@@ -78,26 +70,12 @@ export default function DeploymentSetting() {
     const deployment = globalState.deployments.find((d) => d.Name === repo);
 
     // setting states
-    const [activeTab, setActiveTab] = useState("redeploy");
+    const [activeTab, setActiveTab] = useState("delete");
     const [showSidebar, setShowSidebar] = useState(true);
     const [, setError] = useState<string>("");
 
     // loading state
     const [isDeleting, setIsDeleting] = useState<boolean>(false);
-    const [isRedeploying, setIsRedeploying] = useState<boolean>(false);
-    const [, setBuildOutput] = useState<string[]>([]);
-    const deploymentFailedRef = useRef(false);
-    const [isWaitingForLogs, setIsWaitingForLogs] = useState<boolean>(false);
-    const [isFetchingLogs, setIsFetchingLogs] = useState<boolean>(false);
-    const [deploymentFailed, setDeploymentFailed] = useState<boolean>(false);
-    const [showRedployWarning, setRedeployWarning] = useState<boolean>(true);
-
-    //logs
-    const [logs, setLogs] = useState<string[]>([]);
-    const [logError, setLogError] = useState<string>("");
-    const [accordionValue, setAccordionValue] = useState<string | undefined>(
-        undefined,
-    );
 
     const toggleSidebar = () => setShowSidebar(!showSidebar);
     const handleTabClick = (tab: string) => {
@@ -166,149 +144,9 @@ export default function DeploymentSetting() {
         }
     }
 
-    async function redeploy() {
-        if (!deployment) return;
-        const isGithub = deployment.RepoUrl.includes("github.com");
-        if (!isGithub) toast.error("protocol land is not supported");
-        if (isRedeploying) return;
 
-        const projName = deployment.Name;
-        const repoUrl = deployment.RepoUrl;
-        const installCommand = deployment.InstallCMD;
-        const buildCommand = deployment.BuildCMD;
-        const outputDir = deployment.OutputDIR;
-        const arnsProcess = deployment.ArnsProcess;
-        const branch = deployment.Branch || "main";
-        setIsRedeploying(true);
-        setBuildOutput([]);
-        setError("");
 
-        const ownerName = extractOwnerName(repoUrl);
-        const repoName = extractRepoName(repoUrl);
 
-        const POLLING_INTERVAL = 2000;
-        const MAX_POLLING_TIME = 600000;
-        const startTime = Date.now();
-        let intervalId: NodeJS.Timeout | null = null;
-
-        const clearIntervalPolling = () => {
-            console.log("stopping polling");
-            if (intervalId) {
-                setIsFetchingLogs(false);
-                setIsWaitingForLogs(false);
-                clearInterval(intervalId);
-            }
-        };
-
-        // Start the log polling in parallel
-        const logPollingPromise = async () => {
-            setIsWaitingForLogs(true);
-            await new Promise((resolve) => setTimeout(resolve, 10000));
-            setIsWaitingForLogs(false);
-            setIsFetchingLogs(true);
-
-            const fetchLogs = async () => {
-                console.log("started polling");
-                if (deploymentFailedRef.current) {
-                    clearIntervalPolling();
-                }
-                if (Date.now() - startTime > MAX_POLLING_TIME) {
-                    clearIntervalPolling();
-                    setDeploymentFailed(true);
-                    return;
-                }
-
-                try {
-                    const logs = await axios.get(
-                        `${BUILDER_BACKEND}/logs/${ownerName}/${repoName}`,
-                    );
-                    setLogs(logs.data.split("\n"));
-                } catch (error) {
-                    console.log(deploymentFailed);
-                    if (isAxiosError(error)) {
-                        if (deploymentFailed) {
-                            clearIntervalPolling();
-                        }
-                    }
-                    // I don't want to see red red spams in the logs xD
-                }
-            };
-
-            intervalId = setInterval(fetchLogs, POLLING_INTERVAL);
-        };
-
-        if (!deploymentFailedRef.current) {
-            logPollingPromise();
-        }
-
-        try {
-            const txid = await axios.post(`${BUILDER_BACKEND}/deploy`, {
-                repository: repoUrl,
-                branch,
-                installCommand,
-                buildCommand,
-                outputDir,
-                subDirectory: "./",
-            });
-
-            if (txid.status == 200) {
-                toast.success("Deployment successful");
-
-                await runLua("", arnsProcess, [
-                    { name: "Action", value: "Set-Record" },
-                    { name: "Sub-Domain", value: "@" },
-                    { name: "Transaction-Id", value: txid.data },
-                    { name: "TTL-Seconds", value: "900" },
-                ]);
-
-                await runLua(
-                    `db:exec[[UPDATE Deployments SET DeploymentId='${txid.data}' WHERE Name='${projName}']]`,
-                    globalState.managerProcess,
-                );
-
-                navigate(`/deployment?repo=${projName}`);
-                await refresh();
-            } else {
-                setIsFetchingLogs(false);
-                setIsWaitingForLogs(false);
-                console.log(txid);
-                deploymentFailedRef.current = true;
-                setDeploymentFailed(true);
-                setError("Deployment failed. Please try again.");
-                setLogError("Deployment failed. Please try again.");
-                clearIntervalPolling();
-            }
-        } catch (error) {
-            setIsFetchingLogs(false);
-            setDeploymentFailed(true);
-            deploymentFailedRef.current = true;
-            clearIntervalPolling();
-            toast.error("Deployment failed");
-            console.log(error);
-            setError(
-                "An error occurred during deployment. Please try again later.",
-            );
-            setLogError(
-                "An error occurred during deployment. Please try again later.",
-            );
-        } finally {
-            setIsRedeploying(false);
-        }
-    }
-
-    useEffect(() => {});
-
-    useEffect(() => {
-        console.log({
-            ref: deploymentFailedRef.current,
-            deploymentFailed,
-        });
-    }, [deploymentFailed]);
-
-    useEffect(() => {
-        setIsFetchingLogs(false);
-        setIsWaitingForLogs(false);
-    }, [deploymentFailedRef.current]);
 
     async function handleArnsSelection(arnsName: ArnsName) {
         setArnsProcess(arnsName.processId);
@@ -318,11 +156,7 @@ export default function DeploymentSetting() {
         setArnsDropDownModal(false);
     }
 
-    useEffect(() => {
-        if (isFetchingLogs && !deploymentFailedRef.current) {
-            setAccordionValue("item-1");
-        }
-    }, [isFetchingLogs]);
+
 
     const handleFetchArns = async () => {
         await handleFetchExistingArnsName({
@@ -414,7 +248,7 @@ export default function DeploymentSetting() {
                 )}
             >
                 <nav className="space-y-1">
-                    {["redeploy", "delete", "configure-arns"].map((tab) => (
+                    {["delete", "configure-arns"].map((tab) => (
                         <button
                             key={tab}
                             onClick={() => handleTabClick(tab)}
@@ -425,9 +259,6 @@ export default function DeploymentSetting() {
                                     : "text-neutral-400 md:hover:bg-neutral-800/50 md:hover:text-neutral-100",
                             )}
                         >
-                            {tab === "redeploy" && (
-                                <Rocket className="mr-2 h-4 w-4" />
-                            )}
                             {tab === "delete" && (
                                 <Trash2 className="mr-2 h-4 w-4" />
                             )}
@@ -459,122 +290,7 @@ export default function DeploymentSetting() {
                     )}
                 </div>
 
-                {activeTab === "redeploy" && (
-                    <>
-                        <div className="space-y-4">
-                            {showRedployWarning && (
-                                <div className="bg-yellow-900/20 border border-yellow-900/50 rounded-lg p-4 flex flex-col">
-                                    <div className="font-semibold pb-2 text-yellow-500 ">
-                                        Warning
-                                    </div>
-                                    <div className="flex items-start gap-3">
-                                        <div>
-                                            <ul className="text-sm text-yellow-500 leading-relaxed list-disc pl-4">
-                                                <li>
-                                                    This feature will only work
-                                                    if you have a new commit in
-                                                    your repo
-                                                </li>
-                                                <li>
-                                                    This feature is not
-                                                    available for the protocol
-                                                    land
-                                                </li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                    <div className="flex justify-start mt-3">
-                                        <button
-                                            onClick={() =>
-                                                setRedeployWarning(false)
-                                            }
-                                            className="px-3 py-1.5 text-sm font-medium text-yellow-500 hover:text-yellow-400 bg-yellow-900/30 transition-colors rounded-md hover:bg-yellow-900/50 focus:outline-none focus:ring-2 focus:ring-yellow-500/40"
-                                        >
-                                            Dismiss
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
 
-                            <div className="space-y-1">
-                                <h2 className="text-2xl md:text-3xl font-bold text-neutral-100">
-                                    Redeploy
-                                </h2>
-                                <p className="text-sm text-neutral-400">
-                                    Are you sure you want to redeploy your
-                                    application?
-                                </p>
-                            </div>
-                        </div>
-                        <Button
-                            className="bg-neutral-800 mt-4 text-neutral-100 hover:bg-neutral-700"
-                            disabled={isRedeploying}
-                            onClick={redeploy}
-                        >
-                            {isRedeploying ? (
-                                <div className="flex items-center gap-4">
-                                    <Loader2 className="animate-spin" />
-                                    Deploying
-                                </div>
-                            ) : (
-                                <p>Redeploy</p>
-                            )}
-                        </Button>
-                        <div className="space-y-2 w-full mt-8">
-                            <Accordion
-                                type="single"
-                                value={accordionValue}
-                                onValueChange={setAccordionValue}
-                                collapsible
-                                className="w-full"
-                            >
-                                <AccordionItem
-                                    value="item-1"
-                                    className="rounded-lg w-full bg-neutral-950 border border-neutral-900 overflow-hidden"
-                                >
-                                    <AccordionTrigger className="p-4 w-full">
-                                        <div className="flex items-center w-full justify-between">
-                                            <div className="pl-2">
-                                                Build logs
-                                            </div>
-                                            {isWaitingForLogs && (
-                                                <div className="text-xs flex items-center pr-4 gap-2">
-                                                    <Loader2 className="text-neutral-600 animate-spin" />
-                                                    <span className="text-neutral-200">
-                                                        Build is starting
-                                                    </span>
-                                                </div>
-                                            )}
-                                            {isFetchingLogs && (
-                                                <div className="text-xs flex items-center pr-4 gap-2">
-                                                    <Loader2 className="text-neutral-600 animate-spin" />
-                                                    <span className="text-neutral-200">
-                                                        Fetching logs
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </AccordionTrigger>
-                                    <AccordionContent>
-                                        <Logs logs={logs} />
-                                    </AccordionContent>
-                                </AccordionItem>
-                            </Accordion>
-
-                            {logError && (
-                                <div className="flex items-center gap-2 p-4 rounded-lg bg-red-950/50 border border-red-900">
-                                    <XCircle
-                                        className="text-red-500"
-                                        size={20}
-                                    />
-                                    <p className="text-red-400 text-sm">
-                                        {logError}
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    </>
-                )}
 
                 {activeTab === "delete" && (
                     <>
