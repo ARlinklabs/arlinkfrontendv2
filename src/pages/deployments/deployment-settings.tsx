@@ -59,6 +59,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PopoverTrigger } from "@radix-ui/react-popover";
 import { CommandGroup } from "cmdk";
 import { deleteFromServer, performDeleteDeployment } from "@/actions/deploy";
+import type { TDeployment } from "@/types";
 
 export default function DeploymentSetting() {
     // global states
@@ -67,7 +68,7 @@ export default function DeploymentSetting() {
     const repo = searchParams.get("repo");
     const navigate = useNavigate();
     const globalState = useGlobalState();
-    const deployment = globalState.deployments.find((d) => d.Name === repo);
+    const [deployment, setDeployment] = useState<TDeployment | null>(null);
 
     // setting states
     const [activeTab, setActiveTab] = useState("delete");
@@ -103,6 +104,24 @@ export default function DeploymentSetting() {
     const [transactionId, setTransactionId] = useState<string | null>(null);
     const [isOpen, setIsOpen] = useState(false);
     const [updatingArns, setUpdatingArns] = useState<boolean>(false);
+
+    // Deployment existence check
+    useEffect(() => {
+        if (!repo) {
+            toast.error("No repository specified");
+            navigate("/dashboard");
+            return;
+        }
+
+        const foundDeployment = globalState.deployments.find((d) => d.Name === repo);
+        if (!foundDeployment) {
+            toast.error("Deployment not found");
+            navigate("/dashboard");
+            return;
+        }
+
+        setDeployment(foundDeployment);
+    }, [repo, globalState.deployments, navigate]);
 
     async function deleteDeployment() {
         setIsDeleting(true);
@@ -193,6 +212,15 @@ export default function DeploymentSetting() {
             setIsOpen(true);
         }
     }, [transactionId]);
+
+    // Loading state while searching for deployment
+    if (!deployment) {
+        return (
+            <div className="flex flex-col z-0 md:py-8 md:flex-row container bg-random min-h-[80vh]">
+                <div className="text-xl">Searching for deployment...</div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col z-0 md:py-8 md:flex-row container bg-random min-h-[80vh]">
@@ -479,7 +507,7 @@ export default function DeploymentSetting() {
                             {updatingArns ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Updating ARN...
+                                    Updating ARNS...
                                 </>
                             ) : (
                                 "Update ARNS"

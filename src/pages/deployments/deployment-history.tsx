@@ -71,8 +71,18 @@ export default function DeploymentHistory() {
 
     const { deployments, isRefreshing, walletAddress } = useDeploymentManager();
     const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
     const repoName = searchParams.get("repo");
     const { managerProcess } = useGlobalState();
+
+    // Early redirect check for missing repo parameter
+    useEffect(() => {
+        if (!repoName) {
+            toast.error("No repository specified");
+            navigate("/dashboard");
+            return;
+        }
+    }, [repoName, navigate]);
 
     const [history, setHistory] = useState<DeploymentRecord[]>([]);
 
@@ -113,7 +123,17 @@ export default function DeploymentHistory() {
         );
     }
     
-    if (!foundDeployment) return;
+    if (!foundDeployment) {
+        toast.error("Deployment not found");
+        navigate("/dashboard");
+        return (
+            <div className="min-h-screen text-neutral-200">
+                <div className="container mx-auto px-4 py-10 md:px-10">
+                    <div className="text-xl">Searching for deployment...</div>
+                </div>
+            </div>
+        );
+    }
 
     const [arnsNames, setArnsNames] = useState<ArnsName[]>([]);
     const [fetchingUserArns, setFetchingUserArns] = useState<boolean>(false);

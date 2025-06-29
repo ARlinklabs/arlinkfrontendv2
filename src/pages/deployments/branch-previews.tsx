@@ -30,10 +30,12 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { useState, useEffect, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useGlobalState } from "@/store/useGlobalState";
 import EnableBranchDeployments from "@/components/enable-branch-deployments";
 import { BranchPreviewsFullSkeleton } from "@/components/skeletons";
+import { toast } from "sonner";
+import type { TDeployment } from "@/types";
 
 interface BranchData {
     id: string;
@@ -55,22 +57,28 @@ interface BranchData {
 
 export default function BranchPreviews() {
     const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
     const projectName = searchParams.get("repo");
-    const deployments = useGlobalState((state) => state.deployments);
-    const getDeploymentByName = useGlobalState((state) => state.getDeploymentByName);
+    const { deployments } = useGlobalState();
+    const [deployment, setDeployment] = useState<TDeployment | null>(null);
     
-    const selectedProject = useMemo(() => {
-        if (!projectName) return undefined;
-        
-        // First try to get from cache by name (safer)
-        const cachedProject = getDeploymentByName(projectName);
-        if (cachedProject) {
-            return cachedProject;
+    // Deployment existence check
+    useEffect(() => {
+        if (!projectName) {
+            toast.error("No repository specified");
+            navigate("/dashboard");
+            return;
         }
-        
-        // Fallback to searching the deployments array
-        return deployments.find((project) => project.Name === projectName);
-    }, [deployments, projectName, getDeploymentByName]);
+
+        const foundDeployment = deployments.find((d) => d.Name === projectName);
+        if (!foundDeployment) {
+            toast.error("Deployment not found");
+            navigate("/dashboard");
+            return;
+        }
+
+        setDeployment(foundDeployment);
+    }, [projectName, deployments, navigate]);
 
     // Branch deployment states
     const [isCheckingBranchStatus, setIsCheckingBranchStatus] = useState(false);
@@ -89,14 +97,14 @@ export default function BranchPreviews() {
 
     // Create branches from real config data
     const realBranches = useMemo(() => {
-        if (!branchConfig || !selectedProject) return [];
+        if (!branchConfig || !deployment) return [];
         
         const branches = [];
         
         // Add main branch
         branches.push({
-            id: selectedProject.Branch,
-            name: selectedProject.Branch,
+            id: deployment.Branch,
+            name: deployment.Branch,
             lastUpdated: "Ready",
             author: "main",
             status: { resolved: 0, total: 0, type: "resolved" as const },
@@ -106,12 +114,12 @@ export default function BranchPreviews() {
         
         // Add configured branches with real deployment data
         branchConfig.selectedBranches.forEach(branchName => {
-            const deployment = branchConfig.deployments?.[branchName];
+            const deploymentData = branchConfig.deployments?.[branchName];
             
-            if (deployment) {
+            if (deploymentData) {
                 // Branch has deployment data
-                const lastDeployed = deployment.lastDeployedAt 
-                    ? new Date(deployment.lastDeployedAt).toLocaleString()
+                const lastDeployed = deploymentData.lastDeployedAt 
+                    ? new Date(deploymentData.lastDeployedAt).toLocaleString()
                     : "Unknown";
                 
                 branches.push({
@@ -122,9 +130,9 @@ export default function BranchPreviews() {
                     status: { resolved: 0, total: 0, type: "resolved" as const },
                     hasDeployment: true,
                     isMainBranch: false,
-                    deploymentStatus: deployment.status,
-                    commit: deployment.commit,
-                    url: deployment.undername ? `${deployment.undername}_arlink.arweave.net` : null
+                    deploymentStatus: deploymentData.status,
+                    commit: deploymentData.commit,
+                    url: deploymentData.undername ? `${deploymentData.undername}_arlink.arweave.net` : null
                 });
             } else {
                 // Branch is still building/waiting
@@ -142,7 +150,7 @@ export default function BranchPreviews() {
         });
         
         return branches;
-    }, [branchConfig, selectedProject]);
+    }, [branchConfig, deployment]);
 
     // Filter branches based on search term
     const filteredBranches = realBranches.filter((branch) => {
@@ -167,12 +175,12 @@ export default function BranchPreviews() {
 
     // Function to fetch branch deployment config and status
     const fetchBranchConfig = async () => {
-        if (!selectedProject) return;
+        if (!deployment) return;
         
         try {
             // Extract owner and repo name from the deployment
-            const owner = selectedProject.RepoUrl.split("/").reverse()[1];
-            const repoName = selectedProject.RepoUrl.replace(/\.git|\/$/, "")
+            const owner = deployment.RepoUrl.split("/").reverse()[1];
+            const repoName = deployment.RepoUrl.replace(/\.git|\/$/, "")
                 .split("/")
                 .pop();
             
@@ -189,7 +197,7 @@ export default function BranchPreviews() {
                 
                 if (isEnabled && config.branchPreview.allowedBranches) {
                     setBranchConfig({
-                        allBranches: [selectedProject.Branch, ...config.branchPreview.allowedBranches],
+                        allBranches: [deployment.Branch, ...config.branchPreview.allowedBranches],
                         instantDeployBranch: "", // Will be determined from deployments
                         selectedBranches: config.branchPreview.allowedBranches,
                         deployments: config.branchPreview.deployments || {}
@@ -218,7 +226,7 @@ export default function BranchPreviews() {
 
     // Initial check when component mounts
     useEffect(() => {
-        if (!selectedProject) return;
+        if (!deployment) return;
 
         const checkInitialStatus = async () => {
             setIsCheckingBranchStatus(true);
@@ -228,11 +236,11 @@ export default function BranchPreviews() {
         };
 
         checkInitialStatus();
-    }, [selectedProject]);
+    }, [deployment]);
 
     // Polling effect - runs every 5 seconds when feature is enabled
     useEffect(() => {
-        if (!branchDeploymentsEnabled || !selectedProject || isIncompatible) return;
+        if (!branchDeploymentsEnabled || !deployment || isIncompatible) return;
 
         const pollInterval = setInterval(async () => {
             console.log('Polling for branch deployment updates...');
@@ -242,7 +250,7 @@ export default function BranchPreviews() {
         return () => {
             clearInterval(pollInterval);
         };
-    }, [branchDeploymentsEnabled, selectedProject]);
+    }, [branchDeploymentsEnabled, deployment]);
 
     const handleEnableBranchDeployments = (config: {
         allBranches: string[];
@@ -270,7 +278,7 @@ export default function BranchPreviews() {
     }
 
     // Show incompatible message if deployment doesn't support branch previews
-    if (isIncompatible && selectedProject) {
+    if (isIncompatible && deployment) {
         return (
             <div className="py-10 container">
                 <div className="max-w-3xl mx-auto text-center space-y-6">
@@ -320,7 +328,7 @@ export default function BranchPreviews() {
     }
 
     // Show building state if deployments are enabled but still building
-    if (branchDeploymentsEnabled && isBuilding && selectedProject) {
+    if (branchDeploymentsEnabled && isBuilding && deployment) {
         return (
             <div className="py-10 container">
                 <div className="relative">
@@ -347,19 +355,28 @@ export default function BranchPreviews() {
     }
 
     // Show enable form if branch deployments are not enabled
-    if (!branchDeploymentsEnabled && selectedProject) {
+    if (!branchDeploymentsEnabled && deployment) {
         return (
             <div className="py-10 container">
                 <EnableBranchDeployments 
-                    deployment={selectedProject}
+                    deployment={deployment}
                     onComplete={handleEnableBranchDeployments}
                 />
             </div>
         );
     }
 
+    // Loading state while searching for deployment
+    if (!deployment) {
+        return (
+            <div className="py-10 container">
+                <div className="text-xl">Searching for deployment...</div>
+            </div>
+        );
+    }
+
     // Show error if no project found
-    if (!selectedProject || !projectName) {
+    if (!projectName) {
         return (
             <div className="py-10 container">
                 <div className="text-center text-neutral-400">

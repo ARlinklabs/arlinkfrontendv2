@@ -6,15 +6,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useGlobalState } from "@/store/useGlobalState";
 import { useActiveAddress } from "@arweave-wallet-kit/react";
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import type { TDeployment } from "@/types";
 
 const Analytics = () => {
     const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
     const projectName = searchParams.get("repo");
-    const deployments = useGlobalState((state) => state.deployments);
-    const selectedProject = useMemo(() => {
-        return deployments.find((project) => project.Name === projectName);
-    }, []);
+    const { deployments } = useGlobalState();
+    const [deployment, setDeployment] = useState<TDeployment | null>(null);
     const walletAddress = useActiveAddress();
     const [completedAnalyticsProcess, setCompletedAnalyticsProcess] =
         useState<boolean>(false);
@@ -28,15 +29,33 @@ const Analytics = () => {
         setProcessId(value);
     };
 
+    // Deployment existence check
+    useEffect(() => {
+        if (!projectName) {
+            toast.error("No repository specified");
+            navigate("/dashboard");
+            return;
+        }
+
+        const foundDeployment = deployments.find((d) => d.Name === projectName);
+        if (!foundDeployment) {
+            toast.error("Deployment not found");
+            navigate("/dashboard");
+            return;
+        }
+
+        setDeployment(foundDeployment);
+    }, [projectName, deployments, navigate]);
+
     // useEffects
     useEffect(() => {
-        if (!selectedProject || !walletAddress) return;
+        if (!deployment || !walletAddress) return;
 
         const init = async () => {
             setIsCheckingProcessId(true);
             try {
                 const processId = await checkProcessId(
-                    selectedProject.Name,
+                    deployment.Name,
                     walletAddress,
                 );
                 setProcessId(processId);
@@ -51,11 +70,21 @@ const Analytics = () => {
         };
 
         init();
-    }, []);
+    }, [deployment, walletAddress]);
+
+    // Loading state while searching for deployment
+    if (!deployment) {
+        return (
+            <div className="py-10 container space-y-4">
+                <div className="text-xl">Searching for deployment...</div>
+            </div>
+        );
+    }
 
     // conditions
-    if (!selectedProject || !projectName || !walletAddress)
-        return <div>No project exists with the name ${projectName}</div>;
+    if (!walletAddress) {
+        return <div>Please connect your wallet to view analytics</div>;
+    }
 
     if (isCheckingProcessId) {
         return (

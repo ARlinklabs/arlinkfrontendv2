@@ -1,6 +1,6 @@
 import { useGlobalState } from "@/store/useGlobalState";
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import Layout from "@/layouts/layout";
 import {
     Accordion,
@@ -13,16 +13,19 @@ import { Logs } from "@/components/ui/logs";
 import axios from "axios";
 import { runLua } from "@/lib/ao-vars";
 import { TESTING_FETCH } from "@/lib/utils";
+import { toast } from "sonner";
+import type { TDeployment } from "@/types";
 
 const DeploymentLogs = () => {
     // hooks and global state
     const { deployments } = useGlobalState();
     const globalState = useGlobalState();
     const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
 
     // repo and deployment variable
     const repo = searchParams.get("repo");
-    const deployment = deployments.find((project) => project.Name === repo);
+    const [deployment, setDeployment] = useState<TDeployment | null>(null);
 
     // states
     const [buildOutput, setBuildOutput] = useState<string[]>([]);
@@ -32,6 +35,24 @@ const DeploymentLogs = () => {
 
     // loading states
     const [isFetchingLogs, setIsFetchingLogs] = useState<boolean>(false);
+
+    // Deployment existence check
+    useEffect(() => {
+        if (!repo) {
+            toast.error("No repository specified");
+            navigate("/dashboard");
+            return;
+        }
+
+        const foundDeployment = deployments.find((d) => d.Name === repo);
+        if (!foundDeployment) {
+            toast.error("Deployment not found");
+            navigate("/dashboard");
+            return;
+        }
+
+        setDeployment(foundDeployment);
+    }, [repo, deployments, navigate]);
 
     // useEffect
     useEffect(() => {
@@ -125,6 +146,15 @@ const DeploymentLogs = () => {
         fetchLogsFromDB();
         fetchLatestLogs();
     }, [deployment, globalState.managerProcess]);
+
+    // Loading state while searching for deployment
+    if (!deployment) {
+        return (
+            <Layout>
+                <div className="text-xl">Searching for deployment...</div>
+            </Layout>
+        );
+    }
 
     return (
         <Layout>
