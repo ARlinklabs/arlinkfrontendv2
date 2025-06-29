@@ -3,12 +3,14 @@ import { Zap, Globe, ChevronRight, ExternalLink } from "lucide-react";
 import ReactConfetti from "react-confetti";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import TwitterShareButton from "@/components/ui/twitter-share-button";
+import { useState, useEffect } from "react";
 
 export default function DeploymentCard({}) {
     const navigate = useNavigate();
     // hooks and stores
-    const { deployments } = useDeploymentManager();
+    const { deployments, isRefreshing, walletAddress } = useDeploymentManager();
     const [searchParmas] = useSearchParams();
+    const [showNotFound, setShowNotFound] = useState<boolean>(false);
 
     // constants
     const repo = searchParmas.get("repo");
@@ -16,10 +18,43 @@ export default function DeploymentCard({}) {
 
     console.log(deployments);
 
-    if (!deployment?.UnderName)
+    if (!deployment?.UnderName && deployment)
         navigate("/deployment?repo=" + deployment?.Name);
 
-    if (!deployment) {
+    // Handle showing "No Deployment Found" with a delay to prevent flashing during wallet switches
+    useEffect(() => {
+        if (deployment) {
+            setShowNotFound(false);
+        } else if (walletAddress && deployments.length > 0 && !isRefreshing) {
+            // Only show not found if we have deployments but this specific one isn't found
+            setShowNotFound(true);
+        } else if (walletAddress && deployments.length === 0 && !isRefreshing) {
+            // Add a small delay before showing "not found" when no deployments at all
+            const timer = setTimeout(() => {
+                setShowNotFound(true);
+            }, 1000);
+            return () => clearTimeout(timer);
+        } else {
+            setShowNotFound(false);
+        }
+    }, [deployment, walletAddress, deployments.length, isRefreshing]);
+
+    // Reset showNotFound when wallet changes
+    useEffect(() => {
+        setShowNotFound(false);
+    }, [walletAddress]);
+
+    // Show loading state during wallet transitions or when refreshing
+    if (isRefreshing || (walletAddress && deployments.length === 0 && !showNotFound)) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[50vh] text-neutral-100">
+                <div className="animate-spin rounded-full h-12 w-12 border-2 border-neutral-300 border-t-transparent mb-4"></div>
+                <p className="text-neutral-400">Loading deployment...</p>
+            </div>
+        );
+    }
+
+    if (!deployment && showNotFound) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[50vh] text-neutral-100">
                 <h2 className="text-2xl font-semibold mb-4">
@@ -34,6 +69,16 @@ export default function DeploymentCard({}) {
                 >
                     Return to Dashboard
                 </a>
+            </div>
+        );
+    }
+
+    // If no deployment and not showing "not found" yet, show loading
+    if (!deployment) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[50vh] text-neutral-100">
+                <div className="animate-spin rounded-full h-12 w-12 border-2 border-neutral-300 border-t-transparent mb-4"></div>
+                <p className="text-neutral-400">Loading deployment...</p>
             </div>
         );
     }

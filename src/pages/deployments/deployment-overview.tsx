@@ -25,7 +25,6 @@ import TwitterShareButton from "@/components/ui/twitter-share-button";
 interface DeploymentComponentProps {
     deployment: TDeployment;
 }
-``;
 
 export default function DeploymentOverview({
     deployment,
@@ -49,8 +48,29 @@ export default function DeploymentOverview({
     const [isFetchingProject, setIsFetchingProject] = useState<boolean>(true);
     const [, setError] = useState<string>("");
 
-    // github path
-    const githubUserPath = extractGithubPath(deployment.RepoUrl);
+    // github path with error handling
+    const githubUserPath = (() => {
+        try {
+            if (!deployment?.RepoUrl) {
+                console.warn('No RepoUrl found for deployment:', deployment?.Name);
+                return 'unknown/unknown';
+            }
+            return extractGithubPath(deployment.RepoUrl);
+        } catch (error) {
+            console.warn('Invalid GitHub URL for deployment:', deployment?.Name, deployment?.RepoUrl);
+            console.warn('Error:', error);
+            // Return a fallback path based on the repo URL if possible
+            try {
+                const parts = deployment.RepoUrl.split('/').filter(Boolean);
+                if (parts.length >= 2) {
+                    return `${parts[parts.length - 2]}/${parts[parts.length - 1].replace('.git', '')}`;
+                }
+            } catch (fallbackError) {
+                console.warn('Fallback path extraction failed:', fallbackError);
+            }
+            return 'unknown/unknown';
+        }
+    })();
 
     const updateUnderName = async (underName: string) => {
         try {

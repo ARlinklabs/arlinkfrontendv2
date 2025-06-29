@@ -24,13 +24,11 @@ const Dashboardcomp = () => {
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
     const [searchTerm, setSearchTerm] = useState("");
     const [sortBy, setSortBy] = useState("activity");
-    const [isFetchingDeployments, setIsFetchingDeployments] =
-        useState<boolean>(true);
-    const { managerProcess, deployments } = useDeploymentManager();
+    const { managerProcess, deployments, isRefreshing, walletAddress } = useDeploymentManager();
     const [cardsLimit, setCardsLimit] = useState(0);
     const navigate = useNavigate();
-    const [managerProcessExists, setManagerProcessExists] =
-        useState<boolean>(true);
+    const [managerProcessExists, setManagerProcessExists] = useState<boolean>(true);
+    const [showNoDeployments, setShowNoDeployments] = useState<boolean>(false);
 
     const formatProjectData = (deployments: TDeployment[]) => {
         return deployments.map((dep: TDeployment) => ({
@@ -84,35 +82,45 @@ const Dashboardcomp = () => {
     }, [deployments, cardsLimit]);
 
     useEffect(() => {
-        let timeOutId: NodeJS.Timeout | null = null;
-
-        if (isFetchingDeployments) {
-            if (deployments.length > 0) {
-                setIsFetchingDeployments(false);
-                return () => {
-                    if (timeOutId) {
-                        clearInterval(timeOutId);
-                    }
-                };
-            }
-
-            timeOutId = setTimeout(() => {
-                setIsFetchingDeployments(false);
-            }, 200000);
-
-            return () => {
-                if (timeOutId) clearTimeout(timeOutId);
-            };
-        }
-    }, [deployments]);
-
-    useEffect(() => {
         if (managerProcess) {
             setManagerProcessExists(true);
         } else {
             setManagerProcessExists(false);
         }
     }, [managerProcess]);
+
+    // Handle showing "no deployments found" with a delay to prevent flashing during wallet switches
+    useEffect(() => {
+        if (deployments.length > 0) {
+            setShowNoDeployments(false);
+        } else if (walletAddress && managerProcess && !isRefreshing) {
+            // Add a small delay before showing "no deployments found"
+            const timer = setTimeout(() => {
+                setShowNoDeployments(true);
+            }, 1000);
+            return () => clearTimeout(timer);
+        } else {
+            setShowNoDeployments(false);
+        }
+    }, [deployments.length, walletAddress, managerProcess, isRefreshing]);
+
+    // Reset showNoDeployments when wallet changes
+    useEffect(() => {
+        setShowNoDeployments(false);
+    }, [walletAddress]);
+
+    // Determine if we should show loading state
+    const shouldShowLoading = () => {
+        // Show loading if:
+        // 1. Currently refreshing deployments
+        // 2. Have a wallet but no manager process yet
+        // 3. Have wallet and manager process but no deployments and haven't decided to show "no deployments" yet
+        return (
+            isRefreshing || 
+            (walletAddress && !managerProcess) ||
+            (walletAddress && managerProcess && deployments.length === 0 && !showNoDeployments)
+        );
+    };
 
     return (
         <Layout>
@@ -169,33 +177,29 @@ const Dashboardcomp = () => {
                     </div>
                 </div>
 
-                {managerProcess ? (
-                    isFetchingDeployments ? (
-                        <ProjectCardSkeleton viewMode={viewMode} />
-                    ) : deployments.length > 0 ? (
-                        <div
-                            className={`grid ${
-                                viewMode === "grid"
-                                    ? "md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3"
-                                    : "grid-cols-1"
-                            } gap-6`}
-                        >
-                            {filteredAndSortedProjects
-                                .slice(0, cardsLimit)
-                                .map((project) => (
-                                    <ProjectCard
-                                        key={project.id}
-                                        project={project}
-                                    />
-                                ))}
-                        </div>
-                    ) : (
-                        <NoDeploymentFoundCard />
-                    )
-                ) : isFetchingDeployments ? (
+                {shouldShowLoading() ? (
                     <ProjectCardSkeleton viewMode={viewMode} />
-                ) : (
+                ) : deployments.length > 0 ? (
+                    <div
+                        className={`grid ${
+                            viewMode === "grid"
+                                ? "md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3"
+                                : "grid-cols-1"
+                        } gap-6`}
+                    >
+                        {filteredAndSortedProjects
+                            .slice(0, cardsLimit)
+                            .map((project) => (
+                                <ProjectCard
+                                    key={project.id}
+                                    project={project}
+                                />
+                            ))}
+                    </div>
+                ) : showNoDeployments ? (
                     <NoDeploymentFoundCard />
+                ) : (
+                    <ProjectCardSkeleton viewMode={viewMode} />
                 )}
 
                 {cardsLimit < deployments.length && (

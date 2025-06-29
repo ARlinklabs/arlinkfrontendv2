@@ -482,7 +482,7 @@ export default function DeploymentSetting() {
                                     Updating ARN...
                                 </>
                             ) : (
-                                "Update ARN"
+                                "Update ARNS"
                             )}
                         </Button>
                     </>

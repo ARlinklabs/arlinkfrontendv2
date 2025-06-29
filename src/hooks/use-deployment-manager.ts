@@ -132,33 +132,42 @@ db:exec[[
 // deploy -> 200 value, set a dummy value
 
 export default function useDeploymentManager() {
-    const globalState = useGlobalState();
+    const setManagerProcess = useGlobalState(state => state.setManagerProcess);
+    const safeUpdateDeployments = useGlobalState(state => state.safeUpdateDeployments);
+    
+    const walletAddress = useGlobalState(state => state.walletAddress);
+    const managerProcess = useGlobalState(state => state.managerProcess);
+    const deployments = useGlobalState(state => state.deployments);
+    
     const { connected } = useConnection();
     const address = useActiveAddress();
     const [isRefreshing, setIsRefreshing] = useState(false);
     const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const retryCountRef = useRef(0);
     const maxRetries = 3;
-    
 
+    // Handle manager process setup when wallet connects or changes
     useEffect(() => {
-        if (connected && address) {
+        if (connected && address && walletAddress === address && !managerProcess) {
+            // Only proceed if the global state wallet matches current address and no manager process exists
+            console.log(`Setting up manager process for wallet: ${address}`);
             getManagerProcessFromAddress(address).then((id) => {
                 if (id) {
-                    globalState.setManagerProcess(id);
+                    setManagerProcess(id);
                 } else {
                     console.log("No manager process found, spawning new one");
                     //@ts-ignore
                     spawnProcess("ARlink-Manager").then(async (newId) => {
                         await runLua(setupCommands, newId);
-                        // console.log("deployment manager id", newId);
-                        globalState.setManagerProcess(newId);
+                        console.log("deployment manager id", newId);
+                        setManagerProcess(newId);
                     });
                 }
             });
         }
-    }, [connected, address, globalState.setManagerProcess]);
+    }, [connected, address, walletAddress, managerProcess, setManagerProcess]);
 
+    // Handle deployment fetching when manager process is ready
     useEffect(() => {
         // Reset retry count when manager process changes
         retryCountRef.current = 0;
@@ -168,8 +177,9 @@ export default function useDeploymentManager() {
             clearTimeout(refreshTimeoutRef.current);
         }
         
-        // Add a small delay when process is newly set to ensure it's ready
-        if (globalState.managerProcess) {
+        // Only fetch deployments if we have both manager process and correct wallet, and no deployments yet
+        if (managerProcess && walletAddress === address && connected && deployments.length === 0) {
+            console.log(`Fetching deployments for wallet: ${address}`);
             refreshTimeoutRef.current = setTimeout(() => {
                 refresh();
             }, 1000); // 1 second delay for new processes
@@ -180,10 +190,24 @@ export default function useDeploymentManager() {
                 clearTimeout(refreshTimeoutRef.current);
             }
         };
-    }, [globalState.managerProcess]);
+    }, [managerProcess, walletAddress, address, connected, deployments.length]);
 
     async function refresh(isRetry = false) {
-        if (!globalState.managerProcess || isRefreshing) return;
+        // Validate we have the right context before proceeding
+        if (!managerProcess || 
+            !walletAddress || 
+            walletAddress !== address || 
+            !connected || 
+            isRefreshing) {
+            console.log('Skipping refresh - invalid context:', {
+                managerProcess: !!managerProcess,
+                walletAddress: walletAddress,
+                currentAddress: address,
+                connected,
+                isRefreshing
+            });
+            return;
+        }
         
         // Prevent excessive retries
         if (isRetry && retryCountRef.current >= maxRetries) {
@@ -193,12 +217,12 @@ export default function useDeploymentManager() {
         }
 
         setIsRefreshing(true);
+        console.log(`Refreshing deployments for wallet: ${address}`);
 
         try {
-            // console.log("fetching deployments");
             const result = await executeWithRetry(async (ao) => {
                 return await ao.dryrun({
-                    process: globalState.managerProcess,
+                    process: managerProcess,
                     tags: [{ name: "Action", value: "ARlink.GetDeployments" }],
                     Owner: address,
                 });
@@ -210,7 +234,6 @@ export default function useDeploymentManager() {
                 return;
             }
             
-            // console.log("result", result);
             const { Messages } = result;
             
             if (!Messages || Messages.length === 0) {
@@ -218,7 +241,18 @@ export default function useDeploymentManager() {
             }
             
             const deployments = JSON.parse(Messages[0].Data);
-            globalState.setDeployments(deployments);
+            
+            // Double-check wallet hasn't changed during fetch
+            const currentWallet = useGlobalState.getState().walletAddress;
+            if (currentWallet === address) {
+                console.log(`Successfully fetched ${deployments.length} deployments for wallet: ${address}`);
+                // Use safe update to preserve existing cache if new data is invalid
+                safeUpdateDeployments(deployments);
+                console.log(`Deployments stored successfully for wallet: ${address}`);
+            } else {
+                console.log('Wallet changed during fetch, discarding results');
+            }
+            
             retryCountRef.current = 0; // Reset retry count on success
             setIsRefreshing(false);
             
@@ -226,8 +260,16 @@ export default function useDeploymentManager() {
             console.warn("Refresh failed, attempting setup and retry:", error);
             retryCountRef.current++;
             
+            // Double-check wallet hasn't changed during error handling
+            const currentWallet = useGlobalState.getState().walletAddress;
+            if (currentWallet !== address) {
+                console.log('Wallet changed during error handling, aborting retry');
+                setIsRefreshing(false);
+                return;
+            }
+            
             try {
-                await runLua(setupCommands, globalState.managerProcess);
+                await runLua(setupCommands, managerProcess);
                 
                 // Exponential backoff for retries
                 const delay = Math.min(500 * Math.pow(2, retryCountRef.current - 1), 5000);
@@ -253,10 +295,11 @@ export default function useDeploymentManager() {
     }, []);
 
     return {
-        managerProcess: globalState.managerProcess,
-        deployments: globalState.deployments,
+        managerProcess,
+        deployments,
         isRefreshing,
         refresh: () => refresh(false),
+        walletAddress,
     };
 }
 // keep it as local host if NODE_ENV is test

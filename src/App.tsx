@@ -7,8 +7,11 @@ import {
     useNavigate,
 } from "react-router-dom";
 import { lazy, Suspense, useEffect } from "react";
+import { useConnection, useActiveAddress } from "@arweave-wallet-kit/react";
+import { useGlobalState } from "@/store/useGlobalState";
 import Navbar from "./components/shared/navbar";
 import { Toaster } from "./components/ui/sonner";
+import ErrorBoundary from "./components/ui/error-boundary";
 
 // Lazy-loaded components
 const Home = lazy(() => import("@/pages/index"));
@@ -29,6 +32,7 @@ const Analytics = lazy(() => import("./pages/deployments/analytics"));
 const DeploymentHistory = lazy(
     () => import("./pages/deployments/deployment-history"),
 );
+const BranchPreviews = lazy(() => import("./pages/deployments/branch-previews"));
 const TemplateDashboard = lazy(
     () => import("./pages/template/template-dashboard"),
 );
@@ -44,16 +48,41 @@ const ArnsDashboard = lazy(() => import("./pages/arns/dashboard"));
 
 const Loading = () => <div className="text-center p-4"></div>;
 
+// Wallet Manager Component - handles wallet state changes at app level
+function WalletManager() {
+    const { connected } = useConnection();
+    const address = useActiveAddress();
+    const setWalletAddress = useGlobalState(state => state.setWalletAddress);
+    const clearWalletData = useGlobalState(state => state.clearWalletData);
+    
+    useEffect(() => {
+        console.log('App-level wallet state change:', { connected, address });
+        
+        if (connected && address) {
+            console.log('App: Setting wallet address:', address);
+            setWalletAddress(address);
+        } else if (!connected) {
+            console.log('App: Wallet disconnected, clearing data');
+            clearWalletData();
+        }
+    }, [connected, address, setWalletAddress, clearWalletData]);
+    
+    return null; // This component doesn't render anything
+}
+
 function Layout() {
     return (
-        <div className="bg-random">
-            <Navbar />
-            <main className="max-w-[1440px] mx-auto">
-                <Suspense fallback={<Loading />}>
-                    <Outlet />
-                </Suspense>
-            </main>
-        </div>
+        <ErrorBoundary>
+            <div className="bg-random">
+                <WalletManager />
+                <Navbar />
+                <main className="max-w-[1440px] mx-auto">
+                    <Suspense fallback={<Loading />}>
+                        <Outlet />
+                    </Suspense>
+                </main>
+            </div>
+        </ErrorBoundary>
     );
 }
 
@@ -83,12 +112,37 @@ const router = createBrowserRouter([
                 element: <Layout />,
                 children: [
                     { path: "dashboard", element: <Dashboard /> },
-                    { path: "deployment", element: <Deployment /> },
-                    { path: "deployment/logs", element: <DeploymentLogs /> },
-                    { path: "deployment/card", element: <DeploymentCard /> },
+                    { 
+                        path: "deployment", 
+                        element: (
+                            <ErrorBoundary>
+                                <Deployment />
+                            </ErrorBoundary>
+                        )
+                    },
+                    { 
+                        path: "deployment/logs", 
+                        element: (
+                            <ErrorBoundary>
+                                <DeploymentLogs />
+                            </ErrorBoundary>
+                        )
+                    },
+                    { 
+                        path: "deployment/card", 
+                        element: (
+                            <ErrorBoundary>
+                                <DeploymentCard />
+                            </ErrorBoundary>
+                        )
+                    },
                     {
                         path: "deployment/history",
-                        element: <DeploymentHistory />,
+                        element: (
+                            <ErrorBoundary>
+                                <DeploymentHistory />
+                            </ErrorBoundary>
+                        ),
                     },
                     { path: "templates", element: <TemplateDashboard /> },
                     { path: "6&iFtgG4Lr8Ul54+29", element: <Generate /> },
@@ -109,10 +163,29 @@ const router = createBrowserRouter([
                         path: "templates/deploy/:owner/:repoName",
                         element: <TemplateDeploy />,
                     },
-                    { path: "deployment/analytics", element: <Analytics /> },
+                    { 
+                        path: "deployment/analytics", 
+                        element: (
+                            <ErrorBoundary>
+                                <Analytics />
+                            </ErrorBoundary>
+                        )
+                    },
                     {
                         path: "deployment/settings",
-                        element: <DeploymentSetting />,
+                        element: (
+                            <ErrorBoundary>
+                                <DeploymentSetting />
+                            </ErrorBoundary>
+                        ),
+                    },
+                    {
+                        path: "deployment/branch-previews",
+                        element: (
+                            <ErrorBoundary>
+                                <BranchPreviews />
+                            </ErrorBoundary>
+                        ),
                     },
                     { path: "deploy", element: <NewDeployment /> },
                     { path: "integration", element: <ComingSoon /> },
@@ -120,6 +193,7 @@ const router = createBrowserRouter([
                     { path: "support", element: <ComingSoon /> },
                     { path: "/arns", element: <Arns /> },
                     { path: "/arns/dashboard", element: <ArnsDashboard /> },
+
                     { path: "*", element: <ComingSoon /> },
                 ],
             },

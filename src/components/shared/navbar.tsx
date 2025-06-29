@@ -76,8 +76,11 @@ export default function Navbar() {
         {
             name: "Analytics",
             url: `/deployment/Analytics?repo=${extractRepoName(repo || "")}`,
-        },
-        {
+
+        },{
+            name : "Branch Previews",
+            url : `/deployment/branch-previews?repo=${extractRepoName(repo || "")}`,
+        },{
             name: "History",
             url: `/deployment/history?repo=${extractRepoName(repo || "")}`,
         },

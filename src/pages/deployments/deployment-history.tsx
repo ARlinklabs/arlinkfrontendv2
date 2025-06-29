@@ -69,7 +69,7 @@ import { revertNonArnsProject } from "@/actions/deploy";
 export default function DeploymentHistory() {
     // hooks
 
-    const { deployments } = useDeploymentManager();
+    const { deployments, isRefreshing, walletAddress } = useDeploymentManager();
     const [searchParams] = useSearchParams();
     const repoName = searchParams.get("repo");
     const { managerProcess } = useGlobalState();
@@ -83,6 +83,36 @@ export default function DeploymentHistory() {
         useState<boolean>(false);
     const [, setHistoryError] = useState<string | null>("");
     const activeAddress = useActiveAddress();
+    
+    // Show loading state during wallet transitions or when refreshing
+    if ((isRefreshing || (walletAddress && deployments.length === 0)) && !foundDeployment) {
+        return (
+            <div className="min-h-screen text-neutral-200">
+                <div className="container mx-auto px-4 py-10 md:px-10">
+                    <div className="space-y-6">
+                        <div className="space-y-2">
+                            <h1 className="text-3xl font-semibold flex items-center tracking-tight text-neutral-100">
+                                Deployment history
+                            </h1>
+                            <div className="flex items-center space-x-2 text-sm text-neutral-400">
+                                <GitBranchIcon className="h-4 w-4" />
+                                <span>Loading deployment history...</span>
+                            </div>
+                        </div>
+                        <Separator />
+                        <div className="space-y-2 rounded-md">
+                            <MinimalDeploymentSkeleton />
+                            <MinimalDeploymentSkeleton />
+                            <MinimalDeploymentSkeleton />
+                            <MinimalDeploymentSkeleton />
+                            <MinimalDeploymentSkeleton />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+    
     if (!foundDeployment) return;
 
     const [arnsNames, setArnsNames] = useState<ArnsName[]>([]);

@@ -84,7 +84,7 @@ export async function getProjectPID(
 ): Promise<GetProcessPIDResponse> {
     const TARGET_PROCESS = managerProcess;
     const ao = connect({
-        CU_URL: "https://cu.ardrive.io",
+        CU_URL: "https://ur-cu.randao.net",
         MODE: "legacy",
     });
 
@@ -190,7 +190,7 @@ export async function registerProject(
 ): Promise<RegisterProjectReturnType> {
     const TARGET_PROCESS = REGISTRY_PROCESS;
     const ao = connect({
-        CU_URL: "https://cu.ardrive.io",
+        CU_URL: "https://ur-cu.randao.net",
         MODE: "legacy",
     });
 
@@ -265,7 +265,7 @@ export async function getAnalytics(
     processId: string,
 ): Promise<AnalyticsResponse> {
     const ao = connect({
-        CU_URL: "https://cu.ardrive.io",
+        CU_URL: "https://ur-cu.randao.net",
         MODE: "legacy",
     });
 

@@ -16,6 +16,9 @@ import {
     AlertTriangle,
     ExternalLink,
     ArrowLeftFromLine,
+    Settings,
+    Filter,
+    Search,
 } from "lucide-react";
 import { CardTitle } from "./ui/card-hover-effect";
 import { cn } from "@/lib/utils";
@@ -604,6 +607,138 @@ export const ArnsDetailsSkeleton = () => {
                                 </div>
                             </div>
                         </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Branch Previews Skeleton Components
+export const BranchPreviewsHeaderSkeleton = () => {
+    return (
+        <div className="space-y-2">
+            <h1 className="text-3xl font-bold text-neutral-100">Branch Previews</h1>
+            <p className="text-neutral-400">
+                Monitor and manage automatic deployments for your Git branches. Control sync settings and view deployment status.
+            </p>
+        </div>
+    );
+};
+
+export const BranchDeploymentToggleSkeleton = () => {
+    return (
+        <Card className="bg-neutral-950 border-neutral-800">
+            <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                        <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                                <Settings className="h-5 w-5 text-neutral-400" />
+                                <h3 className="text-lg font-semibold text-neutral-100">Preview Sync</h3>
+                            </div>
+                            <p className="text-neutral-400">
+                                Sync branch changes to preview deployments in real-time. Disable to pause automatic updates.
+                            </p>
+                        </div>
+                    </div>
+                    <Skeleton className="h-6 w-11 rounded-full bg-neutral-800" />
+                </div>
+            </CardContent>
+        </Card>
+    );
+};
+
+export const BranchListHeaderSkeleton = () => {
+    return (
+        <div className="flex items-center justify-between">
+            <div>
+                <h2 className="text-2xl font-bold text-neutral-100 mb-2">Active Branches</h2>
+                <div className="flex items-center gap-1 text-sm text-neutral-400">
+                    <span>Open branches</span>
+                    <span>•</span>
+                    <Skeleton className="h-4 w-8 bg-neutral-800 inline-block" />
+                    <span>total deployments</span>
+                </div>
+            </div>
+            <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-neutral-400" />
+                    <span className="text-sm text-neutral-400">Filter</span>
+                </div>
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                    <input
+                        type="text"
+                        placeholder="Search branches..."
+                        className="pl-10 pr-4 py-2 bg-neutral-950 border border-neutral-800 rounded-lg text-neutral-100 placeholder-neutral-500 focus:outline-none focus:border-neutral-600 w-64"
+                    />
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export const BranchItemSkeleton = () => {
+    return (
+        <Card className="bg-neutral-950 border-neutral-800">
+            <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-2">
+                            <GitBranch className="h-4 w-4 text-neutral-400" />
+                            <div className="flex items-center space-x-2">
+                                <Skeleton className="w-2 h-2 rounded-full bg-neutral-800" />
+                                <Skeleton className="h-5 w-32 bg-neutral-800" />
+                            </div>
+                        </div>
+                        <div className="flex items-center space-x-4 text-sm text-neutral-400">
+                            <div className="flex items-center gap-1">
+                                <span>Updated</span>
+                                <Skeleton className="h-4 w-12 bg-neutral-800 inline-block" />
+                                <span>ago</span>
+                            </div>
+                            <span>•</span>
+                            <div className="flex items-center gap-1">
+                                <span>by</span>
+                                <Skeleton className="h-4 w-24 bg-neutral-800 inline-block" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center space-x-3">
+                        <div className="flex items-center gap-1 text-sm">
+                            <Skeleton className="w-2 h-2 rounded-full bg-neutral-800" />
+                            <Skeleton className="h-4 w-16 bg-neutral-800" />
+                        </div>
+                        <Skeleton className="h-8 w-32 bg-neutral-800 rounded-lg" />
+                        <button className="p-2 text-neutral-400 hover:text-neutral-300 hover:bg-neutral-900 rounded-lg transition-colors">
+                            <MoreVertical className="h-4 w-4" />
+                        </button>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+};
+
+export const BranchPreviewsFullSkeleton = () => {
+    return (
+        <div className="container mx-auto py-8 space-y-8 bg-random min-h-[80vh]">
+            {/* Header */}
+            <BranchPreviewsHeaderSkeleton />
+
+            {/* Branch Deployments Toggle */}
+            <BranchDeploymentToggleSkeleton />
+
+            {/* Active Branches */}
+            <div className="space-y-4">
+                <BranchListHeaderSkeleton />
+
+                {/* Branches List */}
+                <div className="space-y-3">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                        <BranchItemSkeleton key={i} />
                     ))}
                 </div>
             </div>

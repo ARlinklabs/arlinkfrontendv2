@@ -219,19 +219,47 @@ export function extractRepoName(url: string): string {
 }
 
 export const extractGithubPath = (url: string): string => {
+    // Handle null, undefined, or empty strings
+    if (!url || typeof url !== 'string') {
+        throw new Error("Invalid GitHub URL: URL is required");
+    }
+
+    // Normalize the URL by trimming whitespace
+    const normalizedUrl = url.trim();
+    
+    // Handle different GitHub URL formats
+    const githubPatterns = [
+        /^https?:\/\/github\.com\/([^\/]+)\/([^\/]+)/,  // https://github.com/owner/repo
+        /^git@github\.com:([^\/]+)\/([^\/]+)/,          // git@github.com:owner/repo
+        /^github\.com\/([^\/]+)\/([^\/]+)/              // github.com/owner/repo
+    ];
+
+    for (const pattern of githubPatterns) {
+        const match = normalizedUrl.match(pattern);
+        if (match) {
+            const owner = match[1];
+            const repo = match[2].replace(/\.git$/, ''); // Remove .git suffix if present
+            
+            if (owner && repo) {
+                return `${owner}/${repo}`;
+            }
+        }
+    }
+
+    // If no pattern matches, try the original logic as fallback
     const githubPrefix = "https://github.com/";
-    if (!url.startsWith(githubPrefix)) {
-        throw new Error("Invalid GitHub URL");
+    if (normalizedUrl.startsWith(githubPrefix)) {
+        const path = normalizedUrl.slice(githubPrefix.length);
+        const parts = path.split("/").filter(Boolean); // Filter out empty parts
+        
+        if (parts.length >= 2) {
+            const owner = parts[0];
+            const repo = parts[1].replace(/\.git$/, '');
+            return `${owner}/${repo}`;
+        }
     }
 
-    const path = url.slice(githubPrefix.length);
-
-    const parts = path.split("/");
-    if (parts.length < 2) {
-        throw new Error("Invalid GitHub repository URL format");
-    }
-
-    return `${parts[0]}/${parts[1]}`;
+    throw new Error(`Invalid GitHub URL format: ${url}`);
 };
 
 export function extractOwnerName(url: string): string {
