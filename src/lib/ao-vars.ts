@@ -282,3 +282,30 @@ export async function setArnsName(
         }
     });
 }
+export async function setArnsUnderName(
+    antProcess: string,
+    manifestId: string,
+    undername :string ,
+) {
+    return executeWithRetry(async (ao) => {
+        const msgtags = [
+            { name: "Action", value: "Set-Record" },
+            { name: "Sub-Domain", value: undername },
+            { name: "Transaction-Id", value: manifestId },
+            { name: "TTL-Seconds", value: "60" },
+        ];
+        try {
+            const result = await ao.message({
+                process: antProcess,
+                tags: msgtags,
+                signer: createDataItemSigner(window.arweaveWallet),
+                data: "",
+            });
+            console.log("set arns message officially sent out ", result);
+            return result;
+        } catch (e) {
+            console.error(e);
+            return null;
+        }
+    });
+}

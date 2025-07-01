@@ -289,21 +289,78 @@ const EnableBranchDeployments = ({ deployment, onComplete }: EnableBranchDeploym
                                                     Select Branches to Monitor
                                                 </CardTitle>
                                                 <CardDescription className="w-full">
-                                                    Choose up to 3 branches to monitor for automatic deployments. 
-                                                    Your main branch ({deployment.Branch}) is already deployed and will always be available.
+                                                    {isLoading ? (
+                                                        "Fetching available branches from your repository..."
+                                                    ) : branches.filter(branch => branch.name !== deployment.Branch).length > 0 ? (
+                                                        `Choose up to 3 branches to monitor for automatic deployments. Your main branch (${deployment.Branch}) is already deployed and will always be available.`
+                                                    ) : (
+                                                        `No additional branches found beyond your main branch (${deployment.Branch}).`
+                                                    )}
                                                 </CardDescription>
                                             </CardHeader>
                                             <CardContent className="p-6 relative bg-neutral-900/50 border-t border-neutral-800">
+                                                <motion.div
+                                                    key={isLoading ? 'loading' : branches.filter(branch => branch.name !== deployment.Branch).length > 0 ? 'branches' : 'empty'}
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    exit={{ opacity: 0 }}
+                                                    transition={{ duration: 0.2 }}
+                                                >
                                                 {isLoading ? (
-                                                    <div className="flex items-center justify-center py-12">
-                                                        <Loader2 className="h-8 w-8 animate-spin text-neutral-400" />
-                                                        <span className="ml-2 text-neutral-400">Fetching branches...</span>
+                                                        // Show list skeleton while loading (default expectation)
+                                                        <div className="space-y-3 max-h-96 overflow-y-auto">
+                                                            {[1, 2, 3].map((i) => (
+                                                                <Card key={i} className="bg-neutral-950 border-neutral-800">
+                                                                    <CardContent className="p-4">
+                                                                        <div className="flex items-center justify-between">
+                                                                            <div className="flex items-center space-x-3">
+                                                                                <div className="w-4 h-4 bg-neutral-800 rounded animate-pulse"></div>
+                                                                                <div className="w-4 h-4 bg-neutral-800 rounded animate-pulse"></div>
+                                                                                <div className="h-5 w-24 bg-neutral-800 rounded animate-pulse"></div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </CardContent>
+                                                                </Card>
+                                                            ))}
+                                                        </div>
+                                                    ) : branches.filter(branch => branch.name !== deployment.Branch).length === 0 ? (
+                                                        // Show encouraging message when no additional branches
+                                                        <div className="py-6">
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center space-x-4">
+                                                                    <div className="w-10 h-10 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center">
+                                                                        <GitBranch className="h-5 w-5 text-neutral-400" />
+                                                                    </div>
+                                                                    <div>
+                                                                        <h3 className="text-lg font-semibold text-neutral-100">
+                                                                            No Additional Branches
+                                                                        </h3>
+                                                                        <p className="text-sm text-neutral-400">
+                                                                            Create new branches to enable previews
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                                <Button 
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    className="border-neutral-700 text-neutral-300 hover:bg-neutral-800"
+                                                                    onClick={() => window.open(deployment?.RepoUrl, '_blank')}
+                                                                >
+                                                                    <GitBranch className="h-4 w-4 mr-2" />
+                                                                    Open Repository
+                                                                </Button>
+                                                            </div>
                                                     </div>
                                                 ) : (
                                                     <div className="space-y-3 max-h-96 overflow-y-auto">
                                                         {branches.filter(branch => branch.name !== deployment.Branch).map((branch) => (
+                                                                <motion.div
+                                                                    key={branch.name}
+                                                                    initial={{ opacity: 0, y: 10 }}
+                                                                    animate={{ opacity: 1, y: 0 }}
+                                                                    transition={{ duration: 0.2 }}
+                                                                >
                                                             <Card 
-                                                                key={branch.name} 
                                                                 className={cn(
                                                                     "bg-neutral-950 border-neutral-800 hover:border-neutral-700 transition-colors cursor-pointer",
                                                                     selectedBranches.includes(branch.name) && "border-neutral-600 bg-neutral-900/30"
@@ -329,11 +386,15 @@ const EnableBranchDeployments = ({ deployment, onComplete }: EnableBranchDeploym
                                                                     </div>
                                                                 </CardContent>
                                                             </Card>
+                                                                </motion.div>
                                                         ))}
                                                     </div>
                                                 )}
+                                                </motion.div>
                                             </CardContent>
                                             <CardFooter className="py-4 space-x-2">
+                                                {branches.filter(branch => branch.name !== deployment.Branch).length > 0 ? (
+                                                    <>
                                                 <div className="text-sm text-neutral-400">
                                                     {selectedBranches.length}/3 branches selected
                                                 </div>
@@ -346,6 +407,24 @@ const EnableBranchDeployments = ({ deployment, onComplete }: EnableBranchDeploym
                                                     Continue
                                                     <ArrowRight className="ml-2 h-4 w-4" />
                                                 </Button>
+                                                    </>
+                                                ) : (
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={fetchBranches}
+                                                        disabled={isLoading}
+                                                        className="text-sm font-semibold px-6 bg-white text-black hover:bg-gray-100 disabled:opacity-75"
+                                                    >
+                                                        <motion.div
+                                                            animate={isLoading ? { rotate: 360 } : { rotate: 0 }}
+                                                            transition={isLoading ? { duration: 1, repeat: Infinity, ease: "linear" } : { duration: 0.2 }}
+                                                            className="mr-2"
+                                                        >
+                                                            <Loader2 className="h-4 w-4" />
+                                                        </motion.div>
+                                                        {isLoading ? "Refreshing..." : "Refresh Branches"}
+                                                    </Button>
+                                                )}
                                             </CardFooter>
                                         </Card>
                                     </motion.div>

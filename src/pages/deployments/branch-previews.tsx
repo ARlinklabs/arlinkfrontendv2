@@ -3,12 +3,9 @@
 import {
     GitBranch,
     Settings,
-    MessageCircle,
-    Eye,
     Search,
-    MoreVertical,
-    User,
-    Clock
+    Copy,
+    ExternalLink
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,21 +18,36 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { useState, useEffect, useMemo } from "react";
-import { cn } from "@/lib/utils";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useGlobalState } from "@/store/useGlobalState";
 import EnableBranchDeployments from "@/components/enable-branch-deployments";
 import { BranchPreviewsFullSkeleton } from "@/components/skeletons";
 import { toast } from "sonner";
-import type { TDeployment } from "@/types";
+import type { TDeployment, ArnsName } from "@/types";
+import { useActiveAddress } from "@arweave-wallet-kit/react";
+import { setArnsUnderName } from "@/lib/ao-vars";
+import { handleFetchExistingArnsName } from "../utilts";
+import {
+    Command,
+    CommandEmpty,
+    CommandInput,
+    CommandItem,
+    CommandList,
+    CommandGroup,
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 
 interface BranchData {
     id: string;
@@ -87,7 +99,18 @@ export default function BranchPreviews() {
     const [isIncompatible, setIsIncompatible] = useState(false);
     const [previewSyncEnabled, setPreviewSyncEnabled] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
-    const [statusFilter, setStatusFilter] = useState("4/5");
+    const [statusFilter, setStatusFilter] = useState("all");
+    const [isArnsModalOpen, setIsArnsModalOpen] = useState(false);
+    const [selectedBranchForArns, setSelectedBranchForArns] = useState<BranchData | null>(null);
+    const [underName, setUnderName] = useState("");
+    
+    // ARNS related states
+    const activeAddress = useActiveAddress();
+    const [arnsNames, setArnsNames] = useState<ArnsName[]>([]);
+    const [selectedArns, setSelectedArns] = useState<ArnsName | undefined>(undefined);
+    const [isArnsDropdownOpen, setIsArnsDropdownOpen] = useState(false);
+    const [isLoadingArns, setIsLoadingArns] = useState(false);
+    const [isAssigningArns, setIsAssigningArns] = useState(false);
     const [branchConfig, setBranchConfig] = useState<{
         allBranches: string[];
         instantDeployBranch: string;
@@ -109,7 +132,9 @@ export default function BranchPreviews() {
             author: "main",
             status: { resolved: 0, total: 0, type: "resolved" as const },
             hasDeployment: true,
-            isMainBranch: true
+            isMainBranch: true,
+            commit: deployment.DeploymentId, // Add transaction ID for main branch
+            url: deployment.UnderName ? `${deployment.UnderName}_arlink.arweave.net` : null
         });
         
         // Add configured branches with real deployment data
@@ -117,7 +142,7 @@ export default function BranchPreviews() {
             const deploymentData = branchConfig.deployments?.[branchName];
             
             if (deploymentData) {
-                // Branch has deployment data
+                // Branch has deployment data - check actual status
                 const lastDeployed = deploymentData.lastDeployedAt 
                     ? new Date(deploymentData.lastDeployedAt).toLocaleString()
                     : "Unknown";
@@ -128,23 +153,23 @@ export default function BranchPreviews() {
                     lastUpdated: lastDeployed,
                     author: "system",
                     status: { resolved: 0, total: 0, type: "resolved" as const },
-                    hasDeployment: true,
+                    hasDeployment: deploymentData.status === "deployed",
                     isMainBranch: false,
-                    deploymentStatus: deploymentData.status,
+                    deploymentStatus: deploymentData.status, // Use actual status from API
                     commit: deploymentData.commit,
-                    url: deploymentData.undername ? `${deploymentData.undername}_arlink.arweave.net` : null
+                    url: deploymentData.undername ? `${deploymentData.undername}_arlink.arweave.net` : deploymentData.url || null
                 });
             } else {
-                // Branch is still building/waiting
+                // Branch has no deployment data - it's waiting for a push
                 branches.push({
                     id: branchName,
                     name: branchName,
-                    lastUpdated: "Building",
+                    lastUpdated: "No deployments yet",
                     author: "system",
                     status: { resolved: 0, total: 0, type: "pending" as const },
                     hasDeployment: false,
                     isMainBranch: false,
-                    deploymentStatus: "building"
+                    deploymentStatus: "waiting" // This should show grey status
                 });
             }
         });
@@ -152,24 +177,65 @@ export default function BranchPreviews() {
         return branches;
     }, [branchConfig, deployment]);
 
-    // Filter branches based on search term
-    const filteredBranches = realBranches.filter((branch) => {
+    // Filter branches based on search term and status
+    const filteredBranches = realBranches.filter((branch: BranchData) => {
         const matchesSearch = branch.name.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        // Status filter logic
+        if (statusFilter === "all") return matchesSearch;
+        if (statusFilter === "ready") return matchesSearch && (branch.isMainBranch || branch.deploymentStatus === "deployed");
+        if (statusFilter === "building") return matchesSearch && branch.deploymentStatus === "building";
+        if (statusFilter === "failed") return matchesSearch && branch.deploymentStatus === "failed";
+        if (statusFilter === "waiting") return matchesSearch && !branch.hasDeployment && !branch.isMainBranch;
+        
         return matchesSearch;
     });
 
-    // Get branch status based on branch data
+    // Get branch status based on branch data (Vercel-style)
     const getBranchStatus = (branch: any) => {
         if (branch.isMainBranch) {
-            return { type: "resolved", color: "bg-neutral-800 text-neutral-200 border-neutral-700", text: "Ready" };
+            return { 
+                type: "ready", 
+                color: "bg-green-900/20 text-green-400 border-green-800", 
+                text: "Ready",
+                dot: "bg-green-500"
+            };
         } else if (branch.deploymentStatus === "deployed") {
-            return { type: "deployed", color: "bg-neutral-700 text-neutral-300 border-neutral-600", text: "Deployed" };
+            return { 
+                type: "ready", 
+                color: "bg-green-900/20 text-green-400 border-green-800", 
+                text: "Ready",
+                dot: "bg-green-500"
+            };
         } else if (branch.deploymentStatus === "building") {
-            return { type: "building", color: "bg-neutral-900 text-neutral-500 border-neutral-800", text: "Building" };
+            return { 
+                type: "building", 
+                color: "bg-orange-900/20 text-orange-400 border-orange-800", 
+                text: "Building",
+                dot: "bg-orange-500"
+            };
         } else if (branch.deploymentStatus === "failed") {
-            return { type: "failed", color: "bg-red-900/30 text-red-400 border-red-800", text: "Failed" };
+            return { 
+                type: "failed", 
+                color: "bg-red-900/20 text-red-400 border-red-800", 
+                text: "Failed",
+                dot: "bg-red-500"
+            };
+        } else if (branch.deploymentStatus === "waiting") {
+            return { 
+                type: "waiting", 
+                color: "bg-neutral-900/20 text-neutral-500 border-neutral-800", 
+                text: "Waiting for push",
+                dot: "bg-neutral-500"
+            };
         } else {
-            return { type: "building", color: "bg-neutral-900 text-neutral-500 border-neutral-800", text: "Building" };
+            // Fallback for any other status
+            return { 
+                type: "waiting", 
+                color: "bg-neutral-900/20 text-neutral-500 border-neutral-800", 
+                text: "Waiting for push",
+                dot: "bg-neutral-500"
+            };
         }
     };
 
@@ -252,6 +318,21 @@ export default function BranchPreviews() {
         };
     }, [branchDeploymentsEnabled, deployment]);
 
+    // Fetch ARNS names when component mounts
+    useEffect(() => {
+        const fetchArnsNames = async () => {
+            await handleFetchExistingArnsName({
+                setArnsNames,
+                activeAddress,
+                setExistingArnsLoading: setIsLoadingArns,
+            });
+        };
+        
+        if (activeAddress) {
+            fetchArnsNames();
+        }
+    }, [activeAddress]);
+
     const handleEnableBranchDeployments = (config: {
         allBranches: string[];
         instantDeployBranch: string;
@@ -317,7 +398,7 @@ export default function BranchPreviews() {
                     <div className="pt-4">
                         <Button 
                             className="bg-neutral-700 hover:bg-neutral-600 text-white font-medium px-8 py-3"
-                            onClick={() => window.location.href = '/deployments'}
+                            onClick={() => window.location.href = '/deploy'}
                         >
                             Create New Deployment
                         </Button>
@@ -435,20 +516,35 @@ export default function BranchPreviews() {
                         </div>
                         <div className="flex items-center gap-4">
                             <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                <SelectTrigger className="w-32 bg-neutral-900 border-neutral-700 text-neutral-100">
-                                    <div className="flex items-center gap-2">
-                                        <Badge variant="outline" className="bg-red-900/30 text-red-400 border-red-800">
-                                            <div className="w-2 h-2 bg-red-500 rounded-full mr-1" />
-                                        </Badge>
-                                        <span>Status</span>
-                                    </div>
-                                    <SelectValue />
+                                <SelectTrigger className="w-40 bg-neutral-900 border-neutral-700 text-neutral-100">
+                                    <SelectValue placeholder="All Branches" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-neutral-900 border-neutral-700">
-                                    <SelectItem value="4/5" className="text-neutral-100">4/5</SelectItem>
-                                    <SelectItem value="all" className="text-neutral-100">All</SelectItem>
-                                    <SelectItem value="resolved" className="text-neutral-100">Resolved</SelectItem>
-                                    <SelectItem value="pending" className="text-neutral-100">Pending</SelectItem>
+                                    <SelectItem value="all" className="text-neutral-100">All Branches</SelectItem>
+                                    <SelectItem value="ready" className="text-neutral-100">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 bg-green-500 rounded-full" />
+                                            Ready
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value="building" className="text-neutral-100">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 bg-orange-500 rounded-full" />
+                                            Building
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value="failed" className="text-neutral-100">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 bg-red-500 rounded-full" />
+                                            Failed
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value="waiting" className="text-neutral-100">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 bg-neutral-500 rounded-full" />
+                                            Waiting
+                                        </div>
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                             <div className="relative">
@@ -465,94 +561,361 @@ export default function BranchPreviews() {
 
                     {/* Branches List */}
                     <div className="space-y-3">
-                        {filteredBranches.map((branch: BranchData) => {
-                            const branchStatus = getBranchStatus(branch);
-                            
-                            return (
-                                <Card 
-                                    key={branch.id} 
-                                    className="bg-neutral-950 border-neutral-800 hover:border-neutral-700 transition-colors"
-                                >
-                                    <CardContent className="p-6">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center space-x-4">
-                                                <div className="flex items-center space-x-3">
-                                                    <GitBranch className="h-5 w-5 text-neutral-400" />
-                                                    <div>
-                                                        <h3 className="font-semibold text-neutral-100">
-                                                            {branch.name}
-                                                        </h3>
-                                                        <div className="flex items-center space-x-2 text-sm text-neutral-400">
-                                                            <User className="h-3 w-3" />
-                                                            <span>{branch.author}</span>
-                                                            <Clock className="h-3 w-3 ml-2" />
-                                                            <span>{branch.lastUpdated}</span>
+                        {filteredBranches.length === 0 || (filteredBranches.length === 1 && filteredBranches[0].isMainBranch) ? (
+                            // Show message when no additional branches are available
+                            <Card className="bg-neutral-950 border-neutral-800">
+                                <CardContent className="p-6">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center space-x-4">
+                                            <div className="w-10 h-10 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center">
+                                                <GitBranch className="h-5 w-5 text-neutral-400" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-semibold text-neutral-100">
+                                                    No Additional Branches
+                                                </h3>
+                                                <p className="text-sm text-neutral-400">
+                                                    Create new branches to enable branch previews
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <Button 
+                                            variant="outline"
+                                            size="sm"
+                                            className="border-neutral-700 text-neutral-300 hover:bg-neutral-800"
+                                            onClick={() => window.open(deployment?.RepoUrl, '_blank')}
+                                        >
+                                            <GitBranch className="h-4 w-4 mr-2" />
+                                            Open Repository
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                                                ) : (
+                            // Show actual branches list (Vercel-style)
+                            filteredBranches.map((branch: BranchData) => {
+                                const branchStatus = getBranchStatus(branch);
+                                const showViewButton = branchStatus.type === "ready" && branch.url;
+                                const isWaiting = branchStatus.type === "waiting";
+                                
+                                return (
+                                    <Card 
+                                        key={branch.id} 
+                                        className="bg-neutral-950 border-neutral-800 hover:border-neutral-700 transition-colors"
+                                    >
+                                        <CardContent className="p-4">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center space-x-4">
+                                                    <div className="flex items-center space-x-3">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="w-6 h-6 rounded bg-neutral-800 hover:bg-neutral-700 p-0 flex items-center justify-center"
+                                                            onClick={() => {
+                                                                const repoUrl = deployment?.RepoUrl?.replace(/\.git$/, '');
+                                                                window.open(`${repoUrl}/tree/${branch.name}`, '_blank');
+                                                            }}
+                                                            title="View branch on GitHub"
+                                                        >
+                                                            <GitBranch className="h-3 w-3 text-neutral-400" />
+                                                        </Button>
+                                                        <div>
+                                                            <div className="flex items-center space-x-2">
+                                                                <h3 className="font-medium text-neutral-100">
+                                                                    {branch.name}
+                                                                </h3>
+                                                                {deployment && (
+                                                                    <span className="text-xs text-neutral-500">
+                                                                        {deployment.RepoUrl.split('/').slice(-2).join('/')}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex items-center space-x-2 mt-1">
+                                                                <div className={`w-2 h-2 rounded-full ${branchStatus.dot}`}></div>
+                                                                <span className="text-xs text-neutral-400">{branchStatus.text}</span>
+                                                                {!isWaiting && (
+                                                                    <>
+                                                                        <span className="text-xs text-neutral-600">•</span>
+                                                                        <span className="text-xs text-neutral-500">{branch.lastUpdated}</span>
+                                                                    </>
+                                                                )}
+                                                                {/* Show Transaction ID for deployed branches */}
+                                                                {branch.commit && branchStatus.type === "ready" && (
+                                                                    <>
+                                                                        <span className="text-xs text-neutral-600">•</span>
+                                                                        <span className="text-xs text-neutral-500 font-mono">
+                                                                            {branch.commit.slice(0, 3)}...{branch.commit.slice(-5)}
+                                                                        </span>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                            {isWaiting && (
+                                                                <p className="text-xs text-neutral-500 mt-1">
+                                                                    Push to this branch to create a preview
+                                                                </p>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
 
-                                            <div className="flex items-center space-x-4">
-                                                <div className="flex items-center space-x-3">
-                                                    <Badge variant="outline" className={branchStatus.color}>
-                                                        {branchStatus.text || `${branch.status.resolved}/${branch.status.total}`}
-                                                    </Badge>
+                                                <div className="flex items-center space-x-2">
+                                                    {/* Preview Button */}
+                                                    {showViewButton && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800 p-2"
+                                                            onClick={() => {
+                                                                if (branch.url) {
+                                                                    window.open(`https://${branch.url}`, '_blank');
+                                                                }
+                                                            }}
+                                                            title="View Preview"
+                                                        >
+                                                            <ExternalLink className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
                                                     
-                                                    {(branch.hasDeployment || branch.url) && (
-                                                        <div className="flex items-center space-x-2">
-                                                            <Button 
-                                                                size="sm" 
-                                                                variant="outline"
-                                                                className="border-neutral-700 text-neutral-300 hover:bg-neutral-800"
-                                                                onClick={() => {
-                                                                    if (branch.url) {
-                                                                        window.open(`https://${branch.url}`, '_blank');
-                                                                    }
-                                                                }}
-                                                                disabled={!branch.url}
-                                                            >
-                                                                <Eye className="h-4 w-4 mr-1" />
-                                                                View
-                                                            </Button>
-                                                            <Button 
-                                                                size="sm" 
-                                                                variant="outline"
-                                                                className="border-neutral-700 text-neutral-300 hover:bg-neutral-800"
-                                                            >
-                                                                <MessageCircle className="h-4 w-4 mr-1" />
-                                                                Comment
-                                                            </Button>
-                                                        </div>
+                                                    {/* Copy Transaction ID */}
+                                                    {branch.commit && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800 p-2"
+                                                            onClick={() => {
+                                                                if (branch.commit) {
+                                                                    navigator.clipboard.writeText(branch.commit);
+                                                                    toast.success("Transaction ID copied to clipboard");
+                                                                }
+                                                            }}
+                                                            title="Copy Transaction ID"
+                                                        >
+                                                            <Copy className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+                                                    
+                                                                                                        {/* ARNS Settings Gear - Only for deployed branches */}
+                                                    {branchStatus.type === "ready" && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800 p-2"
+                                                            onClick={() => {
+                                                                setSelectedBranchForArns(branch);
+                                                                setUnderName("");
+                                                                setSelectedArns(undefined);
+                                                                setIsArnsModalOpen(true);
+                                                            }}
+                                                            title="Assign ARNS"
+                                                        >
+                                                            <Settings className="h-4 w-4" />
+                                                        </Button>
                                                     )}
                                                 </div>
-
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="sm" className="text-neutral-400 hover:text-neutral-100">
-                                                            <MoreVertical className="h-4 w-4" />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent className="bg-neutral-900 border-neutral-700">
-                                                        <DropdownMenuItem className="text-neutral-100 hover:bg-neutral-800">
-                                                            View Details
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem className="text-neutral-100 hover:bg-neutral-800">
-                                                            Copy URL
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem className="text-red-400 hover:bg-red-900/20">
-                                                            Delete Preview
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
                                             </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            );
-                        })}
+                                        </CardContent>
+                                    </Card>
+                                );
+                            })
+                        )}
                     </div>
                 </div>
             </div>
+
+            {/* ARNS Assignment Modal */}
+            <Dialog open={isArnsModalOpen} onOpenChange={setIsArnsModalOpen}>
+                <DialogContent className="bg-neutral-950 border-neutral-800 text-neutral-100 sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-semibold">
+                            Assign ARNS to Branch Preview
+                        </DialogTitle>
+                        <DialogDescription className="text-neutral-400">
+                            Assign a custom ARNS undername to make this branch preview accessible at a memorable URL.
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="branch-name" className="text-sm font-medium text-neutral-200">
+                                Branch
+                            </Label>
+                            <div className="flex items-center space-x-2 min-w-0">
+                                <GitBranch className="h-4 w-4 text-neutral-400 flex-shrink-0" />
+                                <span className="font-medium text-neutral-100 truncate max-w-[200px]" title={selectedBranchForArns?.name}>
+                                    {selectedBranchForArns?.name}
+                                </span>
+                                <span className="text-xs text-green-400 flex-shrink-0">• Ready</span>
+                            </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                            <Label className="text-sm font-medium text-neutral-200">
+                                Select ARNS
+                            </Label>
+                            {isLoadingArns ? (
+                                <div className="flex items-center justify-center p-3 bg-neutral-900 rounded-lg border border-neutral-800">
+                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                    <span className="text-sm text-neutral-400">Loading ARNS names...</span>
+                                </div>
+                            ) : (
+                                <Popover open={isArnsDropdownOpen} onOpenChange={setIsArnsDropdownOpen}>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            className="w-full justify-between bg-neutral-900 border-neutral-700 text-neutral-100"
+                                            aria-expanded={isArnsDropdownOpen}
+                                        >
+                                            <span className="truncate mr-2" title={selectedArns?.name}>
+                                                {selectedArns ? selectedArns.name : "Select an ARNS name"}
+                                            </span>
+                                            <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-full p-0 bg-neutral-900 border-neutral-700">
+                                        <Command className="bg-neutral-900">
+                                            <CommandInput placeholder="Search ARNS names..." className="border-0" />
+                                            <CommandList>
+                                                <CommandEmpty>No ARNS names found.</CommandEmpty>
+                                                <CommandGroup>
+                                                    {arnsNames.map((arns) => (
+                                                        <CommandItem
+                                                            key={arns.processId}
+                                                            value={arns.name}
+                                                            onSelect={() => {
+                                                                setSelectedArns(arns);
+                                                                setIsArnsDropdownOpen(false);
+                                                            }}
+                                                            className="text-neutral-100"
+                                                        >
+                                                            <Check
+                                                                className={`mr-2 h-4 w-4 flex-shrink-0 ${
+                                                                    selectedArns?.processId === arns.processId
+                                                                        ? "opacity-100"
+                                                                        : "opacity-0"
+                                                                }`}
+                                                            />
+                                                            <span className="truncate" title={arns.name}>
+                                                                {arns.name}
+                                                            </span>
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
+                            )}
+                        </div>
+                        
+                        <div className="space-y-2">
+                            <Label htmlFor="under-name" className="text-sm font-medium text-neutral-200">
+                                Undername
+                            </Label>
+                            <Input
+                                id="under-name"
+                                placeholder="my-preview-site"
+                                value={underName}
+                                onChange={(e) => setUnderName(e.target.value)}
+                                className="bg-neutral-900 border-neutral-700 text-neutral-100 placeholder:text-neutral-500"
+                            />
+                            <p className="text-xs text-neutral-500">
+                                Your branch preview will be available at: <br />
+                                <span className={`break-all ${underName && selectedArns ? 'text-green-400' : 'text-neutral-500'}`}>
+                                    {underName && selectedArns 
+                                        ? `https://${underName}_${selectedArns.name.replace('.arweave', '')}.ar.io` 
+                                        : "https://your-undername_your-arns.ar.io"
+                                    }
+                                </span>
+                            </p>
+                        </div>
+                        
+                        {selectedBranchForArns?.url && (
+                            <div className="space-y-2">
+                                <Label className="text-sm font-medium text-neutral-200">
+                                    Current URL
+                                </Label>
+                                <div className="p-3 bg-neutral-900 rounded-lg border border-neutral-800">
+                                    <span className="text-sm text-neutral-400 break-all">
+                                        https://{selectedBranchForArns.url}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    
+                    <DialogFooter className="flex space-x-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsArnsModalOpen(false)}
+                            className="border-neutral-700 text-neutral-300 hover:bg-neutral-800"
+                            disabled={isAssigningArns}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={async () => {
+                                if (!underName.trim()) {
+                                    toast.error("Please enter an undername");
+                                    return;
+                                }
+                                if (!selectedArns) {
+                                    toast.error("Please select an ARNS name");
+                                    return;
+                                }
+
+                                setIsAssigningArns(true);
+                                try {
+                                    if (!selectedBranchForArns) {
+                                        toast.error("Branch information not found");
+                                        return;
+                                    }
+                                    
+                                    // Extract the deployment ID from the branch URL or use the transaction ID
+                                    const deploymentId = selectedBranchForArns.commit || selectedBranchForArns.url;
+                                    
+                                    if (!deploymentId) {
+                                        toast.error("Deployment ID not found for this branch");
+                                        return;
+                                    }
+                                    
+                                    const txId = await setArnsUnderName(
+                                        selectedArns.processId,
+                                        deploymentId,
+                                        underName
+                                    );
+
+                                    if (txId) {
+                                        const finalUrl = `https://${underName}_${selectedArns.name.replace('.arweave', '')}.ar.io`;
+                                        toast.success(
+                                            `ARNS assigned! Your site will be available at ${finalUrl}. Transaction ID: ${txId}`,
+                                            { duration: 8000 }
+                                        );
+                                        setIsArnsModalOpen(false);
+                                    } else {
+                                        toast.error("Failed to assign ARNS. Please try again.");
+                                    }
+                                } catch (error) {
+                                    console.error("Error assigning ARNS:", error);
+                                    toast.error("An error occurred while assigning ARNS");
+                                } finally {
+                                    setIsAssigningArns(false);
+                                }
+                            }}
+                            disabled={!underName.trim() || !selectedArns || isAssigningArns}
+                            className="bg-white text-black hover:bg-gray-100 disabled:opacity-50"
+                        >
+                            {isAssigningArns ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Assigning...
+                                </>
+                            ) : (
+                                "Assign ARNS"
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </section>
     );
 } 

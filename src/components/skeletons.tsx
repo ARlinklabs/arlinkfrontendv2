@@ -653,25 +653,26 @@ export const BranchListHeaderSkeleton = () => {
     return (
         <div className="flex items-center justify-between">
             <div>
-                <h2 className="text-2xl font-bold text-neutral-100 mb-2">Active Branches</h2>
-                <div className="flex items-center gap-1 text-sm text-neutral-400">
-                    <span>Open branches</span>
-                    <span>•</span>
+                <h2 className="text-2xl font-bold text-neutral-100">Active Branches</h2>
+                <div className="flex items-center gap-1 text-neutral-400">
                     <Skeleton className="h-4 w-8 bg-neutral-800 inline-block" />
-                    <span>total deployments</span>
+                    <span>branches configured for automatic deployment</span>
                 </div>
             </div>
             <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4 text-neutral-400" />
-                    <span className="text-sm text-neutral-400">Filter</span>
+                {/* Status Filter Dropdown Skeleton */}
+                <div className="w-40 h-10 bg-neutral-900 border border-neutral-700 rounded-md flex items-center justify-between px-3">
+                    <span className="text-neutral-400 text-sm">All Branches</span>
+                    <div className="w-4 h-4 bg-neutral-700 rounded" />
                 </div>
+                {/* Search Input Skeleton */}
                 <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 h-4 w-4" />
                     <input
                         type="text"
-                        placeholder="Search branches..."
-                        className="pl-10 pr-4 py-2 bg-neutral-950 border border-neutral-800 rounded-lg text-neutral-100 placeholder-neutral-500 focus:outline-none focus:border-neutral-600 w-64"
+                        placeholder="Search..."
+                        disabled
+                        className="pl-10 w-64 h-10 bg-neutral-900 border border-neutral-700 rounded-md text-neutral-100 placeholder:text-neutral-400"
                     />
                 </div>
             </div>
@@ -681,40 +682,76 @@ export const BranchListHeaderSkeleton = () => {
 
 export const BranchItemSkeleton = () => {
     return (
-        <Card className="bg-neutral-950 border-neutral-800">
+        <Card className="bg-neutral-950 border-neutral-800 hover:border-neutral-700 transition-colors">
             <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
-                        <div className="flex items-center space-x-2">
-                            <GitBranch className="h-4 w-4 text-neutral-400" />
-                            <div className="flex items-center space-x-2">
-                                <Skeleton className="w-2 h-2 rounded-full bg-neutral-800" />
-                                <Skeleton className="h-5 w-32 bg-neutral-800" />
+                        <div className="flex items-center space-x-3">
+                            {/* Branch Icon Button */}
+                            <div className="w-6 h-6 rounded bg-neutral-800 flex items-center justify-center">
+                                <GitBranch className="h-3 w-3 text-neutral-400" />
                             </div>
-                        </div>
-                        <div className="flex items-center space-x-4 text-sm text-neutral-400">
-                            <div className="flex items-center gap-1">
-                                <span>Updated</span>
-                                <Skeleton className="h-4 w-12 bg-neutral-800 inline-block" />
-                                <span>ago</span>
-                            </div>
-                            <span>•</span>
-                            <div className="flex items-center gap-1">
-                                <span>by</span>
-                                <Skeleton className="h-4 w-24 bg-neutral-800 inline-block" />
+                            <div>
+                                <div className="flex items-center space-x-2">
+                                    {/* Branch Name */}
+                                    <Skeleton className="h-5 w-24 bg-neutral-800" />
+                                    {/* Repo Info */}
+                                    <Skeleton className="h-4 w-32 bg-neutral-800" />
+                                </div>
+                                <div className="flex items-center space-x-2 mt-1">
+                                    {/* Status Dot */}
+                                    <div className="w-2 h-2 rounded-full bg-neutral-500"></div>
+                                    {/* Status Text */}
+                                    <Skeleton className="h-3 w-16 bg-neutral-800" />
+                                    {/* Timestamp */}
+                                    <span className="text-xs text-neutral-600">•</span>
+                                    <Skeleton className="h-3 w-20 bg-neutral-800" />
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex items-center space-x-3">
-                        <div className="flex items-center gap-1 text-sm">
-                            <Skeleton className="w-2 h-2 rounded-full bg-neutral-800" />
-                            <Skeleton className="h-4 w-16 bg-neutral-800" />
+                    <div className="flex items-center space-x-2">
+                        {/* Preview Button */}
+                        <div className="text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800 p-2 rounded">
+                            <ExternalLink className="h-4 w-4" />
                         </div>
-                        <Skeleton className="h-8 w-32 bg-neutral-800 rounded-lg" />
-                        <button className="p-2 text-neutral-400 hover:text-neutral-300 hover:bg-neutral-900 rounded-lg transition-colors">
-                            <MoreVertical className="h-4 w-4" />
-                        </button>
+                        {/* Copy Transaction ID Button */}
+                        <div className="text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800 p-2 rounded">
+                            <div className="h-4 w-4 bg-neutral-600 rounded" />
+                        </div>
+                        {/* Settings Button */}
+                        <div className="text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800 p-2 rounded">
+                            <Settings className="h-4 w-4" />
+                        </div>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+};
+
+export const NoBranchesMessageSkeleton = () => {
+    return (
+        <Card className="bg-neutral-950 border-neutral-800">
+            <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                        <div className="w-10 h-10 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center">
+                            <GitBranch className="h-5 w-5 text-neutral-400" />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-semibold text-neutral-100">
+                                No Additional Branches
+                            </h3>
+                            <p className="text-sm text-neutral-400">
+                                Create new branches to enable branch previews
+                            </p>
+                        </div>
+                    </div>
+                    <div className="border border-neutral-700 text-neutral-300 hover:bg-neutral-800 px-4 py-2 rounded-md flex items-center space-x-2">
+                        <GitBranch className="h-4 w-4" />
+                        <span className="text-sm">Open Repository</span>
                     </div>
                 </div>
             </CardContent>
@@ -735,9 +772,9 @@ export const BranchPreviewsFullSkeleton = () => {
             <div className="space-y-4">
                 <BranchListHeaderSkeleton />
 
-                {/* Branches List */}
+                {/* Branches List - Show skeleton branch items while loading */}
                 <div className="space-y-3">
-                    {[1, 2, 3, 4, 5].map((i) => (
+                    {[1, 2, 3].map((i) => (
                         <BranchItemSkeleton key={i} />
                     ))}
                 </div>
