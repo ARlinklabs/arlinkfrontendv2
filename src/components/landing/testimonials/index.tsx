@@ -56,14 +56,14 @@ const InfiniteScroll = ({
         {
             name: "Arweave India",
             username: "@arweaveindia",
-            image: "https://pbs.twimg.com/profile_images/1705002503367184384/_wTnYvte_400x400.jpg",
+            image: "https://pbs.twimg.com/profile_images/1891888342616150016/eSQ1CsCE_400x400.jpg",
             description:
                 "Are you building for @aoTheComputer mainnet?🌐 Any onchain backend needs a solid frontend that users can always access + centralized hosting can bring single points of failure Arlink helps you create timeless frontends hosted on @ArweaveEco 🐘",
         },
         {
             name: "Rohit",
             username: "@ropats16",
-            image: "https://pbs.twimg.com/profile_images/1832435374909755392/oxgXES3L_400x400.jpg",
+            image: "https://pbs.twimg.com/profile_images/1891015540920963072/MS4qFnoW_400x400.jpg",
             description:
                 "Your awesome backend doesn’t matter if users lose access to the frontend!\n\nNot everyone can interact directly with the backend. A simple interface is their only path Build timeless frontends with\n@arlinklabs\n+ assign friendly ArNS names via\n@ar_io_network\nfor easy discovery",
         },

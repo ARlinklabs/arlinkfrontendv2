@@ -13,7 +13,7 @@ export async function initiateGitHubAuth() {
             : "https://arlink.arweave.net";
 
     const redirectUri = `${BASE_URL}/deploy`;
-    const authUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${redirectUri}&scope=repo,read:org,read:user,admin:repo_hook`;
+    const authUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${redirectUri}&scope=repo,read:org,repo:status,read:user,admin:repo_hook`;
     window.location.href = authUrl;
 }
 

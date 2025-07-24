@@ -32,7 +32,7 @@ export async function deleteFromServer({
 }): Promise<boolean> {
     try {
         // this will delete the project from the server
-        await axios.post(
+        await axios.delete(
             `${TESTING_FETCH}/deleteproject/${ownerName}/${repoProjectName}`,
         );
 

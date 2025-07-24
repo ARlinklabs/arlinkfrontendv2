@@ -22,7 +22,7 @@ const DeploySuccessCard = () => {
                 </div>
             )}
             <div className="h-[325px] flex items-center justify-between">
-                <img src="/deploy.webp" alt="Deployment illustration" />
+                <img src="/deploy.png" alt="Deployment illustration" />
             </div>
             <div className="border flex flex-col gap-2 border-[#27272a] p-4 rounded-lg">
                 <div className="px-2 border border-[#27272a] py-1 rounded-xl w-fit bg-[#18181b]">
