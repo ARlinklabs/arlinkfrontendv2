@@ -6,12 +6,14 @@ import {
     Outlet,
     useNavigate,
 } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { lazy, Suspense, useEffect } from "react";
 import { useConnection, useActiveAddress } from "@arweave-wallet-kit/react";
 import { useGlobalState } from "@/store/useGlobalState";
 import Navbar from "./components/shared/navbar";
 import { Toaster } from "./components/ui/sonner";
 import ErrorBoundary from "./components/ui/error-boundary";
+import { handleGitHubCallback } from "@/actions/github";
 
 // Lazy-loaded components
 const Home = lazy(() => import("@/pages/index"));
@@ -90,6 +92,7 @@ function Root() {
     return (
         <>
             <RedirectHandler />
+            <GitHubCallbackHandler />
             <Outlet />
         </>
     );
@@ -210,6 +213,38 @@ function RedirectHandler() {
             navigate(redirect, { replace: true });
         }
     }, [navigate]);
+    return null;
+}
+
+function GitHubCallbackHandler() {
+    const { githubToken, setGithubToken } = useGlobalState();
+    const [searchParams] = useSearchParams();
+
+    useEffect(() => {
+        const handleAuth = async () => {
+            const code = searchParams.get("code");
+            if (code && !githubToken) {
+                try {
+                    console.log("Processing GitHub callback with code:", code);
+                    const token = await handleGitHubCallback(code);
+                    setGithubToken(token);
+                    
+                    // Clean up the URL
+                    window.history.replaceState(
+                        {},
+                        "",
+                        window.location.pathname,
+                    );
+                    console.log("GitHub authentication successful");
+                } catch (error) {
+                    console.error("Failed to authenticate with GitHub:", error);
+                }
+            }
+        };
+
+        handleAuth();
+    }, [searchParams, githubToken, setGithubToken]);
+
     return null;
 }
 

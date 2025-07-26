@@ -41,7 +41,8 @@ export default function Home() {
         console.log(import.meta.env.VITE_ENV);
 
         // Check if we're not supposed to be on the home page
-        if (location.pathname !== "/") {
+        // But don't redirect if there's a GitHub callback code
+        if (location.pathname !== "/" && !location.search.includes("code=")) {
             navigate(location.pathname + location.search);
         }
     }, [navigate, location]);

@@ -59,7 +59,7 @@ export function CustomDropdown({ handleProvider }: CustomDropdownProps) {
             const code = searchParams.get("code");
 
             // generating token with the code
-            if (code) {
+            if (code && !githubToken) {
                 try {
                     const token = await handleGitHubCallback(code);
                     setGithubToken(token);
@@ -82,7 +82,7 @@ export function CustomDropdown({ handleProvider }: CustomDropdownProps) {
         if (!githubToken) {
             handleAuth();
         }
-    }, [searchParams]);
+    }, [searchParams, githubToken]);
 
     useEffect(() => {
         if (githubToken) {

@@ -20,7 +20,7 @@ export function GitHubSignInTemplate() {
     useEffect(() => {
         const handleAuth = async () => {
             const code = searchParams.get("code");
-            if (code) {
+            if (code && !githubToken) {
                 try {
                     const token = await handleGitHubCallbackTemplate(code);
                     setGithubToken(token);
@@ -38,7 +38,7 @@ export function GitHubSignInTemplate() {
         if (!githubToken) {
             handleAuth();
         }
-    }, [searchParams]);
+    }, [searchParams, githubToken]);
 
     // handlers
     const handleGithubLogin = async () => {
@@ -64,7 +64,7 @@ export function GitHubSignInTemplate() {
         </Button>
     );
 }
-
+ /// this is same thing runs int he dropdown.tsx  code , this can be removed in the future
 export function GitHubSignInDeploy() {
     const [isLoading, setIsLoading] = useState(false);
 
@@ -74,7 +74,7 @@ export function GitHubSignInDeploy() {
     useEffect(() => {
         const handleAuth = async () => {
             const code = searchParams.get("code");
-            if (code) {
+            if (code && !githubToken) {
                 try {
                     const token = await handleGitHubCallback(code);
                     setGithubToken(token);
@@ -92,7 +92,7 @@ export function GitHubSignInDeploy() {
         if (!githubToken) {
             handleAuth();
         }
-    }, [searchParams]);
+    }, [searchParams, githubToken]);
 
     // handlers
     const handleGithubLogin = async () => {
