@@ -74,7 +74,7 @@ const ConfigureProject = ({ deployment }: DeploymentComponentProps) => {
               WHERE Name = '${deployment.Name}'
             ]]
             `;
-
+            
             const res = await runLua(query, globalState.managerProcess);
             if (res.Error) {
                 toast.error(res.Error);

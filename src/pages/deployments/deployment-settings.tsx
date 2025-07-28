@@ -199,6 +199,16 @@ export default function DeploymentSetting() {
                     deployment.DeploymentId,
                 );
                 setTransactionId(txid);
+
+                await runLua(
+                    `db:exec[[
+                        UPDATE Deployments 
+                        SET ArnsProcess = '${arnsName.processId}'
+                        WHERE Name = '${deployment.Name}'
+                    ]]`,
+                    globalState.managerProcess,
+                );
+               
             }
         } catch (error) {
             console.log(error);
@@ -388,7 +398,7 @@ export default function DeploymentSetting() {
                                         htmlFor="current"
                                         className="text-sm text-neutral-400"
                                     >
-                                        Current ARN
+                                        Current ARNS
                                     </Label>
                                     <Input
                                         id="current"
