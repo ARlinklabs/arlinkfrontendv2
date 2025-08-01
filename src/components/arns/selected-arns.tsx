@@ -167,7 +167,7 @@ const SelectedArns = ({ name: nameProp, arns: arnsProp }: { name: string; arns?:
                     <ArrowLeftFromLine className="w-4 h-4" />
                     <span className="hidden sm:inline">Back</span>
                 </button>
-                {arns && <ArnsHeader anrsAddres={arns.processId} arnsName={arns.name} />}
+                {arns && <ArnsHeader anrsAddres={arns.processId} arnsName={arns.name} arns={arns} />}
             </div>
             <ArnsStats 
                 arns={arns} 
@@ -242,16 +242,21 @@ const SelectedArns = ({ name: nameProp, arns: arnsProp }: { name: string; arns?:
 const ArnsHeader = ({
     arnsName,
     anrsAddres,
+    arns,
+   
+       
 }: {
     arnsName: string;
     anrsAddres: string;
+    arns: any;
+    
 }) => {
     const [isLoading, setIsLoading] = useState(false);
 
     const handleMakePrimary = async () => {
         try {
             setIsLoading(true);
-            const result = await makePrimaryNameRequest(arnsName);
+            const result = await makePrimaryNameRequest(arnsName , arns.processId );
             if (result.success) {
                 toast({
                     title: "Success",
@@ -463,7 +468,6 @@ const ArnsStats = ({
                 isOpen={extendLeaseModal}
                 onClose={() => setExtendLeaseModal(false)}
                 arnsName={arns.name}
-                currentExpiry={Number(arns.endTimestamp)}
                 onSuccess={handleExtendLeaseSuccess}
             />
         </>

@@ -93,7 +93,7 @@ export async function getPrimaryname(walletaddy: string) {
                 processId: ARIO_MAINNET_PROCESS_ID,
                 // @ts-ignore
                 ao: connect({
-                    MU_URL: "https://mu-testnet.xyz",
+                    MU_URL: "https://mu.ao-testnet.xyz",
                     CU_URL: "https://cu.ardrive.io",
                     GRAPHQL_URL: "https://arweave.net/graphql",
                     GATEWAY_URL: "https://arweave.net",

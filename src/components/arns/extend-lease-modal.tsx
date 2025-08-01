@@ -1,57 +1,132 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
-import { getArNSPrice, buyArNS } from "@/actions/arns/arnslater";
+import { getArNSRecordInfo, extendLease, checkBalance } from "@/actions/arns/arnslater";
+import { getIncreaseLeaseCost } from "@/actions/arns/arnsutils";
 import { useActiveAddress } from "@arweave-wallet-kit/react";
 import { toast } from "@/components/ui/use-toast";
-import { Minus, Plus, Calendar } from "lucide-react";
+import { Minus, Plus, Calendar, AlertTriangle, ExternalLink } from "lucide-react";
+import { InsufficientBalanceModal } from "./insufficient-balance-modal";
 
 interface ExtendLeaseModalProps {
     isOpen: boolean;
     onClose: () => void;
     arnsName: string;
-    currentExpiry: number;
     onSuccess: () => void;
+}
+
+interface LeaseInfo {
+    processId: string;
+    endTimestamp: number;
+    startTimestamp: number;
+    type: string;
+    undernameLimit: number;
+}
+
+interface CostInfo {
+    rawTokenCost: number;
+    tokenCost6Decimals: string;
+    fundingInfo: {
+        shortfall: number;
+        balance: number;
+    };
 }
 
 export function ExtendLeaseModal({
     isOpen,
     onClose,
     arnsName,
-    currentExpiry,
     onSuccess
 }: ExtendLeaseModalProps) {
     const activeAddress = useActiveAddress();
     const [years, setYears] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
-    const [priceInfo, setPriceInfo] = useState<{
-        lease: { priceInArio: number };
-        permabuy: { priceInArio: number };
-    } | null>(null);
-    const [purchaseType, setPurchaseType] = useState<"lease" | "permabuy">("lease");
+    const [leaseInfo, setLeaseInfo] = useState<LeaseInfo | null>(null);
+    const [costInfo, setCostInfo] = useState<CostInfo | null>(null);
+    const [userBalance, setUserBalance] = useState<number>(0);
+    const [showInsufficientBalance, setShowInsufficientBalance] = useState(false);
+    const [loadingLeaseInfo, setLoadingLeaseInfo] = useState(false);
+    const [loadingCost, setLoadingCost] = useState(false);
 
+    // Fetch current lease information when modal opens
+    useEffect(() => {
+        if (isOpen && arnsName) {
+            fetchLeaseInfo();
+        }
+    }, [isOpen, arnsName]);
+
+    // Fetch cost information when years change
+    useEffect(() => {
+        if (isOpen && arnsName && activeAddress && years > 0) {
+            fetchCostInfo();
+        }
+    }, [isOpen, arnsName, activeAddress, years]);
+
+    // Fetch user balance when modal opens
     useEffect(() => {
         if (isOpen && activeAddress) {
-            fetchPrice();
+            fetchUserBalance();
         }
-    }, [isOpen, years, purchaseType, activeAddress]);
+    }, [isOpen, activeAddress]);
 
-    const fetchPrice = async () => {
+    const fetchLeaseInfo = async () => {
+        setLoadingLeaseInfo(true);
         try {
-            const price = await getArNSPrice(arnsName);
-            if (price.success) {
-                setPriceInfo(price);
+            const recordInfo = await getArNSRecordInfo(arnsName);
+            if (recordInfo) {
+                setLeaseInfo({
+                    processId: recordInfo.processId,
+                    endTimestamp: recordInfo.endTimestamp,
+                    startTimestamp: recordInfo.startTimestamp,
+                    type: recordInfo.type,
+                    undernameLimit: recordInfo.undernameLimit,
+                });
             } else {
-                throw new Error(price.error);
+                toast({
+                    title: "Error",
+                    description: "Could not fetch lease information",
+                    variant: "destructive",
+                });
             }
         } catch (error) {
-            console.error("Error fetching price:", error);
+            console.error("Error fetching lease info:", error);
             toast({
                 title: "Error",
-                description: "Failed to fetch price information",
+                description: "Failed to fetch lease information",
                 variant: "destructive",
             });
+        } finally {
+            setLoadingLeaseInfo(false);
+        }
+    };
+
+    const fetchCostInfo = async () => {
+        if (!activeAddress) return;
+        
+        setLoadingCost(true);
+        try {
+            const cost = await getIncreaseLeaseCost(arnsName, years, activeAddress);
+            setCostInfo(cost);
+        } catch (error) {
+            console.error("Error fetching cost info:", error);
+            toast({
+                title: "Error",
+                description: "Failed to fetch cost information",
+                variant: "destructive",
+            });
+        } finally {
+            setLoadingCost(false);
+        }
+    };
+
+    const fetchUserBalance = async () => {
+        if (!activeAddress) return;
+        
+        try {
+            const balance = await checkBalance(activeAddress);
+            setUserBalance(parseFloat(balance.decimalBalance));
+        } catch (error) {
+            console.error("Error fetching user balance:", error);
         }
     };
 
@@ -71,6 +146,10 @@ export function ExtendLeaseModal({
         }
     };
 
+    const handleBuyTokens = () => {
+        window.open("https://botega.arweave.net/#/swap?from=xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10&to=qNvAoz0TgcH7DMg8BCVn8jF32QH5L6T29VjHxhHqqGE", "_blank");
+    };
+
     const handleSubmit = async () => {
         if (!activeAddress) {
             toast({
@@ -81,29 +160,36 @@ export function ExtendLeaseModal({
             return;
         }
 
-        try {
-            setIsLoading(true);
-            const result = await buyArNS(arnsName, purchaseType, years);
-            
-            if (result.success) {
-                toast({
-                    title: "Success",
-                    description: `Successfully ${purchaseType === "lease" ? "extended lease" : "purchased"} ${arnsName}`,
-                });
-                onSuccess();
-                onClose();
-            } else {
-                toast({
-                    title: "Error",
-                    description: result.error || `Failed to ${purchaseType === "lease" ? "extend lease" : "purchase"}`,
-                    variant: "destructive",
-                });
-            }
-        } catch (error) {
-            console.error("Error processing transaction:", error);
+        if (!costInfo) {
             toast({
                 title: "Error",
-                description: "An unexpected error occurred",
+                description: "Cost information not available",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        // Check if user has sufficient balance
+        if (userBalance < parseFloat(costInfo.tokenCost6Decimals)) {
+            setShowInsufficientBalance(true);
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+            const transactionId = await extendLease(arnsName, years);
+            
+            toast({
+                title: "Success",
+                description: `Successfully extended lease for ${arnsName} by ${years} year${years > 1 ? 's' : ''}`,
+            });
+            onSuccess();
+            onClose();
+        } catch (error) {
+            console.error("Error extending lease:", error);
+            toast({
+                title: "Error",
+                description: "Failed to extend lease. Please try again.",
                 variant: "destructive",
             });
         } finally {
@@ -119,86 +205,186 @@ export function ExtendLeaseModal({
         });
     };
 
+    const calculateNewExpiry = () => {
+        if (!leaseInfo) return null;
+        const currentEnd = new Date(leaseInfo.endTimestamp);
+        const newEnd = new Date(currentEnd);
+        newEnd.setFullYear(newEnd.getFullYear() + years);
+        return newEnd;
+    };
+
     return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[600px]">
-                <DialogHeader>
-                    <DialogTitle className="text-2xl">Extend Lease</DialogTitle>
-                </DialogHeader>
-                <div className="py-4">
-                    {/* Current Expiry Date */}
-                    <div className="mb-6 p-4 bg-neutral-900 rounded-lg">
-                        <div className="flex items-center gap-2 text-neutral-400 mb-2">
-                            <Calendar className="w-4 h-4" />
-                            <span>Current Expiry Date</span>
-                        </div>
-                        <p className="text-lg font-medium">{formatDate(currentExpiry)}</p>
-                    </div>
+        <>
+            <Dialog open={isOpen} onOpenChange={onClose}>
+                <DialogContent className="sm:max-w-[600px] bg-neutral-950 border border-neutral-800">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl text-neutral-100">Extend Lease</DialogTitle>
+                        <DialogDescription className="text-neutral-400">
+                            Extend the lease duration for your ArNS domain
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="py-4 space-y-6">
+                        {/* Current Lease Information */}
+                        {loadingLeaseInfo ? (
+                            <div className="p-4 bg-neutral-900/50 rounded-lg">
+                                <div className="animate-pulse space-y-2">
+                                    <div className="h-4 bg-neutral-700 rounded w-3/4"></div>
+                                    <div className="h-4 bg-neutral-700 rounded w-1/2"></div>
+                                </div>
+                            </div>
+                        ) : leaseInfo ? (
+                            <div className="p-4 bg-neutral-900/50 rounded-lg space-y-3">
+                                <div className="flex items-center gap-2 text-neutral-400">
+                                    <Calendar className="w-4 h-4" />
+                                    <span>Current Lease Information</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <span className="text-neutral-400">Current Expiry:</span>
+                                        <p className="text-white font-medium">{formatDate(leaseInfo.endTimestamp)}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-neutral-400">Lease Duration:</span>
+                                        <p className="text-white font-medium">
+                                            {Math.round((leaseInfo.endTimestamp - leaseInfo.startTimestamp) / (1000 * 60 * 60 * 24 * 365))} years
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="p-4 bg-red-900/20 border border-red-800 rounded-lg">
+                                <div className="flex items-center gap-2 text-red-400">
+                                    <AlertTriangle className="w-4 h-4" />
+                                    <span>Could not load lease information</span>
+                                </div>
+                            </div>
+                        )}
 
-                    {/* Purchase Type Selection */}
-                    <div className="mb-6">
-                        <select
-                            value={purchaseType}
-                            onChange={(e) => setPurchaseType(e.target.value as "lease" | "permabuy")}
-                            className="w-full p-2 bg-neutral-900 border border-neutral-700 rounded-md"
-                        >
-                            <option value="lease">Extend Lease</option>
-                            <option value="permabuy">Permabuy</option>
-                        </select>
-                    </div>
-
-                    {/* Years Selection */}
-                    {purchaseType === "lease" && (
-                        <div className="mb-6">
-                            <h3 className="text-lg font-medium mb-4">Select Years</h3>
+                        {/* Extension Duration Selection */}
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-medium text-neutral-100">Select Extension Duration</h3>
                             <div className="flex items-center justify-between">
                                 <Button
                                     variant="outline"
                                     size="icon"
                                     onClick={handleDecrement}
                                     disabled={years <= 1}
+                                    className="border-neutral-700 text-neutral-300 hover:bg-neutral-800"
                                 >
                                     <Minus className="h-4 w-4" />
                                 </Button>
-                                <Input
-                                    type="number"
-                                    value={years}
-                                    onChange={(e) => handleYearsChange(parseInt(e.target.value) || 1)}
-                                    className="w-24 text-center mx-4"
-                                    min={1}
-                                />
+                                <div className="text-center">
+                                    <span className="text-2xl font-bold text-white">{years}</span>
+                                    <p className="text-sm text-neutral-400">year{years > 1 ? 's' : ''}</p>
+                                </div>
                                 <Button
                                     variant="outline"
                                     size="icon"
                                     onClick={handleIncrement}
+                                    className="border-neutral-700 text-neutral-300 hover:bg-neutral-800"
                                 >
                                     <Plus className="h-4 w-4" />
                                 </Button>
                             </div>
                         </div>
-                    )}
 
-                    {/* Price Display */}
-                    {priceInfo && (
-                        <div className="text-center mb-6 p-4 bg-neutral-900 rounded-lg">
-                            <p className="text-sm text-neutral-400 mb-2">Estimated Cost</p>
-                            <p className="text-2xl font-medium">
-                                {purchaseType === "lease" 
-                                    ? Number(priceInfo.lease.priceInArio).toFixed(2)
-                                    : Number(priceInfo.permabuy.priceInArio).toFixed(2)} ARIO
-                            </p>
+                        {/* New Expiry Preview */}
+                        {leaseInfo && (
+                            <div className="p-4 bg-blue-900/20 border border-blue-800 rounded-lg">
+                                <div className="flex items-center gap-2 text-blue-400 mb-2">
+                                    <Calendar className="w-4 h-4" />
+                                    <span>New Expiry Date</span>
+                                </div>
+                                <p className="text-white font-medium">
+                                    {formatDate(calculateNewExpiry()?.getTime() || 0)}
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Cost Information */}
+                        {loadingCost ? (
+                            <div className="p-4 bg-neutral-900/50 rounded-lg">
+                                <div className="animate-pulse space-y-2">
+                                    <div className="h-4 bg-neutral-700 rounded w-1/2"></div>
+                                    <div className="h-4 bg-neutral-700 rounded w-3/4"></div>
+                                </div>
+                            </div>
+                        ) : costInfo ? (
+                            <div className="p-4 bg-neutral-900/50 rounded-lg space-y-3">
+                                <div className="text-center">
+                                    <p className="text-sm text-neutral-400 mb-1">Estimated Cost</p>
+                                    <p className="text-2xl font-bold text-white">
+                                        {parseFloat(costInfo.tokenCost6Decimals).toFixed(2)} ARIO
+                                    </p>
+                                </div>
+                                
+                                {/* Balance Check */}
+                                <div className="border-t border-neutral-800 pt-3 space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-neutral-400">Your Balance:</span>
+                                        <span className="text-white">{userBalance.toFixed(2)} ARIO</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-neutral-400">Required:</span>
+                                        <span className="text-white">{parseFloat(costInfo.tokenCost6Decimals).toFixed(2)} ARIO</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm border-t border-neutral-800 pt-2">
+                                        <span className="text-neutral-400">Remaining:</span>
+                                        <span className={`font-medium ${userBalance >= parseFloat(costInfo.tokenCost6Decimals) ? 'text-green-400' : 'text-red-400'}`}>
+                                            {(userBalance - parseFloat(costInfo.tokenCost6Decimals)).toFixed(2)} ARIO
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="p-4 bg-neutral-900/50 rounded-lg text-center text-neutral-400">
+                                Cost information not available
+                            </div>
+                        )}
+
+                        {/* Action Buttons */}
+                        <div className="flex flex-col gap-3">
+                            <Button
+                                className="w-full font-semibold glow-btn"
+                                onClick={handleSubmit}
+                                disabled={isLoading || !costInfo || !leaseInfo || userBalance < (costInfo ? parseFloat(costInfo.tokenCost6Decimals) : 0)}
+                            >
+                                {isLoading ? "Processing..." : `Extend Lease by ${years} Year${years > 1 ? 's' : ''}`}
+                            </Button>
+                            
+                            {costInfo && userBalance < parseFloat(costInfo.tokenCost6Decimals) && (
+                                <Button
+                                    variant="outline"
+                                    onClick={handleBuyTokens}
+                                    className="w-full border-neutral-700 text-neutral-300 hover:bg-neutral-800"
+                                >
+                                    <ExternalLink className="h-4 w-4 mr-2" />
+                                    Buy ARIO Tokens
+                                </Button>
+                            )}
+                            
+                            <Button
+                                variant="outline"
+                                onClick={onClose}
+                                className="w-full border-neutral-700 text-neutral-300 hover:bg-neutral-800"
+                            >
+                                Cancel
+                            </Button>
                         </div>
-                    )}
+                    </div>
+                </DialogContent>
+            </Dialog>
 
-                    <Button
-                        className="w-full"
-                        onClick={handleSubmit}
-                        disabled={isLoading || !priceInfo || !activeAddress}
-                    >
-                        {isLoading ? "Processing..." : purchaseType === "lease" ? "Extend Lease" : "Permabuy"}
-                    </Button>
-                </div>
-            </DialogContent>
-        </Dialog>
+            {/* Insufficient Balance Modal */}
+            {costInfo && (
+                <InsufficientBalanceModal
+                    isOpen={showInsufficientBalance}
+                    onClose={() => setShowInsufficientBalance(false)}
+                    requiredAmount={parseFloat(costInfo.tokenCost6Decimals)}
+                    currentBalance={userBalance}
+                />
+            )}
+        </>
     );
 } 

@@ -782,3 +782,14 @@ export const BranchPreviewsFullSkeleton = () => {
         </div>
     );
 };
+
+export const PriceLoadingSkeleton = () => {
+    return (
+        <div className="flex items-end">
+            <div className="flex flex-col items-end gap-1">
+                <Skeleton className="h-8 w-24 bg-neutral-800/60 animate-pulse" />
+                <Skeleton className="h-3 w-12 bg-neutral-800/40 animate-pulse" />
+            </div>
+        </div>
+    );
+};

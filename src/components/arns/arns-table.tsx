@@ -28,12 +28,12 @@ export default function ArnsTable({ data }: ArnsTableProps) {
     return (
         <div className="border h-[calc(100svh-260px)] border-[#373737] rounded-md overflow-hidden bg-black text-white">
             <div className="grid grid-cols-6 bg-[#181819] font-semibold border-b border-[#373737] text-sm">
-                <div className="p-4">ARNS Name</div>
-                <div className="p-4">Role</div>
-                <div className="p-4">Process ID</div>
-                <div className="p-4">Type</div>
-                <div className="p-4">Undernames</div>
-                <div className="p-4">Expiry</div>
+                <div className="p-4 min-w-0">ARNS Name</div>
+                <div className="p-4 min-w-0">Role</div>
+                <div className="p-4 min-w-0">Process ID</div>
+                <div className="p-4 min-w-0">Type</div>
+                <div className="p-4 min-w-0">Undernames</div>
+                <div className="p-4 min-w-0">Expiry</div>
             </div>
 
             <div className="max-h-[calc(100svh-310px)] overflow-y-scroll pb-4">
@@ -44,17 +44,18 @@ export default function ArnsTable({ data }: ArnsTableProps) {
                         exit={{ opacity: 0, y: -10 }}
                         transition={{ delay: index * 0.05 }}
                         key={index}
-                        className={`grid grid-cols-6 font-medium border-b border-[#373737] text-sm hover:bg-[#121212] transition-colors`}
+                        className={`grid grid-cols-6 font-medium border-b border-[#373737] text-sm hover:bg-[#121212] transition-colors min-w-0`}
                     >
                         <Link
                             to={`?name=${row.name}`}
-                            className="p-4 hover:underline"
+                            className="p-4 hover:underline truncate block min-w-0"
+                            title={row.name}
                         >
                             {row.name}
                         </Link>
-                        <div className="p-4">{row.role}</div>
-                        <div className="p-4 flex items-center">
-                            <span>{row.processId}</span>
+                        <div className="p-4 truncate min-w-0">{row.role}</div>
+                        <div className="p-4 flex items-center min-w-0">
+                            <span className="truncate">{row.processId}</span>
                             <button
                                 className="ml-2 p-1 hover:bg-[#212121] rounded-md transition-colors"
                                 onClick={() =>
@@ -79,12 +80,12 @@ export default function ArnsTable({ data }: ArnsTableProps) {
                                 )}
                             </button>
                         </div>
-                        <div className="p-4 flex items-center">
-                            <span>{row.targetId}</span>
+                        <div className="p-4 flex items-center min-w-0">
+                            <span className="truncate">{row.targetId}</span>
                         </div>
-                        <div className="p-4">{row.undernameLimit ?? '-'}</div>
-                        <div className="p-4 flex items-center justify-between">
-                            <span>{row.expiry}</span>
+                        <div className="p-4 truncate min-w-0">{row.undernameLimit ?? '-'}</div>
+                        <div className="p-4 flex items-center justify-between min-w-0">
+                            <span className="truncate">{row.expiry}</span>
                             <button
                                 onClick={() => navigate(`?name=${row.name}`)}
                                 className="hover:bg-[#232323] rounded-full p-1 transition ml-2"

@@ -2,53 +2,112 @@ import {
     ARIO,
     AOProcess,
     mARIOToken,
-   
     ArconnectSigner,
     ANT,
-    type AoARIOWrite,
     ARIO_MAINNET_PROCESS_ID,
-    
-    
+    spawnANT,
+    DEFAULT_SCHEDULER_ID,
+    ANTRegistry,
+    ARIO_TESTNET_PROCESS_ID
+
 } from "@ar.io/sdk";
-import { connect } from "@permaweb/aoconnect";
+import { connect, createDataItemSigner ,dryrun } from "@permaweb/aoconnect";
 import Arweave from "arweave";
 import { lowerCaseDomain } from "../../lib/utils";
+import { createAntStateForOwner, getLatestANTVersion, sleep } from "./arnsutils";
+
+// Environment detection
+const isTestnet = import.meta.env.VITE_BASE_URL === "http://localhost:3000";
+
+// Global configuration based on environment
+const AO_CONFIG = {
+    MODE: "legacy",
+    MU_URL: "https://mu.ao-testnet.xyz",
+    CU_URL: "https://cu.ardrive.io",
+    GRAPHQL_URL: "https://arweave.net/graphql",
+    GATEWAY_URL: "https://arweave.net"
+};
+
+// Registry and process IDs based on environment
+const REGISTRYPID = isTestnet ? "i_le_yKKPVstLTDSmkHRqf-wYphMnwB9OhleiTgMkWc" : "i_le_yKKPVstLTDSmkHRqf-wYphMnwB9OhleiTgMkWc";
+const NAMES_PROCESS_ID = isTestnet ? "agYcCFJtrMG6cqMuZfskIkFTGvUPddICmtQSBIoPdiA" : "qNvAoz0TgcH7DMg8BCVn8jF32QH5L6T29VjHxhHqqGE";
+const ARIO_PROCESS_ID = isTestnet ? ARIO_TESTNET_PROCESS_ID : ARIO_MAINNET_PROCESS_ID;
+
+
+
+
+
+type Tag = { name: string; value: string };
+
+export async function checkBalance(walletAddress: string): Promise<{
+  rawBalance: string;
+  decimalBalance: string;
+}> {
+  const TOKEN_ID = NAMES_PROCESS_ID;
+  const DECIMALS = 6;
+
+  try {
+    const balanceResponse = await dryrun({
+      process: TOKEN_ID,
+      tags: [
+        { name: 'Action', value: 'Balance' },
+        { name: 'Recipient', value: walletAddress },
+        { name: 'Data-Protocol', value: 'ao' },
+        { name: 'Type', value: 'Message' },
+        { name: 'Variant', value: 'ao.TN.1' }
+      ],
+      Owner: walletAddress
+    });
+
+    const messages = balanceResponse.Messages;
+    if (!messages || messages.length === 0) {
+      throw new Error('No balance messages received from dryrun');
+    }
+
+    const balanceTag = messages[0]?.Tags?.find((tag: Tag) => tag.name === 'Balance');
+    const rawBalance = balanceTag?.value || '0';
+
+    if (!/^\d+$/.test(rawBalance)) {
+      throw new Error('Invalid balance format received from API');
+    }
+
+    const decimalBalance = (Number(rawBalance) / 10 ** DECIMALS).toFixed(DECIMALS);
+
+    return {
+      rawBalance,
+      decimalBalance
+    };
+
+  } catch (err: any) {
+    console.error('Failed to check balance:', err.message || err);
+    throw new Error(`Error checking balance: ${err.message || err}`);
+  }
+}
+
 
 // Create separate instances for read and write operations
 const arioRead = ARIO.init({
     process: new AOProcess({
-        processId: ARIO_MAINNET_PROCESS_ID,
-        // @ts-ignore
-        ao: connect({
-            MU_URL: "https://mu-testnet.xyz",
-            CU_URL: "https://cu.ardrive.io",
-            GRAPHQL_URL: "https://arweave.net/graphql",
-            GATEWAY_URL: "https://arweave.net",
-        }),
+        processId: ARIO_PROCESS_ID,
+        //@ts-ignore
+        ao: connect(AO_CONFIG),
     }),
 });
 
-
-const ant = ANT.init({
-    // @ts-ignore
-    signer: new ArconnectSigner(window.arweaveWallet, Arweave.init({})),
-    processId: ARIO_MAINNET_PROCESS_ID
-});
-
-const arioWrite = ARIO.init({
-    process: new AOProcess({
-        processId: ARIO_MAINNET_PROCESS_ID,
-        // @ts-ignore
-        ao: connect({
-            MU_URL: "https://mu-testnet.xyz",
-            CU_URL: "https://cu.ardrive.io",
-            GRAPHQL_URL: "https://arweave.net/graphql",
-            GATEWAY_URL: "https://arweave.net",
-        }),
-        // @ts-ignore
-        signer: new ArconnectSigner(window.arweaveWallet, Arweave.init({})),
-    }),
-}) as AoARIOWrite;
+// Helper function to get ARIO instance based on environment
+const getArioInstance = () => {
+    if (isTestnet) {
+        return ARIO.testnet({ 
+            // @ts-ignore
+            signer: new ArconnectSigner(window.arweaveWallet, Arweave.init({}))
+        });
+    } else {
+        return ARIO.mainnet({ 
+            // @ts-ignore
+            signer: new ArconnectSigner(window.arweaveWallet, Arweave.init({}))
+        });
+    }
+};
 
 export async function checkArNSAvailability(name: string) {
     try {
@@ -104,24 +163,93 @@ export async function getArNSPrice(name: string) {
     }
 }
 
-// Add write operations
-export async function buyArNS(name: string, type: "lease" | "permabuy", years?: number) {
+export async function buyArNS(name: string, type: "lease" | "permabuy", addres: string, years?: number) {
     try {
-        // @ts-ignore
-        const ario = ARIO.testnet({ signer: new ArconnectSigner(window.arweaveWallet, Arweave.init({})) });
-        
+        // step 1 create state for owner
+        const ownerState = createAntStateForOwner(addres);
+
+        // step 2 spawn process for owner with latest module 
+        const antVersion = await getLatestANTVersion();
+        const antModuleId = antVersion?.moduleId ?? "";
+        const signer = window.arweaveWallet;
+        //@ts-ignore
+        const aoc = connect(AO_CONFIG);
+
+        // spawning here
+        const ownerProcess = await spawnANT({
+            ownerState,
+            //@ts-ignore
+            signer: createDataItemSigner(signer),
+            //@ts-ignore
+            ao: aoc,
+            scheduler: DEFAULT_SCHEDULER_ID,
+            module: antModuleId
+        });
+
+        // step 3 register on registry
+        //@ts-ignore
+        const antRegistry = ANTRegistry.init({
+            signer,
+            hyperbeamUrl: "https://hyperbeam.ario.permaweb.services",
+            process: new AOProcess({
+                processId: REGISTRYPID,
+                //@ts-ignore
+                ao: aoc,
+            }),
+        });
+
+        console.log("Initial ANT registration check starting");
+        let antRegistryUpdated = false;
+        let retries = 0;
+        const maxRetries = 10;
+        const retryBaseDelay = 2000; // ms
+
+        console.log(`Starting registration verification for process: ${ownerProcess}`);
+        console.log(`Maximum retries: ${maxRetries}, Base delay: ${retryBaseDelay}ms`);
+
+        while (!antRegistryUpdated && retries <= maxRetries) {
+            const currentDelay = retryBaseDelay * retries;
+            await sleep(currentDelay);
+
+            try {
+                const aclRes = await antRegistry.accessControlList({
+                    address: addres,
+                });
+
+                const antIdSet = new Set([...aclRes.Controlled, ...aclRes.Owned]);
+                antRegistryUpdated = antIdSet.has(ownerProcess);
+
+                if (!antRegistryUpdated) {
+                    console.log(`- Process ${ownerProcess} not found in registry, retrying...`);
+                }
+            } catch (error) {
+                console.error(`- Error during ACL check:`, error);
+            }
+
+            retries++;
+        }
+
+        if (!antRegistryUpdated) {
+            throw new Error('Failed to register ANT, please try again later.');
+        }
+
+        console.log("registry updated now buying record");
+        //@ts-ignore
+        const ario = getArioInstance();
+
         const result = await ario.buyRecord(
-            { 
-                name, 
-                type, 
+            {
+                name,
+                type,
                 years: type === "lease" ? years : 1,
-                processId: ARIO_MAINNET_PROCESS_ID
+                processId: ownerProcess
             },
             {
-                tags: [{ name: 'App-Name', value: 'ArNS-App' }]
+                tags: [{ name: 'App-Name', value: 'Arlink' }]
             }
         );
 
+        console.log("record bought ", result.id);
         return {
             success: true,
             transactionId: result.id,
@@ -146,8 +274,9 @@ export async function getWalletOwnedNamesindash(walletAddress: string): Promise<
     undernameLimit?: number;
   }[]
 > {
-    const registryUrl = 'https://cu.ardrive.io/dry-run?process-id=i_le_yKKPVstLTDSmkHRqf-wYphMnwB9OhleiTgMkWc';
-    const namesUrl = 'https://cu.ardrive.io/dry-run?process-id=qNvAoz0TgcH7DMg8BCVn8jF32QH5L6T29VjHxhHqqGE';
+    const registryUrl = `https://cu.ardrive.io/dry-run?process-id=${REGISTRYPID}`;
+    const namesUrl = `https://cu.ardrive.io/dry-run?process-id=${NAMES_PROCESS_ID}`;
+    console.log(namesUrl, registryUrl);
     const headers = {
         'accept': '*/*',
         'content-type': 'application/json',
@@ -159,7 +288,7 @@ export async function getWalletOwnedNamesindash(walletAddress: string): Promise<
         // 1. Get owned process IDs
         const registryBody = JSON.stringify({
             Id: "1234",
-            Target: "i_le_yKKPVstLTDSmkHRqf-wYphMnwB9OhleiTgMkWc",
+            Target: REGISTRYPID,
             Owner: "1234",
             Anchor: "0",
             Data: "1234",
@@ -196,7 +325,7 @@ export async function getWalletOwnedNamesindash(walletAddress: string): Promise<
             if (cursor) tags.push({ name: "Cursor", value: cursor });
             const namesBody = JSON.stringify({
                 Id: "1234",
-                Target: "qNvAoz0TgcH7DMg8BCVn8jF32QH5L6T29VjHxhHqqGE",
+                Target: NAMES_PROCESS_ID,
                 Owner: "1234",
                 Anchor: "0",
                 Data: "1234",
@@ -407,13 +536,10 @@ interface PrimaryNameResult {
     error?: string;
 }
 
-export async function makePrimaryNameRequest(name: string): Promise<PrimaryNameResult> {
+export async function makePrimaryNameRequest(name: string , processid:string ): Promise<PrimaryNameResult> {
     try {
-        // Initialize ARIO for mainnet
-        const ario = ARIO.mainnet({ 
-            // @ts-ignore
-            signer: new ArconnectSigner(window.arweaveWallet, Arweave.init({}))
-        });
+        // Initialize ARIO based on environment
+        const ario = getArioInstance();
 
         // Request primary name
         // @ts-ignore
@@ -425,7 +551,7 @@ export async function makePrimaryNameRequest(name: string): Promise<PrimaryNameR
         const ant = ANT.init({
             // @ts-ignore
             signer: new ArconnectSigner(window.arweaveWallet, Arweave.init({})),
-            processId: ARIO_MAINNET_PROCESS_ID
+            processId: processid
         });
 
         // Get the wallet address
@@ -435,7 +561,7 @@ export async function makePrimaryNameRequest(name: string): Promise<PrimaryNameR
         const { id: approvalTxId } = await ant.approvePrimaryNameRequest({
             name,
             address, // Use the current wallet address
-            arioProcessId: ARIO_MAINNET_PROCESS_ID
+            arioProcessId: ARIO_PROCESS_ID
         });
 
         return {
@@ -454,7 +580,7 @@ export async function makePrimaryNameRequest(name: string): Promise<PrimaryNameR
 export async function IncreaseUndername(namee: string, qtyy: number) {
     try {
         // @ts-ignore
-        const ario = ARIO.mainnet({signer : new ArconnectSigner(window.arweaveWallet, Arweave.init({}))})
+        const ario = getArioInstance();
 
         const normalizedName = lowerCaseDomain(namee);
         const { id: txId } = await ario.increaseUndernameLimit(
@@ -508,3 +634,31 @@ export async function flexibleIncreaseUndername(
 }
 
 
+export async function extendLease(name: string, years: number) {
+
+    try {
+ // @ts-ignore
+ const ario = getArioInstance();
+
+ const { id: txId } = await ario.extendLease(
+    {
+      name,
+      years,
+     
+    },
+    {
+      tags: [
+        { name: 'App-Name', value: 'Arlink' },
+      ],
+    }
+  );
+  console.log('Lease extended. Tx ID:', txId);
+  return txId;
+  
+
+    }
+    catch (err) {
+        console.error('Failed to extend lease:', err);
+        throw err;
+      }
+}

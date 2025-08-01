@@ -14,10 +14,13 @@ import { Button } from "../ui/button";
 import { Slider } from "../ui/slider";
 import { ChevronLeft, Info } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { checkArNSAvailability, getArNSPrice, buyArNS } from "@/actions/arns/arnslater";
+import { checkArNSAvailability, getArNSPrice, buyArNS, checkBalance } from "@/actions/arns/arnslater";
 import { Skeleton } from "../ui/skeleton";
-import { BuyArnsSkeleton } from "../skeletons";
+import { BuyArnsSkeleton, PriceLoadingSkeleton } from "../skeletons";
+import { useActiveAddress } from "@arweave-wallet-kit/react";
 import { toast } from "sonner";
+import { useLatestANTVersion, getTokenCost } from "@/actions/arns/arnsutils";
+import { InsufficientBalanceModal } from "./insufficient-balance-modal";
 
 interface BuyArnsProps {
     arnsName: string;
@@ -29,10 +32,14 @@ type AvailableArns = ArnsData & {
 };
 
 const BuyArns = ({ arnsName }: BuyArnsProps) => {
+    const address = useActiveAddress();
+    const { data: antVersion } = useLatestANTVersion();
     const [checking, setChecking] = useState<boolean>(true);
     const [error, setError] = useState<string | null>("");
     const [arns, setArns] = useState<AvailableArns | null>(null);
     const [isBuying, setIsBuying] = useState<boolean>(false);
+    const [showInsufficientBalance, setShowInsufficientBalance] = useState<boolean>(false);
+    const [balanceInfo, setBalanceInfo] = useState<{ required: number; current: number } | null>(null);
     const navigate = useNavigate();
 
     const checkingArNSAvailability = async () => {
@@ -103,9 +110,45 @@ const BuyArns = ({ arnsName }: BuyArnsProps) => {
     };
 
     const handleBuy = async (type: "lease" | "permabuy", years?: number) => {
+        if (!address) {
+            toast.error("Wallet not connected");
+            return;
+        }
+
         try {
             setIsBuying(true);
-            const result = await buyArNS(arnsName, type, years);
+            
+            // Calculate required amount
+            let requiredAmount: number;
+            if (type === "permabuy") {
+                requiredAmount = arns?.permaBuy || 0;
+            } else {
+                // For lease, we need to get the actual token cost
+                const tokenCost = await getTokenCost(arnsName, years || 1);
+                requiredAmount = tokenCost.tokenCost6Decimals;
+            }
+
+            // Check user's balance
+            const balanceResult = await checkBalance(address);
+            const currentBalance = parseFloat(balanceResult.decimalBalance);
+
+            // Check if user has sufficient balance
+            if (currentBalance < requiredAmount) {
+                setBalanceInfo({
+                    required: requiredAmount,
+                    current: currentBalance
+                });
+                setShowInsufficientBalance(true);
+                return;
+            }
+
+            // Proceed with purchase if balance is sufficient
+            const result = await buyArNS(
+                arnsName, 
+                type, 
+                address, 
+                years,
+            );
             
             if (result.success) {
                 toast.success("Purchase Successful", {
@@ -118,6 +161,7 @@ const BuyArns = ({ arnsName }: BuyArnsProps) => {
                 toast.error("Purchase Failed", {
                     description: result.error || "Unknown error occurred",
                 });
+                console.log(result.error);
             }
         } catch (error) {
             toast.error("Error", {
@@ -151,9 +195,9 @@ const BuyArns = ({ arnsName }: BuyArnsProps) => {
                     <Button 
                         className="w-full font-semibold glow-btn"
                         onClick={() => handleBuy("permabuy")}
-                        disabled={isBuying}
+                        disabled={isBuying || !address}
                     >
-                        {isBuying ? "Processing..." : "Buy Now"}
+                        {!address ? "Connect Wallet" : isBuying ? "Processing..." : "Buy Now"}
                     </Button>
                 </CardFooter>
             </Card>
@@ -162,12 +206,32 @@ const BuyArns = ({ arnsName }: BuyArnsProps) => {
 
     const LeaseBuyTabContent = ({ name, lease }: DomainTupleData) => {
         const [selectedYear, setSelectedYear] = useState<number>(1);
+        const [tokenCost, setTokenCost] = useState<{ rawTokenCost: number; tokenCost6Decimals: number } | null>(null);
+        const [loadingCost, setLoadingCost] = useState<boolean>(false);
         const date = new Date().getFullYear();
-        const totalPrice = lease * selectedYear;
-        const formattedPrice = totalPrice.toLocaleString('en-US', {
-            maximumFractionDigits: 1,
+        
+        // Fetch token cost when selectedYear changes
+        useEffect(() => {
+            const fetchTokenCost = async () => {
+                setLoadingCost(true);
+                try {
+                    const cost = await getTokenCost(name, selectedYear);
+                    setTokenCost(cost);
+                } catch (error) {
+                    console.error("Error fetching token cost:", error);
+                    toast.error("Failed to fetch pricing information");
+                } finally {
+                    setLoadingCost(false);
+                }
+            };
+            
+            fetchTokenCost();
+        }, [name, selectedYear]);
+        
+        const formattedPrice = tokenCost ? tokenCost.tokenCost6Decimals.toLocaleString('en-US', {
+            maximumFractionDigits: 6,
             minimumFractionDigits: 1
-        });
+        }) : "0.0";
         return (
             <Card className="hover:border-neutral-800 bg-[#0d0d0d]/50 hover:bg-[#0d0d0d]/50 p-8 space-y-12">
                 <CardHeader className="text-center tracking-tighter p-0">
@@ -223,10 +287,16 @@ const BuyArns = ({ arnsName }: BuyArnsProps) => {
                             until {date + selectedYear}
                         </span>
                         <div className="text-white text-3xl font-semibold flex items-end">
-                            {formattedPrice}
-                            <span className="text-xs text-neutral-400 ml-2 mb-1">
-                                ARIO
-                            </span>
+                            {loadingCost ? (
+                                <PriceLoadingSkeleton />
+                            ) : (
+                                <>
+                                    {formattedPrice}
+                                    <span className="text-xs text-neutral-400 ml-2 mb-1">
+                                        ARIO
+                                    </span>
+                                </>
+                            )}
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -235,9 +305,9 @@ const BuyArns = ({ arnsName }: BuyArnsProps) => {
                             size="sm" 
                             className="px-6 glow-btn"
                             onClick={() => handleBuy("lease", selectedYear)}
-                            disabled={isBuying}
+                            disabled={isBuying || !address || loadingCost}
                         >
-                            {isBuying ? "Processing..." : "Buy"}
+                            {!address ? "Connect Wallet" : isBuying ? "Processing..." : loadingCost ? "Loading..." : "Buy"}
                         </Button>
                     </div>
                 </CardFooter>
@@ -249,7 +319,7 @@ const BuyArns = ({ arnsName }: BuyArnsProps) => {
         return <BuyArnsSkeleton />;
     }
 
-    if (!arns) return;
+    if (!arns) return null;
 
     return (
         <Layout>
@@ -284,6 +354,15 @@ const BuyArns = ({ arnsName }: BuyArnsProps) => {
                     </TabsContent>
                 </Tabs>
             </div>
+            
+            {balanceInfo && (
+                <InsufficientBalanceModal
+                    isOpen={showInsufficientBalance}
+                    onClose={() => setShowInsufficientBalance(false)}
+                    requiredAmount={balanceInfo.required}
+                    currentBalance={balanceInfo.current}
+                />
+            )}
         </Layout>
     );
 };
