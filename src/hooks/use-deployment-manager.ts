@@ -304,44 +304,130 @@ export default function useDeploymentManager() {
 }
 // keep it as local host if NODE_ENV is test
 
+// Primary and fallback GraphQL endpoints
+const PRIMARY_GQL_ENDPOINT = "https://arweave-search.goldsky.com/graphql";
+const FALLBACK_GQL_ENDPOINT = "https://arweave.net/graphql";
+
 export async function getManagerProcessFromAddress(address: string) {
-    const client = new GraphQLClient(
-        "https://arweave-search.goldsky.com/graphql",
-    );
+    // Initialize client with primary endpoint
+    let client = new GraphQLClient(PRIMARY_GQL_ENDPOINT);
+    let currentEndpoint = PRIMARY_GQL_ENDPOINT;
 
     const query = gql`
-  query {
-  transactions(
-    owners: ["${address}"]
-    tags: [
-      { name: "App-Name", values: ["ARlink"] }
-      { name: "Name", values: ["ARlink-Manager"] }
-    ],
-    sort:HEIGHT_ASC
-  ) {
-    edges {
-      node {
-        block{height}
-        id
-      }
-    }
-  }
-}`;
+        query {
+            transactions(
+                owners: ["${address}"]
+                tags: [
+                    { name: "App-Name", values: ["ARlink"] }
+                    { name: "Name", values: ["ARlink-Manager"] }
+                ],
+                sort: HEIGHT_ASC
+            ) {
+                edges {
+                    node {
+                        block { height }
+                        id
+                    }
+                }
+            }
+        }
+    `;
 
-    type response = {
-        transactions: {
-            edges: {
-                node: {
-                    id: string;
-                };
-            }[];
+    type Response = {
+        data?: {
+            transactions: {
+                edges: { node: { id: string } }[];
+            };
         };
+        error?: string;
     };
 
-    const data: response = await client.request(query);
-    return data.transactions.edges.length > 0
-        ? data.transactions.edges[0].node.id
-        : null;
+    async function executeQuery(endpoint: string): Promise<Response> {
+        try {
+            client = new GraphQLClient(endpoint);
+            const data = await client.request(query);
+            // Validate response structure
+            //@ts-ignore
+            if (!data?.transactions?.edges) {
+                throw new Error("Invalid response structure from GraphQL");
+            }
+            return { data };
+        } catch (error) {
+            console.error(`GraphQL query failed at ${endpoint}:`, error.message);
+            return { error: error.message };
+        }
+    }
+
+    // Try primary endpoint
+    let response = await executeQuery(PRIMARY_GQL_ENDPOINT);
+
+    // If primary fails, try fallback endpoint
+    if (response.error) {
+        console.warn(`Switching to fallback GraphQL provider: ${FALLBACK_GQL_ENDPOINT}`);
+        currentEndpoint = FALLBACK_GQL_ENDPOINT;
+        response = await executeQuery(FALLBACK_GQL_ENDPOINT);
+    }
+
+    // If both endpoints fail, return null
+    if (response.error) {
+        console.error("Both GraphQL endpoints failed. Returning null.");
+        return null;
+    }
+
+    //@ts-ignore
+    const edges = response.data.transactions.edges;
+
+    // If no transactions found, return null
+    if (edges.length === 0) {
+        return null;
+    }
+
+    // If transactions exist and fewer than 12, run the second query
+    if (edges.length > 0 && edges.length < 12) {
+        const processIds = edges.map(edge => edge.node.id);
+
+        const secondQuery = gql`
+            query GetProcessTransactions($cursor: String, $processId: String!) {
+                transactions(
+                    sort: INGESTED_AT_DESC
+                    first: 25
+                    after: $cursor
+                    ingested_at: { min: 1696107600 }
+                    tags: [
+                        { name: "From-Process", values: [$processId] }
+                        { name: "Data-Protocol", values: ["ao"] }
+                    ]
+                ) {
+                    count
+                    __typename
+                }
+            }
+        `;
+
+        try {
+            // Execute second query for each process ID concurrently
+            const secondQueryPromises = processIds.map(async (processId) => {
+                const result = await client.request(secondQuery, { cursor: null, processId });
+                //@ts-ignore
+                return { processId, count: result.transactions.count };
+            });
+
+            const secondQueryResults = await Promise.all(secondQueryPromises);
+            // console.log("Second query results:", secondQueryResults);
+
+            // Find the first process ID with count > 1
+            const validProcess = secondQueryResults.find(result => result.count > 1);
+            if (validProcess) {
+                return validProcess.processId;
+            }
+        } catch (error) {
+            //@ts-ignore
+            console.error(`Second query failed at ${currentEndpoint}:`, error.message);
+        }
+    }
+
+    // Return the first transaction ID or null
+    return edges.length > 0 ? edges[0].node.id : null;
 }
 
 export async function getDeploymentHistory(
