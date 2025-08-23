@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Check, ClipboardCopy, ExternalLink, UnlockIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { trackAnalyticsEnabled } from "@/lib/posthog";
 import { Link, useSearchParams } from "react-router-dom";
 import { AnalyticsDashboardSkeleton } from "../skeletons";
 import { GlowingOutlineButton } from "../ui/glowing-outline-button";
@@ -75,6 +76,8 @@ const EnableAnalytics = ({
             const result = await enableAnalytics(projectName, walletAddress);
             if (result) {
                 setInnerProcessId(result);
+                // Track analytics enabled event
+                trackAnalyticsEnabled(projectName);
             }
         } catch (error) {
             console.log(error);

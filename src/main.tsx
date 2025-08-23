@@ -9,6 +9,28 @@ import BrowserWalletStrategy from "@arweave-wallet-kit/browser-wallet-strategy";
 import WebWalletStrategy from "@arweave-wallet-kit/webwallet-strategy";
 import AoSyncStrategy from "@vela-ventures/aosync-strategy";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { PostHogProvider } from 'posthog-js/react'
+
+
+const options = {
+    api_host: "https://us.i.posthog.com",
+    // Enable session recording
+    session_recording: {
+      recordCanvas: true,
+      recordCrossOriginIframes: false,
+      recordNetworkPayload: false,
+      recordResourceTimings: true,
+      recordScreen: false,
+      recordTextInputs: true,
+      recordWindowSize: true,
+    },
+    // Enable automatic event capture
+    autocapture: true,
+    // Capture page views automatically
+    capture_pageview: true,
+    // Capture page leave events
+    capture_pageleave: true,
+  }
 
 // Create a client
 const queryClient = new QueryClient({
@@ -22,6 +44,8 @@ const queryClient = new QueryClient({
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <React.StrictMode>
+            <PostHogProvider apiKey="phc_WY4XjaGylQgKdnvlaEIFM179W36iLQrtHTHusc4P5KF" options={options}>
+
         <QueryClientProvider client={queryClient}>
             <ArweaveWalletKit
                 theme={{
@@ -47,5 +71,6 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
                 <App />
             </ArweaveWalletKit>
         </QueryClientProvider>
+        </PostHogProvider>
     </React.StrictMode>
 );
