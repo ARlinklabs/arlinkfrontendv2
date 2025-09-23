@@ -2,21 +2,15 @@ import { InteractiveGrid } from "../ui";
 
 import { motion } from "framer-motion";
 import { ArIo } from "@/components/ui/icons/ario";
-import { useConnection } from "@arweave-wallet-kit/react";
 import { useNavigate } from "react-router-dom";
 
 const Hero = () => {
-    const { connected, connect } = useConnection();
     const navigate = useNavigate();
 
     const headingLines = [
         "Deployments on Arweave",
         "made as simple as one click",
     ];
-
-    const connecting = async () => {
-        await connect()
-    };
 
     const descriptionLines = [
         "Arlink lets you permanently deploy and",
@@ -36,7 +30,7 @@ const Hero = () => {
     return (
         <section
             id="home"
-            className="sm:h-[800px] z-0 bg-[#09090b] border border-transparent  md:h-[1200px] w-full relative"
+            className="sm:h-[800px] z-0 bg-[#09090b] border border-transparent  md:h-[1200px] w-full relative overflow-hidden"
         >
             <div className="inset-0 lg:block hidden -mt-[200px] absolute max-w-[1536px] h-[800px] mx-auto">
                 <div className="radial_gradient_overlay  pointer-events-none md:scale-x-150 scale-x-100 z-10 absolute inset-0 w-full h-full" />
@@ -118,45 +112,24 @@ const Hero = () => {
                     ))}
                 </p>
 
-                {connected ? (
-                    <motion.div
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{
-                            type: "spring",
-                            stiffness: 100,
-                            damping: 20,
-                            delay: 1.5,
-                        }}
-                        className="w-full flex justify-center mt-6 md:mt-[30px] relative z-30"
-                        onClick={() => {
-                            navigate("/dashboard");
-                        }}
-                    >
-                        <button className="px-4 py-2 mx-auto bg-white rounded-lg text-black font-semibold text-center pointer-events-auto text-sm md:text-base">
-                            Deploy Now
-                        </button>
-                    </motion.div>
-                ) : (
-                    <motion.div
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{
-                            type: "spring",
-                            stiffness: 100,
-                            damping: 20,
-                            delay: 1.5,
-                        }}
-                        className="w-full flex justify-center mt-6 md:mt-[30px] relative z-30"
-                        onClick={() => {
-                            connecting();
-                        }}
-                    >
-                        <button className="px-4 py-2 mx-auto bg-white rounded-lg text-black font-semibold text-center pointer-events-auto text-sm md:text-base">
-                            Deploy Now
-                        </button>
-                    </motion.div>
-                )}
+                <motion.div
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{
+                        type: "spring",
+                        stiffness: 100,
+                        damping: 20,
+                        delay: 1.5,
+                    }}
+                    className="w-full flex justify-center mt-6 md:mt-[30px] relative z-30"
+                    onClick={() => {
+                        navigate("/dashboard");
+                    }}
+                >
+                    <button className="px-4 py-2 mx-auto bg-[#0C9142] rounded-lg text-white font-semibold text-center pointer-events-auto text-sm md:text-base">
+                        Deploy Now
+                    </button>
+                </motion.div>
 
                 <motion.div
                     initial={{ y: 20, opacity: 0 }}
@@ -167,17 +140,32 @@ const Hero = () => {
                         damping: 20,
                         delay: 1.8,
                     }}
-                    className="max-w-7xl mx-auto mt-8 md:mt-[80px] relative z-30 w-full bg-gradient-to-b from-neutral-500 to-black p-1 md:p-2 rounded-xl"
+                    className="max-w-7xl mx-auto mt-8 md:mt-[80px] relative z-30 w-full bg-gradient-to-b from-[#0C9142] to-black p-1 md:p-2 rounded-xl"
                 >
-                    <div className="bg-gradient-to-b from-transparent to-[#09090b] via-[#09090b]/80 z-40 inset-0 rounded-xl absolute" />
+                    <div className="bg-gradient-to-b from-transparent to-[#09090b] via-[#09090b]/80 z-50 inset-0 rounded-xl absolute" />
                     <img
                         src="/dashboard.webp"
-                        className="rounded-md w-full h-auto"
+                        className="relative z-40 rounded-md w-full h-auto"
                         alt="Dashboard preview"
                         loading="eager"
                         //@ts-ignore
                         fetchpriority="high"
                     />
+                    {/* Green spotlight glow (based on Figma) */}
+                    <div
+                        aria-hidden
+                        className="pointer-events-none absolute -top-8 md:-top-12 left-1/2 -translate-x-1/2 w-[85%] h-40 md:h-64 lg:h-[420px] z-30"
+                    >
+                        <div
+                            className="absolute left-0 right-[42.04%] top-[11.89%] bottom-0 bg-[#0C9142] opacity-50 blur-[155px]"
+                        />
+                        <div
+                            className="absolute left-[38.31%] right-[3.73%] top-[11.89%] bottom-0 bg-[#0C9142] opacity-50 blur-[155px]"
+                        />
+                        <div
+                            className="absolute left-[19.15%] right-[22.88%] top-0 bottom-[11.89%] bg-[#0C9142] opacity-50 blur-[155px]"
+                        />
+                    </div>
                 </motion.div>
             </div>
         </section>

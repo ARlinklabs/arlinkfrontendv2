@@ -14,9 +14,12 @@ const Features = () => {
             id="features"
             className="flex flex-col mt-auto sm:mt-[180px] relative w-full items-center justify-center"
         >
-            <div className="absolute top-0 -translate-x-1/2 left-1/2 ">
-                <img src={"/Spotlight.png"} />
-            </div>
+            <div 
+                className="absolute top-0 -translate-x-1/2 left-1/2 w-[600px] h-[600px] opacity-40 blur-2xl z-10"
+                style={{
+                    background: 'radial-gradient(circle, rgba(34, 197, 94, 0.8) 0%, rgba(34, 197, 94, 0.5) 25%, rgba(34, 197, 94, 0.2) 50%, rgba(34, 197, 94, 0.1) 75%, transparent 100%)'
+                }}
+            ></div>
             <div className="max-w-6xl mt-] mx-auto px-4 py-16">
                 <header className="flex items-center justify-center flex-col space-y-6">
                     <motion.div
