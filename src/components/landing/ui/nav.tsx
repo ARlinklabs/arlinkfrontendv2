@@ -1,25 +1,25 @@
-import { useActiveAddress, useConnection } from "@arweave-wallet-kit/react";
-import { Menu, Copy, UserIcon, User, LogOut, Wallet } from "lucide-react";
+import { Menu, Copy, UserIcon, User, LogOut, Wallet, Mail } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import WAuthStrategy, { WAuthProviders } from "@wauth/strategy";
+
 
 import { toast } from "sonner";
 import { getPrimaryname } from "@/lib/utils";
-
+import { useWalletState } from "@/hooks/use-wallet-state";
 type NavLink = {
     name: string;
     url: string;
 };
 
 export const Nav = () => {
-    const { connected, connect, disconnect } = useConnection();
+    const { isConnected: connected, connect, disconnect, address } = useWalletState();
     const [openSideBar, setOpenSideBar] = useState<boolean>(false);
     const [loading, setLoading] = useState<boolean>(false);
     const [disconnecting, setDisconnecting] = useState<boolean>(false);
-    const address = useActiveAddress();
-    const [, setPrimaryName] = useState<string | null>(null);
     const [primaryLogo, setPrimaryLogo] = useState<string | null>(null);
+    const [userEmail, setUserEmail] = useState<string | null>(null);
 
     const links: NavLink[] = [
         { name: "Home", url: "#home" },
@@ -55,22 +55,54 @@ export const Nav = () => {
     };
 
     useEffect(() => {
-        async function fetchPrimaryName() {
-            if (address) {
+        let isCancelled = false;
+
+        async function fetchUserData() {
+            if (address && connected) {
                 try {
+                    // Add a small delay to ensure wallet is fully ready
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    
+                    if (isCancelled) return;
+                    
+                    // Fetch primary name data
                     const primaryNameData = await getPrimaryname(address);
+                    
+                    if (isCancelled) return;
+                    
                     if (primaryNameData) {
-                        setPrimaryName(primaryNameData.primaryname);
+                        // @ts-ignore - primaryNameData is verified to exist
                         setPrimaryLogo(primaryNameData.logo);
                     }
+
+                    // Fetch user email from GitHub authentication
+                    try {
+                        const wauth = new WAuthStrategy({ provider: WAuthProviders.Github });
+                        const emailData = await wauth.getEmail();
+                        if (!isCancelled && emailData && emailData.email) {
+                            setUserEmail(emailData.email);
+                        }
+                    } catch (emailError) {
+                        console.error("Error fetching email:", emailError);
+                        // Continue without email if fetch fails
+                    }
                 } catch (error) {
-                    console.error("Error fetching primary name:", error);
+                    console.error("Error fetching user data:", error);
+                    // Don't block UI on error - just continue without data
                 }
+            } else {
+                // Clear all user data if not connected
+                setPrimaryLogo(null);
+                setUserEmail(null);
             }
         }
 
-        fetchPrimaryName();
-    }, [address]);
+        fetchUserData();
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [address, connected]);
 
     const avatarUrl = primaryLogo ? `https://arweave.net/${primaryLogo}` : "";
 
@@ -108,7 +140,7 @@ export const Nav = () => {
                                     <div className="bg-[#151516] size-8 flex items-center justify-center text-white rounded-md">
                                         <User className="size-4" />
                                     </div>
-                                    <span>{`${address?.slice(
+                                    <span>{userEmail || `${address?.slice(
                                         0,
                                         5,
                                     )}...${address?.slice(
@@ -123,7 +155,7 @@ export const Nav = () => {
                                 </div>
 
                                 <div className="flex flex-col items-center gap-2 mb-4">
-                                    <div className="size-32 overflow-hidden border-2 border-neutral-700 rounded-full bg-gradient-to-b from-[#18171c] relative to-black flex items-center justify-center">
+                                    <div className="size-32 overflow-hidden border-2 border-neutral-700 rounded-full bg-gradient-to-b from-[#0C9142] relative to-black flex items-center justify-center">
                                         {avatarUrl ? (
                                             <img
                                                 src={avatarUrl}
@@ -136,6 +168,22 @@ export const Nav = () => {
                                 </div>
 
                                 <div className="flex flex-col gap-3">
+                                    {userEmail && (
+                                        <div className="flex items-center justify-between bg-[#18171c] rounded-lg p-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="size-10 rounded-md flex items-center justify-center border border-[#302e36] ">
+                                                    <Mail />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm text-gray-400">
+                                                        Email
+                                                    </span>
+                                                    <span className="font-medium">{userEmail}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    
                                     <div className="flex items-center justify-between bg-[#18171c] rounded-lg p-4">
                                         <div className="flex items-center gap-3">
                                             <div className="size-10 rounded-md flex items-center justify-center border border-[#302e36] ">
@@ -211,7 +259,7 @@ export const Nav = () => {
                                     <div className="bg-[#151516] size-8 flex items-center justify-center text-white rounded-md">
                                         <User className="size-4" />
                                     </div>
-                                    <span>{`${address?.slice(
+                                    <span>{userEmail || `${address?.slice(
                                         0,
                                         5,
                                     )}...${address?.slice(
@@ -226,7 +274,7 @@ export const Nav = () => {
                                 </div>
 
                                 <div className="flex flex-col items-center gap-2 mb-4">
-                                    <div className="size-32 overflow-hidden border-2 border-neutral-700 rounded-full bg-gradient-to-b from-[#18171c] relative to-black flex items-center justify-center">
+                                    <div className="size-32 overflow-hidden border-2 border-neutral-700 rounded-full bg-gradient-to-b from-[#0C9142] relative to-black flex items-center justify-center">
                                         {avatarUrl ? (
                                             <img
                                                 src={avatarUrl}
@@ -239,6 +287,22 @@ export const Nav = () => {
                                 </div>
 
                                 <div className="flex flex-col gap-3">
+                                    {userEmail && (
+                                        <div className="flex items-center justify-between bg-[#18171c] rounded-lg p-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="size-10 rounded-md flex items-center justify-center border border-[#302e36] ">
+                                                    <Mail />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm text-gray-400">
+                                                        Email
+                                                    </span>
+                                                    <span className="font-medium">{userEmail}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    
                                     <div className="flex items-center justify-between bg-[#18171c] rounded-lg p-4">
                                         <div className="flex items-center gap-3">
                                             <div className="size-10 rounded-md flex items-center justify-center border border-[#302e36] ">

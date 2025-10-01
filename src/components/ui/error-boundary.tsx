@@ -13,6 +13,10 @@ interface ErrorBoundaryState {
     error: Error | null;
 }
 
+const ignored=[
+    "App not connected"
+]
+
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
     constructor(props: ErrorBoundaryProps) {
         super(props);
@@ -31,8 +35,13 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
         this.setState({ hasError: false, error: null });
     };
 
+
     render() {
         if (this.state.hasError) {
+            if (ignored.some(i => this.state.error?.message?.includes(i))) {
+                return null;
+            }
+
             if (this.props.fallback) {
                 const FallbackComponent = this.props.fallback;
                 return <FallbackComponent error={this.state.error!} resetError={this.resetError} />;

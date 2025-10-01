@@ -21,7 +21,7 @@ import axios, { isAxiosError } from "axios";
 import { AlertTriangle, ChevronDown, ChevronLeft, Loader2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import RootDirectoryDrawer from "./rootdir-drawer";
-import { useActiveAddress } from "@arweave-wallet-kit/react";
+import { useWalletState } from "@/hooks/use-wallet-state";
 import { toast } from "sonner";
 import DomainSelection from "./shared/domain-selection";
 import useDeploymentManager from "@/hooks/use-deployment-manager";
@@ -36,7 +36,7 @@ import {
     extractOwnerName,
     extractRepoName,
     handleFetchExistingArnsName,
-    indexInMalik,
+    
 } from "../pages/utilts";
 import NewDeploymentCard from "@/components/shared/new-deployment-card";
 import { BuildDeploymentSetting } from "@/components/shared/build-settings";
@@ -48,8 +48,11 @@ const ConfigureTemplateDeployment = ({ repoUrl }: { repoUrl: string }) => {
     const { githubToken, managerProcess: mgProcess } = useGlobalState();
     const { refresh, deployments } = useDeploymentManager();
     const navigate = useNavigate();
+    const { address: activeAddress } = useWalletState();
+    
 
-    const activeAddress = useActiveAddress();
+    
+    
     const [frameWork, setFrameWork] = useState<{
         name: string;
         dir: string;
@@ -536,14 +539,7 @@ const ConfigureTemplateDeployment = ({ repoUrl }: { repoUrl: string }) => {
                         mgProcess,
                     ),
 
-                    indexInMalik({
-                        projectName,
-                        description: "An awesome decentralized project",
-                        txid: response.data.result,
-                        owner: activeAddress,
-                        link: `https://arweave.net/${response.data.result}`,
-                        arlink: finalArnsProcess || null,
-                    }),
+                    
                 ];
 
                 if (activeTab === "existing" && arnsName) {
@@ -579,6 +575,8 @@ const ConfigureTemplateDeployment = ({ repoUrl }: { repoUrl: string }) => {
                             ]]`,
                     mgProcess,
                 );
+                // Add small delay to allow database operations to fully propagate
+                await new Promise(resolve => setTimeout(resolve, 2000));
                 await refresh();
                 toast.success("Deployment successful");
                 navigate(`/deployment/card?repo=${projectName}`);
@@ -628,7 +626,7 @@ const ConfigureTemplateDeployment = ({ repoUrl }: { repoUrl: string }) => {
     const handleFetchArns = async () => {
         handleFetchExistingArnsName({
             setArnsNames,
-            activeAddress,
+            activeAddress: activeAddress || undefined,
             setExistingArnsLoading,
         });
     };

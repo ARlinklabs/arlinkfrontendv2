@@ -1,6 +1,6 @@
 import { spawnReportProcess } from "@/hooks/use-report-manager";
 import { AnalyticsResponse } from "@/types";
-import { connect, createDataItemSigner } from "@permaweb/aoconnect";
+import { connect } from "@permaweb/aoconnect";
 
 const REGISTRY_PROCESS = "-M03tLhxzgf552RFPGiSCTOhqhvtRsk4bRsXKJ06CzE";
 
@@ -81,6 +81,7 @@ export async function getProjectPID(
     projectName: string,
     walletAddress: string,
     managerProcess: string = REGISTRY_PROCESS,
+    signer?: any,
 ): Promise<GetProcessPIDResponse> {
     const TARGET_PROCESS = managerProcess;
     const ao = connect({
@@ -99,7 +100,7 @@ export async function getProjectPID(
                     value: walletAddress,
                 },
             ],
-            signer: createDataItemSigner(window.arweaveWallet),
+            signer: signer,
         });
 
         const { Messages, Error } = (await ao.result({
@@ -150,6 +151,7 @@ export async function getProjectPID(
 export async function enableAnalytics(
     projectName: string,
     walletAddress: string,
+    signer?: any,
 ) {
     try {
         const pid = await spawnReportProcess(projectName);
@@ -160,6 +162,7 @@ export async function enableAnalytics(
                 projectName,
                 pid,
                 walletAddress,
+                signer,
             );
 
             console.log("registering process has been completed");
@@ -187,6 +190,7 @@ export async function registerProject(
     projectName: string,
     processId: string,
     walletAddress: string,
+    signer?: any,
 ): Promise<RegisterProjectReturnType> {
     const TARGET_PROCESS = REGISTRY_PROCESS;
     const ao = connect({
@@ -204,7 +208,7 @@ export async function registerProject(
                 { name: "ProcessID", value: processId },
                 { name: "walletaddr", value: walletAddress },
             ],
-            signer: createDataItemSigner(window.arweaveWallet),
+            signer: signer,
         });
 
         console.log("Registration message sent with ID:", message);
@@ -248,9 +252,10 @@ export async function registerProject(
 export const checkProcessId = async (
     projectName: string,
     walletAddress: string,
+    signer?: any,
 ) => {
     console.log("checking process id...");
-    const res = await getProjectPID(projectName, walletAddress);
+    const res = await getProjectPID(projectName, walletAddress, REGISTRY_PROCESS, signer);
     if (res.processId === null) {
         throw new Error("process Id is not available");
     }
@@ -263,6 +268,7 @@ export const checkProcessId = async (
 
 export async function getAnalytics(
     processId: string,
+    signer?: any,
 ): Promise<AnalyticsResponse> {
     const ao = connect({
         CU_URL: "https://ur-cu.randao.net",
@@ -273,7 +279,7 @@ export async function getAnalytics(
         const message = await ao.message({
             process: processId,
             tags: [{ name: "Action", value: "GetAnalytics" }],
-            signer: createDataItemSigner(window.arweaveWallet),
+            signer: signer,
         });
 
         console.log("Analytics request sent with ID:", message);
@@ -314,9 +320,9 @@ export async function getAnalytics(
     }
 }
 
-export async function fetchAnalytics(processId: string) {
+export async function fetchAnalytics(processId: string, signer?: any) {
     try {
-        const analytics = await getAnalytics(processId);
+        const analytics = await getAnalytics(processId, signer);
 
         if (analytics.data) {
             return analytics.data;

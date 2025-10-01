@@ -1,8 +1,10 @@
 import { generateSubmissionCode } from "@/actions/github/template";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useApi } from "@arweave-wallet-kit/react";
 
 const Generate = () => {
+    const api = useApi();
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string>("");
     const [generatedCode, setGeneratedCode] = useState<string>("");
@@ -12,7 +14,7 @@ const Generate = () => {
         setError("");
         setCopied(false);
         setLoading(true);
-        const token = await generateSubmissionCode();
+        const token = await generateSubmissionCode(api?.getAoSigner?.());
         if (token.error) {
             setError(token.error);
         } else if (!token.code) {

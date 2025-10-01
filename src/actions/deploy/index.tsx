@@ -6,6 +6,7 @@ export async function performDeleteDeployment(
     deploymentName: string,
     managerProcess: string,
     refresh: () => Promise<void>,
+    signer?: any,
 ) {
     const query = `local res = db:exec[[
           DELETE FROM Deployments
@@ -13,7 +14,7 @@ export async function performDeleteDeployment(
         ]]`;
 
     try {
-        const res = await runLua(query, managerProcess);
+        const res = await runLua(query, managerProcess, undefined, signer);
         if (res.Error) {
             throw new Error(res.Error);
         }

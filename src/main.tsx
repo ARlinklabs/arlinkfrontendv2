@@ -4,10 +4,11 @@ import App from "./App.tsx";
 import "./globals.css";
 import { ArweaveWalletKit } from "@arweave-wallet-kit/react";
 import WanderStrategy from "@arweave-wallet-kit/wander-strategy";
-import OthentStrategy from "@arweave-wallet-kit/othent-strategy";
-import BrowserWalletStrategy from "@arweave-wallet-kit/browser-wallet-strategy";
-import WebWalletStrategy from "@arweave-wallet-kit/webwallet-strategy";
-import AoSyncStrategy from "@vela-ventures/aosync-strategy";
+import WAuthStrategy, { WAuthProviders } from "@wauth/strategy";
+
+
+
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PostHogProvider } from 'posthog-js/react'
 
@@ -60,11 +61,9 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
                     ],
                     ensurePermissions: true,
                     strategies: [
-                        new WanderStrategy(),
-                        new AoSyncStrategy(),
-                        new OthentStrategy(),
-                        new BrowserWalletStrategy(),
-                        new WebWalletStrategy(),
+                        // new WanderStrategy(),
+                        new WAuthStrategy({ provider: WAuthProviders.Github }),
+
                     ],
                 }}
             >

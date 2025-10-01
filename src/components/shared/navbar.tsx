@@ -1,16 +1,27 @@
 import { Link, useLocation, useSearchParams } from "react-router-dom";
-import { useConnection, useActiveAddress } from "@arweave-wallet-kit/react";
 import { useState, useEffect } from "react";
 import { extractRepoName } from "@/pages/utilts";
 import { getPrimaryname } from "@/lib/utils";
-import { Copy, LogOut, User, UserIcon, Wallet } from "lucide-react";
+import { Copy, LogOut, User, UserIcon, Wallet, Mail } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { useWalletState } from "@/hooks/use-wallet-state";
+import WAuthStrategy, { WAuthProviders } from "@wauth/strategy";
 
 export default function Navbar() {
-    //@ts-ignore
-    const { connected, connect, disconnect } = useConnection();
-    const address = useActiveAddress();
+    // Use centralized wallet state hook for consistency
+    const { isConnected, address, connect, disconnect, kitConnected, kitAddress, walletAddress } = useWalletState();
+    
+    // Debug logging to track navbar state
+    useEffect(() => {
+        console.log('Navbar state:', { 
+            isConnected, 
+            address, 
+            kitConnected, 
+            kitAddress, 
+            walletAddress 
+        });
+    }, [isConnected, address, kitConnected, kitAddress, walletAddress]);
 
     //@ts-ignore
     const [isNewDeployment, setIsNewDeployment] = useState(false);
@@ -18,6 +29,7 @@ export default function Navbar() {
     const [primaryLogo, setPrimaryLogo] = useState<string | null>(null);
     const [connectingToWallet, setConnectingToWallet] = useState(false);
     const [disconnectingToWallet, setDisconnectingToWallet] = useState(false);
+    const [userEmail, setUserEmail] = useState<string | null>(null);
 
     const [searchParams] = useSearchParams();
     const repo = searchParams.get("repo");
@@ -100,22 +112,65 @@ export default function Navbar() {
 
     
     useEffect(() => {
+        let isCancelled = false;
+        let timeoutId: NodeJS.Timeout;
+
         async function fetchPrimaryName() {
-            if (address) {
+            if (address && isConnected) {
                 try {
-                    const primaryNameData = await getPrimaryname(address);
-                    if (primaryNameData) {
-                        setPrimaryName(primaryNameData.primaryname);
-                        setPrimaryLogo(primaryNameData.logo);
-                    }
+                    // Add a longer delay to prevent blocking other operations
+                    // and ensure wallet is fully ready
+                    timeoutId = setTimeout(async () => {
+                        if (isCancelled) return;
+                        
+                        try {
+                            const primaryNameData = await getPrimaryname(address);
+                            
+                            if (isCancelled) return;
+                            
+                            if (primaryNameData) {
+                                //@ts-ignore
+                                setPrimaryName(primaryNameData.primaryname);
+                                //@ts-ignore
+                                setPrimaryLogo(primaryNameData.logo);
+                            }
+
+                            // Fetch user email from GitHub authentication
+                            try {
+                                const wauth = new WAuthStrategy({ provider: WAuthProviders.Github });
+                                const emailData = await wauth.getEmail();
+                                if (!isCancelled && emailData && emailData.email) {
+                                    setUserEmail(emailData.email);
+                                }
+                            } catch (emailError) {
+                                console.error("Error fetching email:", emailError);
+                                // Continue without email if fetch fails
+                            }
+                        } catch (error) {
+                            console.error("Error fetching primary name:", error);
+                            // Don't block UI on error - just continue without primary name
+                        }
+                    }, 2000); // 2 second delay to prevent blocking critical operations
                 } catch (error) {
-                    console.error("Error fetching primary name:", error);
+                    console.error("Error setting up primary name fetch:", error);
                 }
+            } else {
+                // Clear primary name if not connected
+                setPrimaryName(null);
+                setPrimaryLogo(null);
+                setUserEmail(null);
             }
         }
 
         fetchPrimaryName();
-    }, [address]);
+
+        return () => {
+            isCancelled = true;
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+        };
+    }, [address, isConnected]);
 
     const displayName = primaryName || address?.slice(0, 8) || "anonymous";
 
@@ -129,7 +184,7 @@ export default function Navbar() {
                         <img
                             src="/joose.svg"
                             alt="Joose logo"
-                            className="md:w-[56px] w-[40px] aspect-square rounded-full"
+                            className="md:w-[36px] w-[20px] aspect-square rounded-full"
                         />
                     </Link>
                     <h2 className="bg-gradient-to-r from-neutral-50 to-neutral-300 text-transparent bg-clip-text md:text-[24px] text-[18px] tracking-tight font-bold pb-2">
@@ -138,7 +193,7 @@ export default function Navbar() {
                 </div>
                 <div className="flex items-center gap-1">
                     <div className="third_column">
-                        {connected ? (
+                        {isConnected && address ? (
                             <Dialog>
                                 <DialogTrigger asChild>
                                     <button className="bg-[#131314] text-white border-2 border-[#262626] pr-2 flex items-center font-semibold px-1 gap-2 py-1 rounded-md">
@@ -152,7 +207,7 @@ export default function Navbar() {
                                                 <User className="size-4" />
                                             )}
                                         </div>
-                                        <span>{`${address?.slice(
+                                        <span>{userEmail || `${address?.slice(
                                             0,
                                             5,
                                         )}...${address?.slice(
@@ -180,6 +235,22 @@ export default function Navbar() {
                                     </div>
 
                                     <div className="flex flex-col gap-3">
+                                        {userEmail && (
+                                            <div className="flex items-center justify-between bg-[#18171c] rounded-lg p-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="size-10 rounded-md flex items-center justify-center border border-[#302e36] ">
+                                                        <Mail />
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-sm text-gray-400">
+                                                            Email
+                                                        </span>
+                                                        <span className="font-medium">{userEmail}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        
                                         <div className="flex items-center justify-between bg-[#18171c] rounded-lg p-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="size-10 rounded-md flex items-center justify-center border border-[#302e36] ">

@@ -1,5 +1,6 @@
 import { enableAnalytics } from "@/actions/analytics";
 import { useState } from "react";
+import { useApi } from "@arweave-wallet-kit/react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +30,7 @@ const EnableAnalytics = ({
     handleProcessId,
     processId,
 }: EnableAnalyticsProps) => {
+    const api = useApi();
     const [enablingAnalytics, setEnablingAnalytics] = useState<boolean>(false);
     const [copied, setCopied] = useState<boolean>(false);
     const [isHovered, setIsHovered] = useState<boolean>(false);
@@ -73,7 +75,7 @@ const EnableAnalytics = ({
         if (!walletAddress) return;
         setEnablingAnalytics(true);
         try {
-            const result = await enableAnalytics(projectName, walletAddress);
+            const result = await enableAnalytics(projectName, walletAddress, api?.getAoSigner?.());
             if (result) {
                 setInnerProcessId(result);
                 // Track analytics enabled event

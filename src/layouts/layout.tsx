@@ -1,8 +1,8 @@
 import type React from "react";
-import { useConnection } from "@arweave-wallet-kit/react";
 import { Toaster } from "@/components/ui/toaster";
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useWalletState } from "@/hooks/use-wallet-state";
 
 type LayoutProps = {
     children: React.ReactNode;
@@ -10,11 +10,11 @@ type LayoutProps = {
 };
 
 export default function Layout({ children, className }: LayoutProps) {
-    const { connected } = useConnection();
+    const { isConnected } = useWalletState();
     const [loading, setLoading] = useState<boolean>(true);
 
     useEffect(() => {
-        if (connected) {
+        if (isConnected) {
             setLoading(false);
         } else {
             const timer = setTimeout(() => {
@@ -23,19 +23,19 @@ export default function Layout({ children, className }: LayoutProps) {
 
             return () => clearTimeout(timer);
         }
-    }, [connected]);
+    }, [isConnected]);
 
     return (
         <div className={className}>
             <div className="w-full">
-                {connected ? (
+                {isConnected ? (
                     children
                 ) : loading ? (
                     <div />
                 ) : (
                     <div>
                         <p className="text-center pt-10">
-                            Connect your wallet please :)
+                            login using github or web3 wallet please 
                         </p>
                     </div>
                 )}
@@ -44,7 +44,6 @@ export default function Layout({ children, className }: LayoutProps) {
         </div>
     );
 }
-
 const SkeletonLoader = () => {
     return (
         <div className="container pt-[45px] mx-auto text-center">

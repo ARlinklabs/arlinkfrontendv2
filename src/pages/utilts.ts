@@ -41,34 +41,6 @@ export async function fetchRepositories({
     }
 }
 
-export const indexInMalik = async ({
-    projectName,
-    description,
-    txid,
-    owner,
-    link,
-    arlink,
-}: {
-    projectName: string;
-    description: string;
-    txid: string;
-    owner: string | undefined;
-    link: string;
-    arlink: string | null;
-}) => {
-    await index(
-        // @ts-ignore
-        JSON.stringify({
-            title: projectName,
-            description,
-            txid,
-            link,
-            owner,
-            arlink,
-        }),
-        window.arweaveWallet,
-    );
-};
 
 export async function fetchRepositoryByName({
     githubToken,

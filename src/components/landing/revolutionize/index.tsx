@@ -1,8 +1,10 @@
 import { Bolt, ExternalLink, Link2, Lock } from "lucide-react";
 import AnimatedDescription from "../effects/animated-description";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 const Revolutioniaze = () => {
+    const navigate = useNavigate();
     const headline = ["Ready to Revolutionize Your", "Hosting Experience?"];
     const description = [
         "Step into the decentralized future with Arlink—effortless, secure, and ",
@@ -48,7 +50,10 @@ const Revolutioniaze = () => {
                         ease: [0.25, 0.1, 0, 0.9],
                     }}
                 >
-                    <button className="px-5 py-2 bg-white text-black font-medium rounded-lg shadow">
+                    <button 
+                        className="px-5 py-2 bg-white text-black font-medium rounded-lg shadow"
+                        onClick={() => navigate("/dashboard")}
+                    >
                         Deploy your first app
                     </button>
                     <a

@@ -1,7 +1,16 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { connect, createDataItemSigner } from "@permaweb/aoconnect";
+import { connect } from "@permaweb/aoconnect";
 import { ANT, AOProcess, ARIO, ArconnectSigner , ARIO_MAINNET_PROCESS_ID } from "@ar.io/sdk/web";
+
+// Helper function to get signer - can be called from components that have useApi access
+export function getSigner(api?: any) {
+    if (api && api.getAoSigner) {
+        return api.getAoSigner();
+    }
+    // No fallback - signer should be provided
+    return undefined;
+}
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
@@ -56,6 +65,7 @@ export async function setUndername(
     antProcess: string,
     manifestId: string,
     undername: string,
+    signer?: any,
 ) {
     const ao = connect({
         CU_URL: "https://cu.ardrive.io",
@@ -71,7 +81,7 @@ export async function setUndername(
         const result = await ao.message({
             process: antProcess,
             tags: msgtags,
-            signer: createDataItemSigner(window.arweaveWallet),
+            signer: signer,
             data: "",
         });
         console.log("set arns message officially sent out ", result);
@@ -82,61 +92,75 @@ export async function setUndername(
     }
 }
 
-export async function getPrimaryname(walletaddy: string) {
+export async function getPrimaryname(walletaddy: string, signer?: any) {
     try {
-        // Initialize Arweave
-      
+        // Check if wallet is available
+        if (!signer && (!window.arweaveWallet || typeof window.arweaveWallet.getActiveAddress !== 'function')) {
+            console.warn('Wallet not ready for getPrimaryname');
+            return null;
+        }
 
-        // step 1 init ario
-        const ario = ARIO.init({
-            process: new AOProcess({
-                processId: ARIO_MAINNET_PROCESS_ID,
-                // @ts-ignore
-                ao: connect({
-                    MU_URL: "https://mu.ao-testnet.xyz",
-                    CU_URL: "https://cu.ardrive.io",
-                    GRAPHQL_URL: "https://arweave.net/graphql",
-                    GATEWAY_URL: "https://arweave.net",
+        // Add timeout to prevent hanging
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('getPrimaryname timeout')), 10000); // 10 second timeout
+        });
+
+        const primaryNamePromise = (async () => {
+            // step 1 init ario
+            const ario = ARIO.init({
+                process: new AOProcess({
+                    processId: ARIO_MAINNET_PROCESS_ID,
+                    // @ts-ignore
+                    ao: connect({
+                        MU_URL: "https://mu.ao-testnet.xyz",
+                        CU_URL: "https://cu.ardrive.io",
+                        GRAPHQL_URL: "https://arweave.net/graphql",
+                        GATEWAY_URL: "https://arweave.net",
+                    }),
                 }),
-            }),
-            signer: new ArconnectSigner(window.arweaveWallet),
-        });
+                signer: signer || new ArconnectSigner(window.arweaveWallet),
+            });
 
-        // step 2 get primary name from wallet
-        const nameResponse = await ario.getPrimaryName({
-            address: walletaddy,
-        });
+            // step 2 get primary name from wallet
+            const nameResponse = await ario.getPrimaryName({
+                address: walletaddy,
+            });
 
-        // Check if name exists
-        if (!nameResponse?.name) {
-            throw new Error("No primary name found");
-        }
+            // Check if name exists
+            if (!nameResponse?.name) {
+                throw new Error("No primary name found");
+            }
 
-        const primaryname = nameResponse.name;
+            const primaryname = nameResponse.name;
 
-        // step 3 get process id from primaryname
-        const recordResponse = await ario.getArNSRecord({ name: primaryname });
+            // step 3 get process id from primaryname
+            const recordResponse = await ario.getArNSRecord({ name: primaryname });
 
-        // Check if record exists and has processId
-        if (!recordResponse?.processId) {
-            throw new Error("No process ID found");
-        }
+            // Check if record exists and has processId
+            if (!recordResponse?.processId) {
+                throw new Error("No process ID found");
+            }
 
-        const pid = recordResponse.processId;
+            const pid = recordResponse.processId;
 
-        // step 4 get logo from process id
-        const ant = ANT.init({
-            signer: new ArconnectSigner(window.arweaveWallet),
-            processId: pid,
-        });
+            // step 4 get logo from process id
+            const ant = ANT.init({
+                signer: signer || new ArconnectSigner(window.arweaveWallet),
+                processId: pid,
+            });
 
-        const logoTxId = await ant.getLogo();
-        const logo = logoTxId;
+            const logoTxId = await ant.getLogo();
+            const logo = logoTxId;
 
-        return { primaryname, logo };
+            return { primaryname, logo };
+        })();
+
+        // Race between the actual operation and timeout
+        return await Promise.race([primaryNamePromise, timeoutPromise]);
     } catch (error) {
         console.error("Error in getPrimaryname:", error);
-        throw error;
+        // Don't throw error to prevent blocking UI
+        return null;
     }
 }
 

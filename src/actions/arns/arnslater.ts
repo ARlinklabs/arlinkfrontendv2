@@ -11,7 +11,7 @@ import {
     ARIO_TESTNET_PROCESS_ID
 
 } from "@ar.io/sdk";
-import { connect, createDataItemSigner ,dryrun } from "@permaweb/aoconnect";
+import { connect, dryrun } from "@permaweb/aoconnect";
 import Arweave from "arweave";
 import { lowerCaseDomain } from "../../lib/utils";
 import { createAntStateForOwner, getLatestANTVersion, sleep } from "./arnsutils";
@@ -163,7 +163,7 @@ export async function getArNSPrice(name: string) {
     }
 }
 
-export async function buyArNS(name: string, type: "lease" | "permabuy", addres: string, years?: number) {
+export async function buyArNS(name: string, type: "lease" | "permabuy", addres: string, years?: number, signer?: any) {
     try {
         // step 1 create state for owner
         const ownerState = createAntStateForOwner(addres);
@@ -171,7 +171,7 @@ export async function buyArNS(name: string, type: "lease" | "permabuy", addres: 
         // step 2 spawn process for owner with latest module 
         const antVersion = await getLatestANTVersion();
         const antModuleId = antVersion?.moduleId ?? "";
-        const signer = window.arweaveWallet;
+        const walletSigner = signer || window.arweaveWallet;
         //@ts-ignore
         const aoc = connect(AO_CONFIG);
 
@@ -179,7 +179,7 @@ export async function buyArNS(name: string, type: "lease" | "permabuy", addres: 
         const ownerProcess = await spawnANT({
             ownerState,
             //@ts-ignore
-            signer: createDataItemSigner(signer),
+            signer: walletSigner,
             //@ts-ignore
             ao: aoc,
             scheduler: DEFAULT_SCHEDULER_ID,
@@ -189,7 +189,7 @@ export async function buyArNS(name: string, type: "lease" | "permabuy", addres: 
         // step 3 register on registry
         //@ts-ignore
         const antRegistry = ANTRegistry.init({
-            signer,
+            signer: walletSigner,
             hyperbeamUrl: "https://hyperbeam.ario.permaweb.services",
             process: new AOProcess({
                 processId: REGISTRYPID,

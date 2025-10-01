@@ -245,8 +245,8 @@ end)
 print("ok")
 `;
 
-export const spawnReportProcess = async (projectName: string) => {
-    const processId = await spawnProcess(`${projectName}-report-manager`);
+export const spawnReportProcess = async (projectName: string, signer?: any) => {
+    const processId = await spawnProcess(`${projectName}-report-manager`, undefined, undefined, signer);
     console.log("spawned process", processId);
 
     if (processId) {
@@ -263,7 +263,7 @@ export const spawnReportProcess = async (projectName: string) => {
             //added this delay to fix thhe mu 500 error 
             await new Promise(resolve => setTimeout(resolve, 3000));
 
-            result = await runLua(setUpCommands, processId);
+            result = await runLua(setUpCommands, processId, undefined, signer);
             console.log("result is ", result);
 
             if (!result) {

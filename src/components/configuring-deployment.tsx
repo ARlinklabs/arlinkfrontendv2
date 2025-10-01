@@ -13,7 +13,7 @@ import { AlertTriangle, ChevronDown, ChevronLeft, Loader2 } from "lucide-react"
 import type React from "react"
 import { useEffect, useState } from "react"
 import RootDirectoryDrawer from "./rootdir-drawer"
-import { useActiveAddress } from "@arweave-wallet-kit/react"
+import { useActiveAddress, useApi } from "@arweave-wallet-kit/react"
 import { toast } from "sonner"
 import DomainSelection from "./shared/domain-selection"
 import useDeploymentManager from "@/hooks/use-deployment-manager"
@@ -28,7 +28,7 @@ import {
   extractOwnerName,
   extractRepoName,
   handleFetchExistingArnsName,
-  indexInMalik,
+
 } from "../pages/utilts"
 import NewDeploymentCard from "@/components/shared/new-deployment-card"
 import { BuildDeploymentSetting } from "@/components/shared/build-settings"
@@ -48,6 +48,7 @@ const ConfiguringDeploymentProject = ({
   const { refresh, deployments } = useDeploymentManager()
   const navigate = useNavigate()
   const activeAddress = useActiveAddress()
+  const api = useApi()
 
   const [frameWork, setFrameWork] = useState<{
     name: string
@@ -354,6 +355,15 @@ const ConfiguringDeploymentProject = ({
   const deployProject = async () => {
     if (!githubToken) return
 
+    // Get signer and validate it's available
+    if (!api) {
+      return toast.error("Wallet API not available. Please ensure your wallet is connected properly.");
+    }
+    const signer = api.getAoSigner();
+    if (!signer) {
+      return toast.error("Wallet signer not available. Please ensure your wallet is connected properly.");
+    }
+
     // Validation checks
     const validationErrors = [
       { condition: !projectName, message: "Project name is required" },
@@ -572,15 +582,10 @@ const ConfiguringDeploymentProject = ({
               UPDATE Deployments SET UnderName='${response.data.finalUnderName}' WHERE Name='${projectName}';
             ]]`,
             mgProcess,
+            undefined,
+            signer,
           ),
-          indexInMalik({
-            projectName,
-            description: "An awesome decentralized project",
-            txid: response.data.result,
-            owner: activeAddress,
-            link: `https://arweave.net/${response.data.result}`,
-            arlink: finalArnsProcess || null,
-          }),
+          
         ]
 
         if (activeTab === "existing" && arnsName) {
@@ -592,6 +597,8 @@ const ConfiguringDeploymentProject = ({
                 VALUES ('${projectName}', '${response.data.result}', ${userArns ? `'${userArns}'` : "NULL"}, '${getTime()}')
               ]]`,
               mgProcess,
+              undefined,
+              signer,
             ),
           )
         }
@@ -605,8 +612,12 @@ const ConfiguringDeploymentProject = ({
             ('${projectName}', '${response.data.result}', '${response.data.finalUnderName}', '${getTime()}')
           ]]`,
           mgProcess,
+          undefined,
+          signer,
         )
 
+        // Add small delay to allow database operations to fully propagate
+        await new Promise(resolve => setTimeout(resolve, 2000))
         await refresh()
         toast.success("Deployment successful")
         navigate(`/deployment/card?repo=${projectName}`)

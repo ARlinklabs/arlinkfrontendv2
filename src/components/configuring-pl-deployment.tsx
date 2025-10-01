@@ -2,11 +2,11 @@ import useDeploymentManager, {
     historyTable,
 } from "@/hooks/use-deployment-manager";
 import { ArnsName, BuildSettings, Steps } from "@/types";
-import { useActiveAddress } from "@arweave-wallet-kit/react";
+import { useActiveAddress, useApi } from "@arweave-wallet-kit/react";
 import { useState } from "react";
 import { ChevronLeft } from "lucide-react";
 import NewDeploymentCard from "@/components/shared/new-deployment-card";
-import { handleFetchExistingArnsName, indexInMalik } from "../pages/utilts";
+import { handleFetchExistingArnsName} from "../pages/utilts";
 import { Input } from "@/components/ui/input";
 import DomainSelection from "@/components/shared/domain-selection";
 import { BuildDeploymentSetting } from "@/components/shared/build-settings";
@@ -28,6 +28,7 @@ const ConfigureProtocolLandProject = ({
 }) => {
     const { managerProcess, refresh, deployments } = useDeploymentManager();
     const navigate = useNavigate();
+    const api = useApi();
     const activeAddress = useActiveAddress();
 
     // project states
@@ -102,6 +103,15 @@ const ConfigureProtocolLandProject = ({
     const handleDeployProject = async () => {
             // Check deployment limit first
             
+
+        // Get signer and validate it's available
+        if (!api) {
+            return toast.error("Wallet API not available. Please ensure your wallet is connected properly.");
+        }
+        const signer = api.getAoSigner();
+        if (!signer) {
+            return toast.error("Wallet signer not available. Please ensure your wallet is connected properly.");
+        }
 
         // Validation checks
         const validationErrors = [
@@ -278,9 +288,9 @@ const ConfigureProtocolLandProject = ({
 
                 const dbOperations = [
                     ...dbQueries.map((query) =>
-                        runLua(`db:exec[[${query}]]`, managerProcess),
+                        runLua(`db:exec[[${query}]]`, managerProcess, undefined, signer),
                     ),
-                    runLua(historyTable, managerProcess),
+                    runLua(historyTable, managerProcess, undefined, signer),
                     runLua(
                         `db:exec[[INSERT INTO NewDeploymentHistory (Name, DeploymentID, AssignedUndername, Date) 
                          VALUES ('${projectName}', '${txid.result}', 
@@ -288,15 +298,10 @@ const ConfigureProtocolLandProject = ({
                              userArns ? `'${userArns}'` : "NULL"
                          }, '${getTime()}')]]`,
                         managerProcess,
+                        undefined,
+                        signer,
                     ),
-                    indexInMalik({
-                        projectName,
-                        description: "An awesome decentralized project",
-                        txid: txid.finalUnderName,
-                        owner: activeAddress,
-                        link: `https://arweave.net/${txid.result}`,
-                        arlink: finalArnsProcess,
-                    }),
+                
                 ];
 
                 setIsFetchingLogs(false);
@@ -310,8 +315,12 @@ const ConfigureProtocolLandProject = ({
                                 }', '${txid.result}', '${txid.finalUnderName}', '${getTime()}')
                             ]]`,
                     managerProcess,
+                    undefined,
+                    signer,
                 );
 
+                // Add small delay to allow database operations to fully propagate
+                await new Promise(resolve => setTimeout(resolve, 2000));
                 await refresh();
                 navigate(`/deployment/card?repo=${projectName}`);
             } else {

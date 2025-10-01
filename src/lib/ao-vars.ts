@@ -1,4 +1,4 @@
-import { connect, createDataItemSigner } from "@permaweb/aoconnect";
+import { connect } from "@permaweb/aoconnect";
 
 export const AppVersion = "1.0.0";
 export const AOModule = "u1Ju_X8jiuq4rX9Nh-ZGRQuYQZgV2MKLMT3CZsykk54"; // sqlite
@@ -101,6 +101,7 @@ export async function spawnProcess(
     name?: string,
     tags?: Tag[],
     newProcessModule?: string,
+    signer?: any,
 ) {
     return executeWithRetry(async (ao) => {
         if (tags) {
@@ -110,17 +111,24 @@ export async function spawnProcess(
         }
         tags = name ? [...tags, { name: "Name", value: name }] : tags;
 
-        const result = await ao.spawn({
+        // Create spawn options object, only include signer if it's defined
+        const spawnOptions: any = {
             module: newProcessModule ? newProcessModule : AOModule,
             scheduler: AOScheduler,
             tags,
-            signer: createDataItemSigner(window.arweaveWallet),
-        });
+        };
+
+        // Only add signer if it's defined and not null
+        if (signer) {
+            spawnOptions.signer = signer;
+        }
+
+        const result = await ao.spawn(spawnOptions);
         return result;
     });
 }
 
-export async function runLua(code: string, process: string, tags?: Tag[]) {
+export async function runLua(code: string, process: string, tags?: Tag[], signer?: any) {
     return executeWithRetry(async (ao) => {
         if (tags) {
             tags = [...CommonTags, ...tags];
@@ -139,12 +147,19 @@ export async function runLua(code: string, process: string, tags?: Tag[]) {
 
         tags = [...tags, { name: "Action", value: "Eval" }];
 
-        const message = await ao.message({
+        // Create message options object, only include signer if it's defined
+        const messageOptions: any = {
             process,
             data: code,
-            signer: createDataItemSigner(window.arweaveWallet),
             tags,
-        });
+        };
+
+        // Only add signer if it's defined and not null
+        if (signer) {
+            messageOptions.signer = signer;
+        }
+
+        const message = await ao.message(messageOptions);
 
         const result = await ao.result({ process, message });
         console.log("result of run lua ", result);
@@ -172,23 +187,37 @@ export async function getResults(process: string, cursor = "") {
     });
 }
 
-export async function monitor(process: string) {
+export async function monitor(process: string, signer?: any) {
     return executeWithRetry(async (ao) => {
-        const r = await ao.monitor({
+        // Create monitor options object, only include signer if it's defined
+        const monitorOptions: any = {
             process,
-            signer: createDataItemSigner(window.arweaveWallet),
-        });
+        };
+
+        // Only add signer if it's defined and not null
+        if (signer) {
+            monitorOptions.signer = signer;
+        }
+
+        const r = await ao.monitor(monitorOptions);
 
         return r;
     });
 }
 
-export async function unmonitor(process: string) {
+export async function unmonitor(process: string, signer?: any) {
     return executeWithRetry(async (ao) => {
-        const r = await ao.unmonitor({
+        // Create unmonitor options object, only include signer if it's defined
+        const unmonitorOptions: any = {
             process,
-            signer: createDataItemSigner(window.arweaveWallet),
-        });
+        };
+
+        // Only add signer if it's defined and not null
+        if (signer) {
+            unmonitorOptions.signer = signer;
+        }
+
+        const r = await ao.unmonitor(unmonitorOptions);
 
         return r;
     });
@@ -259,6 +288,7 @@ export async function setArnsName(
     antProcess: string,
     manifestId: string,
     undername = "@",
+    signer?: any,
 ) {
     return executeWithRetry(async (ao) => {
         const msgtags = [
@@ -268,12 +298,19 @@ export async function setArnsName(
             { name: "TTL-Seconds", value: "900" },
         ];
         try {
-            const result = await ao.message({
+            // Create message options object, only include signer if it's defined
+            const messageOptions: any = {
                 process: antProcess,
                 tags: msgtags,
-                signer: createDataItemSigner(window.arweaveWallet),
                 data: "",
-            });
+            };
+
+            // Only add signer if it's defined and not null
+            if (signer) {
+                messageOptions.signer = signer;
+            }
+
+            const result = await ao.message(messageOptions);
             console.log("set arns message officially sent out ", result);
             return result;
         } catch (e) {
@@ -285,7 +322,8 @@ export async function setArnsName(
 export async function setArnsUnderName(
     antProcess: string,
     manifestId: string,
-    undername :string ,
+    undername: string,
+    signer?: any,
 ) {
     return executeWithRetry(async (ao) => {
         const msgtags = [
@@ -295,12 +333,19 @@ export async function setArnsUnderName(
             { name: "TTL-Seconds", value: "60" },
         ];
         try {
-            const result = await ao.message({
+            // Create message options object, only include signer if it's defined
+            const messageOptions: any = {
                 process: antProcess,
                 tags: msgtags,
-                signer: createDataItemSigner(window.arweaveWallet),
                 data: "",
-            });
+            };
+
+            // Only add signer if it's defined and not null
+            if (signer) {
+                messageOptions.signer = signer;
+            }
+
+            const result = await ao.message(messageOptions);
             console.log("set arns message officially sent out ", result);
             return result;
         } catch (e) {

@@ -17,7 +17,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { checkArNSAvailability, getArNSPrice, buyArNS, checkBalance } from "@/actions/arns/arnslater";
 import { Skeleton } from "../ui/skeleton";
 import { BuyArnsSkeleton, PriceLoadingSkeleton } from "../skeletons";
-import { useActiveAddress } from "@arweave-wallet-kit/react";
+import { useActiveAddress, useApi } from "@arweave-wallet-kit/react";
 import { toast } from "sonner";
 import { useLatestANTVersion, getTokenCost } from "@/actions/arns/arnsutils";
 import { InsufficientBalanceModal } from "./insufficient-balance-modal";
@@ -33,6 +33,7 @@ type AvailableArns = ArnsData & {
 
 const BuyArns = ({ arnsName }: BuyArnsProps) => {
     const address = useActiveAddress();
+    const api = useApi();
     const { data: antVersion } = useLatestANTVersion();
     const [checking, setChecking] = useState<boolean>(true);
     const [error, setError] = useState<string | null>("");
@@ -148,6 +149,7 @@ const BuyArns = ({ arnsName }: BuyArnsProps) => {
                 type, 
                 address, 
                 years,
+                api?.getAoSigner?.(),
             );
             
             if (result.success) {

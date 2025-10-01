@@ -14,7 +14,7 @@ export type Store = {
     setDeployments: (deployments: TDeployment[]) => void;
     updateDeployment: (deployment: TDeployment) => void;
     mergeDeployments: (newDeployments: TDeployment[]) => void;
-    safeUpdateDeployments: (newDeployments: TDeployment[]) => void;
+    safeUpdateDeployments: (newDeployments: TDeployment[], fallbackWalletAddress?: string) => void;
     getDeploymentByName: (name: string) => TDeployment | undefined;
     setGithubToken: (token: string | null) => void;
     clearCache: () => void;
@@ -123,11 +123,17 @@ export const useGlobalState = create<Store>()(
                 });
             },
             
-            safeUpdateDeployments: (newDeployments: TDeployment[]) => {
-                const currentWallet = get().walletAddress;
+            safeUpdateDeployments: (newDeployments: TDeployment[], fallbackWalletAddress?: string) => {
+                const currentWallet = get().walletAddress || fallbackWalletAddress;
                 if (!currentWallet) {
                     console.warn('Cannot update deployments without wallet address');
                     return;
+                }
+                
+                // If we don't have wallet address in global state but have fallback, set it
+                if (!get().walletAddress && fallbackWalletAddress) {
+                    console.log('Setting wallet address from fallback:', fallbackWalletAddress);
+                    get().setWalletAddress(fallbackWalletAddress);
                 }
                 
                 const currentDeployments = get().deployments;

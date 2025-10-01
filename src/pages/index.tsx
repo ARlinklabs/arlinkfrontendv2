@@ -2,6 +2,7 @@ import { Suspense, lazy } from "react";
 import { Nav } from "@/components/landing/ui";
 import Hero from "@/components/landing/hero";
 
+
 const LazyHowItWorks = lazy(() => import("@/components/landing/how-it-works"));
 const LazyProjects = lazy(() => import("@/components/landing/projects"));
 const LazyTestimonials = lazy(
@@ -11,6 +12,7 @@ const LazyCommunity = lazy(() => import("@/components/landing/community"));
 const LazyFAQSection = lazy(() => import("@/components/landing/faq"));
 const LazyFeatures = lazy(() => import("@/components/landing/features"));
 const LazyFooter = lazy(() => import("@/components/landing/footer"));
+
 
 function LazySuspenseLandingPage() {
     return (
@@ -26,18 +28,15 @@ function LazySuspenseLandingPage() {
     );
 }
 
-import { useConnection } from "@arweave-wallet-kit/react";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 
 export default function Home() {
-    const { connect } = useConnection();
     const navigate = useNavigate();
     const location = useLocation();
 
     useEffect(() => {
-        connect();
         console.log(import.meta.env.VITE_ENV);
 
         // Check if we're not supposed to be on the home page

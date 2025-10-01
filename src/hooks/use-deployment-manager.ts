@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useGlobalState } from "@/store/useGlobalState";
-import { useActiveAddress, useConnection } from "@arweave-wallet-kit/react";
+import { useWalletState } from "./use-wallet-state";
 import { runLua, spawnProcess } from "@/lib/ao-vars";
-import { connect, createDataItemSigner } from "@permaweb/aoconnect";
+import { useApi } from "@arweave-wallet-kit/react";
 import { gql, GraphQLClient } from "graphql-request";
 import { GetDemploymentHistoryReturnType } from "@/types";
 import { executeWithRetry } from "@/lib/ao-vars";
@@ -135,12 +135,15 @@ export default function useDeploymentManager() {
     const setManagerProcess = useGlobalState(state => state.setManagerProcess);
     const safeUpdateDeployments = useGlobalState(state => state.safeUpdateDeployments);
     
-    const walletAddress = useGlobalState(state => state.walletAddress);
+    const globalWalletAddress = useGlobalState(state => state.walletAddress);
     const managerProcess = useGlobalState(state => state.managerProcess);
     const deployments = useGlobalState(state => state.deployments);
     
-    const { connected } = useConnection();
-    const address = useActiveAddress();
+    const { isConnected: connected, address } = useWalletState();
+    
+    // Use the centralized wallet state for consistency
+    const walletAddress = address || globalWalletAddress;
+    const api = useApi();
     const [isRefreshing, setIsRefreshing] = useState(false);
     const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const retryCountRef = useRef(0);
@@ -148,24 +151,36 @@ export default function useDeploymentManager() {
 
     // Handle manager process setup when wallet connects or changes
     useEffect(() => {
-        if (connected && address && walletAddress === address && !managerProcess) {
-            // Only proceed if the global state wallet matches current address and no manager process exists
+        if (connected && address && !managerProcess) {
+            // Only proceed if the wallet is connected and we don't have a manager process yet
             console.log(`Setting up manager process for wallet: ${address}`);
             getManagerProcessFromAddress(address).then((id) => {
                 if (id) {
+                    console.log(`Found existing manager process: ${id}`);
                     setManagerProcess(id);
                 } else {
                     console.log("No manager process found, spawning new one");
                     //@ts-ignore
-                    spawnProcess("ARlink-Manager").then(async (newId) => {
-                        await runLua(setupCommands, newId);
-                        console.log("deployment manager id", newId);
-                        setManagerProcess(newId);
+                    spawnProcess("ARlink-Manager", undefined, undefined, api?.getAoSigner()).then(async (newId) => {
+                        console.log(`Spawned new manager process: ${newId}`);
+                        try {
+                            await runLua(setupCommands, newId, undefined, api?.getAoSigner());
+                            console.log(`Setup commands completed for process: ${newId}`);
+                            setManagerProcess(newId);
+                        } catch (error) {
+                            console.error("Failed to setup commands for new process:", error);
+                            // Still set the process ID, as it might work on retry
+                            setManagerProcess(newId);
+                        }
+                    }).catch((error) => {
+                        console.error("Failed to spawn manager process:", error);
                     });
                 }
+            }).catch((error) => {
+                console.error("Failed to get manager process from address:", error);
             });
         }
-    }, [connected, address, walletAddress, managerProcess, setManagerProcess]);
+    }, [connected, address, managerProcess, setManagerProcess]);
 
     // Handle deployment fetching when manager process is ready
     useEffect(() => {
@@ -177,9 +192,10 @@ export default function useDeploymentManager() {
             clearTimeout(refreshTimeoutRef.current);
         }
         
-        // Only fetch deployments if we have both manager process and correct wallet, and no deployments yet
-        if (managerProcess && walletAddress === address && connected && deployments.length === 0) {
-            console.log(`Fetching deployments for wallet: ${address}`);
+        // Fetch deployments if we have manager process and connected wallet
+        // Always refresh when manager process changes, even if we have deployments
+        if (managerProcess && connected && address) {
+            console.log(`Fetching deployments for wallet: ${address}, process: ${managerProcess}`);
             refreshTimeoutRef.current = setTimeout(() => {
                 refresh();
             }, 1000); // 1 second delay for new processes
@@ -190,19 +206,17 @@ export default function useDeploymentManager() {
                 clearTimeout(refreshTimeoutRef.current);
             }
         };
-    }, [managerProcess, walletAddress, address, connected, deployments.length]);
+    }, [managerProcess, address, connected]); // Remove deployments.length dependency
 
     async function refresh(isRetry = false) {
         // Validate we have the right context before proceeding
         if (!managerProcess || 
-            !walletAddress || 
-            walletAddress !== address || 
+            !address || 
             !connected || 
             isRefreshing) {
             console.log('Skipping refresh - invalid context:', {
                 managerProcess: !!managerProcess,
-                walletAddress: walletAddress,
-                currentAddress: address,
+                address: address,
                 connected,
                 isRefreshing
             });
@@ -242,16 +256,12 @@ export default function useDeploymentManager() {
             
             const deployments = JSON.parse(Messages[0].Data);
             
-            // Double-check wallet hasn't changed during fetch
-            const currentWallet = useGlobalState.getState().walletAddress;
-            if (currentWallet === address) {
-                console.log(`Successfully fetched ${deployments.length} deployments for wallet: ${address}`);
-                // Use safe update to preserve existing cache if new data is invalid
-                safeUpdateDeployments(deployments);
-                console.log(`Deployments stored successfully for wallet: ${address}`);
-            } else {
-                console.log('Wallet changed during fetch, discarding results');
-            }
+            // Always update deployments since we validated the context at the start
+            console.log(`Successfully fetched ${deployments.length} deployments for wallet: ${address}`);
+            // Use safe update to preserve existing cache if new data is invalid
+            // Pass the wallet address as fallback in case global state doesn't have it yet
+            safeUpdateDeployments(deployments, address);
+            console.log(`Deployments stored successfully for wallet: ${address}`);
             
             retryCountRef.current = 0; // Reset retry count on success
             setIsRefreshing(false);
@@ -260,26 +270,25 @@ export default function useDeploymentManager() {
             console.warn("Refresh failed, attempting setup and retry:", error);
             retryCountRef.current++;
             
-            // Double-check wallet hasn't changed during error handling
-            const currentWallet = useGlobalState.getState().walletAddress;
-            if (currentWallet !== address) {
-                console.log('Wallet changed during error handling, aborting retry');
-                setIsRefreshing(false);
-                return;
-            }
-            
-            try {
-                await runLua(setupCommands, managerProcess);
-                
-                // Exponential backoff for retries
-                const delay = Math.min(500 * Math.pow(2, retryCountRef.current - 1), 5000);
-                
-                refreshTimeoutRef.current = setTimeout(() => {
-                    refresh(true);
-                }, delay);
-                
-            } catch (setupError) {
-                console.error("Setup commands failed:", setupError);
+            // Check if we should retry
+            if (retryCountRef.current <= maxRetries) {
+                try {
+                    console.log(`Attempting to setup commands for process ${managerProcess}, retry ${retryCountRef.current}/${maxRetries}`);
+                    await runLua(setupCommands, managerProcess, undefined, api?.getAoSigner());
+                    
+                    // Exponential backoff for retries
+                    const delay = Math.min(500 * Math.pow(2, retryCountRef.current - 1), 5000);
+                    
+                    refreshTimeoutRef.current = setTimeout(() => {
+                        refresh(true);
+                    }, delay);
+                    
+                } catch (setupError) {
+                    console.error("Setup commands failed:", setupError);
+                    setIsRefreshing(false);
+                }
+            } else {
+                console.error("Max retries exceeded for deployment refresh");
                 setIsRefreshing(false);
             }
         }
@@ -351,10 +360,11 @@ export async function getManagerProcessFromAddress(address: string) {
             if (!data?.transactions?.edges) {
                 throw new Error("Invalid response structure from GraphQL");
             }
-            return { data };
+            return { data: data as Response['data'] };
         } catch (error) {
-            console.error(`GraphQL query failed at ${endpoint}:`, error.message);
-            return { error: error.message };
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            console.error(`GraphQL query failed at ${endpoint}:`, errorMessage);
+            return { error: errorMessage };
         }
     }
 
@@ -433,6 +443,7 @@ export async function getManagerProcessFromAddress(address: string) {
 export async function getDeploymentHistory(
     projectName: string,
     managerProcess: string,
+    signer?: any,
 ): Promise<GetDemploymentHistoryReturnType> {
     const TARGET_PROCESS = managerProcess;
 
@@ -448,7 +459,7 @@ export async function getDeploymentHistory(
                     },
                     { name: "ProjectName", value: projectName },
                 ],
-                signer: createDataItemSigner(window.arweaveWallet),
+                signer: signer,
             });
 
             console.log("Message sent with ID:", message);

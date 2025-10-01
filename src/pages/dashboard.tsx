@@ -20,15 +20,33 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ProjectCard } from "@/components/project-card";
 import { ProjectCardSkeleton } from "@/components/skeletons";
 
+
 const Dashboardcomp = () => {
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
     const [searchTerm, setSearchTerm] = useState("");
     const [sortBy, setSortBy] = useState("activity");
     const { managerProcess, deployments, isRefreshing, walletAddress } = useDeploymentManager();
-    const [cardsLimit, setCardsLimit] = useState(0);
+    const [cardsLimit, setCardsLimit] = useState(12);
     const navigate = useNavigate();
     const [managerProcessExists, setManagerProcessExists] = useState<boolean>(true);
     const [showNoDeployments, setShowNoDeployments] = useState<boolean>(false);
+    
+    // Debug logging
+    useEffect(() => {
+        console.log("Dashboard state:", {
+            walletAddress,
+            managerProcess,
+            deploymentsCount: deployments.length,
+            isRefreshing,
+            managerProcessExists,
+            cardsLimit,
+            shouldShowLoading: shouldShowLoading(),
+            showNoDeployments
+        });
+        if (deployments.length > 0) {
+            console.log("Deployments data:", deployments);
+        }
+    }, [walletAddress, managerProcess, deployments.length, isRefreshing, managerProcessExists, cardsLimit, showNoDeployments]);
 
     const formatProjectData = (deployments: TDeployment[]) => {
         return deployments.map((dep: TDeployment) => ({
@@ -74,9 +92,18 @@ const Dashboardcomp = () => {
             });
     }, [projects, searchTerm, sortBy]);
 
+    // Debug filtered projects
     useEffect(() => {
-        // Only set initial cardsLimit when deployments first loads or goes from empty to having items
-        if (cardsLimit === 0 && deployments.length > 0) {
+        if (deployments.length > 0) {
+            console.log("Filtered projects:", filteredAndSortedProjects);
+            console.log("Cards limit:", cardsLimit);
+            console.log("Projects to display:", filteredAndSortedProjects.slice(0, cardsLimit));
+        }
+    }, [filteredAndSortedProjects, cardsLimit, deployments.length]);
+
+    useEffect(() => {
+        // Ensure cardsLimit is always at least 12 or the number of deployments, whichever is smaller
+        if (deployments.length > 0 && cardsLimit < Math.min(deployments.length, 12)) {
             setCardsLimit(Math.min(deployments.length, 12));
         }
     }, [deployments, cardsLimit]);
@@ -166,6 +193,7 @@ const Dashboardcomp = () => {
                         >
                             <List className="w-3 h-3 md:w-4 md:h-4" />
                         </Button>
+                        
                         <Button
                             onClick={() => navigate("/deploy")}
                             className="font-semibold text-sm md:text-base px-3 py-2 md:px-4 md:py-2"

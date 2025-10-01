@@ -14,6 +14,8 @@ import Navbar from "./components/shared/navbar";
 import { Toaster } from "./components/ui/sonner";
 import ErrorBoundary from "./components/ui/error-boundary";
 import { handleGitHubCallback } from "@/actions/github";
+import { fixConnection  } from "@wauth/strategy"
+
 
 // Lazy-loaded components
 const Home = lazy(() => import("@/pages/index"));
@@ -52,22 +54,46 @@ const Loading = () => <div className="text-center p-4"></div>;
 
 // Wallet Manager Component - handles wallet state changes at app level
 function WalletManager() {
-    const { connected } = useConnection();
+    const { connected, disconnect } = useConnection();
     const address = useActiveAddress();
+    
+    // Apply connection fix to handle page refreshes and connection state issues
+    useEffect(() => {
+        // Only call fixConnection if we have the address and connection state is inconsistent
+        if (address && connected) {
+            fixConnection(address, connected, disconnect);
+        }
+    }, [address, connected, disconnect]);
+
     const setWalletAddress = useGlobalState(state => state.setWalletAddress);
     const clearWalletData = useGlobalState(state => state.clearWalletData);
     
     useEffect(() => {
-        console.log('App-level wallet state change:', { connected, address });
+        const currentWalletAddress = useGlobalState.getState().walletAddress;
         
         if (connected && address) {
-            console.log('App: Setting wallet address:', address);
-            setWalletAddress(address);
+            // Only update if address actually changed to prevent unnecessary updates
+            if (currentWalletAddress !== address) {
+                console.log('WalletManager: Wallet connected, setting address:', address);
+                setWalletAddress(address);
+            }
         } else if (!connected) {
-            console.log('App: Wallet disconnected, clearing data');
-            clearWalletData();
+            // Clear wallet data when disconnected, but only if we have data to clear
+            if (currentWalletAddress) {
+                console.log('WalletManager: Wallet disconnected, clearing data');
+                clearWalletData();
+            }
         }
     }, [connected, address, setWalletAddress, clearWalletData]);
+    
+    // Debug logging to help identify connection state issues
+    useEffect(() => {
+        console.log('WalletManager state:', { 
+            connected, 
+            address, 
+            globalWalletAddress: useGlobalState.getState().walletAddress 
+        });
+    }, [connected, address]);
     
     return null; // This component doesn't render anything
 }

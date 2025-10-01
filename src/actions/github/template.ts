@@ -4,7 +4,7 @@ import {
     TemplateSubmission,
 } from "@/types";
 import { Octokit } from "@octokit/rest";
-import { createDataItemSigner, connect } from "@permaweb/aoconnect";
+import { connect } from "@permaweb/aoconnect";
 
 const TARGET_PROCESS = "6M87yicVAKQzGkMrjLZKaomLbBj2BdRCWM-WUFpWHr4";
 
@@ -29,7 +29,7 @@ export async function forkRepository(
     }
 }
 
-export async function submitTemplate(template: TemplateSubmission) {
+export async function submitTemplate(template: TemplateSubmission, signer?: any) {
     const ao = connect({
         CU_URL: "https://ur-cu.randao.net",
         MODE: "legacy",
@@ -50,7 +50,7 @@ export async function submitTemplate(template: TemplateSubmission) {
                 { name: "SubmissionCode", value: template.submissionCode },
                 { name: "DemoUrl", value: template.demoUrl },
             ],
-            signer: createDataItemSigner(window.arweaveWallet),
+            signer: signer,
         });
 
         // console.log("Template submission message sent with ID:", message);
@@ -167,7 +167,7 @@ interface SubmissionCodeResponse {
     error?: string;
 }
 
-export async function generateSubmissionCode(): Promise<SubmissionCodeResponse> {
+export async function generateSubmissionCode(signer?: any): Promise<SubmissionCodeResponse> {
     const ao = connect({
         CU_URL: "https://cu.ardrive.io",
         MODE: "legacy",
@@ -177,7 +177,7 @@ export async function generateSubmissionCode(): Promise<SubmissionCodeResponse> 
         const message = await ao.message({
             process: TARGET_PROCESS,
             tags: [{ name: "Action", value: "GenerateSubmissionCode" }],
-            signer: createDataItemSigner(window.arweaveWallet),
+            signer: signer,
         });
 
         // console.log("🎫 Code generation message sent with ID:", message);
