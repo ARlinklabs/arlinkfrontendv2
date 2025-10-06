@@ -148,6 +148,7 @@ export default function useDeploymentManager() {
     const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const retryCountRef = useRef(0);
     const maxRetries = 3;
+    const isRefreshingRef = useRef(false); // Track if refresh is already in progress
 
     // Handle manager process setup when wallet connects or changes
     useEffect(() => {
@@ -195,7 +196,7 @@ export default function useDeploymentManager() {
         // Fetch deployments if we have manager process and connected wallet
         // Always refresh when manager process changes, even if we have deployments
         if (managerProcess && connected && address) {
-            console.log(`Fetching deployments for wallet: ${address}, process: ${managerProcess}`);
+            console.log(`Scheduling deployment fetch for wallet: ${address}`);
             refreshTimeoutRef.current = setTimeout(() => {
                 refresh();
             }, 1000); // 1 second delay for new processes
@@ -209,17 +210,18 @@ export default function useDeploymentManager() {
     }, [managerProcess, address, connected]); // Remove deployments.length dependency
 
     async function refresh(isRetry = false) {
+        // Prevent duplicate concurrent refresh calls
+        if (isRefreshingRef.current) {
+            console.log('Refresh already in progress, skipping duplicate call');
+            return;
+        }
+        
         // Validate we have the right context before proceeding
         if (!managerProcess || 
             !address || 
             !connected || 
             isRefreshing) {
-            console.log('Skipping refresh - invalid context:', {
-                managerProcess: !!managerProcess,
-                address: address,
-                connected,
-                isRefreshing
-            });
+            console.log('Skipping refresh - invalid context');
             return;
         }
         
@@ -227,9 +229,11 @@ export default function useDeploymentManager() {
         if (isRetry && retryCountRef.current >= maxRetries) {
             console.warn("Max retries reached for deployment refresh");
             setIsRefreshing(false);
+            isRefreshingRef.current = false;
             return;
         }
 
+        isRefreshingRef.current = true;
         setIsRefreshing(true);
         console.log(`Refreshing deployments for wallet: ${address}`);
 
@@ -245,6 +249,7 @@ export default function useDeploymentManager() {
             if (result.Error) {
                 console.error("Deployment fetch error:", result.Error);
                 setIsRefreshing(false);
+                isRefreshingRef.current = false;
                 return;
             }
             
@@ -265,6 +270,7 @@ export default function useDeploymentManager() {
             
             retryCountRef.current = 0; // Reset retry count on success
             setIsRefreshing(false);
+            isRefreshingRef.current = false;
             
         } catch (error) {
             console.warn("Refresh failed, attempting setup and retry:", error);
@@ -286,10 +292,12 @@ export default function useDeploymentManager() {
                 } catch (setupError) {
                     console.error("Setup commands failed:", setupError);
                     setIsRefreshing(false);
+                    isRefreshingRef.current = false;
                 }
             } else {
                 console.error("Max retries exceeded for deployment refresh");
                 setIsRefreshing(false);
+                isRefreshingRef.current = false;
             }
         }
     }

@@ -33,20 +33,20 @@ export const useGlobalState = create<Store>()(
             setWalletAddress: (address: string | null) => {
                 const currentAddress = get().walletAddress;
                 
-                // If wallet address is changing, clear wallet-specific data
-                if (currentAddress !== address) {
-                    console.log('Wallet changed from', currentAddress, 'to', address);
-                    
-                    // Clear current wallet data
-                    set({ 
-                        walletAddress: address,
-                        managerProcess: "",
-                        deployments: [],
-                        lastDeploymentsFetch: 0
-                    });
-                } else {
-                    set({ walletAddress: address });
+                // Only update if address actually changed
+                if (currentAddress === address) {
+                    return; // No change, don't update
                 }
+                
+                console.log('Wallet changed from', currentAddress, 'to', address);
+                
+                // Clear current wallet data when switching wallets
+                set({ 
+                    walletAddress: address,
+                    managerProcess: "",
+                    deployments: [],
+                    lastDeploymentsFetch: 0
+                });
             },
             
             setManagerProcess: (managerProcess: string) => set({ managerProcess }),
@@ -124,35 +124,38 @@ export const useGlobalState = create<Store>()(
             },
             
             safeUpdateDeployments: (newDeployments: TDeployment[], fallbackWalletAddress?: string) => {
-                const currentWallet = get().walletAddress || fallbackWalletAddress;
-                if (!currentWallet) {
-                    console.warn('Cannot update deployments without wallet address');
-                    return;
+                const currentWallet = get().walletAddress;
+                
+                // If we don't have wallet address in global state but have fallback, set it ONLY ONCE
+                if (!currentWallet && fallbackWalletAddress) {
+                    console.log('Setting wallet address from fallback:', fallbackWalletAddress);
+                    // Directly set without triggering side effects
+                    set({ walletAddress: fallbackWalletAddress });
                 }
                 
-                // If we don't have wallet address in global state but have fallback, set it
-                if (!get().walletAddress && fallbackWalletAddress) {
-                    console.log('Setting wallet address from fallback:', fallbackWalletAddress);
-                    get().setWalletAddress(fallbackWalletAddress);
+                const walletToUse = currentWallet || fallbackWalletAddress;
+                if (!walletToUse) {
+                    console.warn('Cannot update deployments without wallet address');
+                    return;
                 }
                 
                 const currentDeployments = get().deployments;
                 
                 // Don't update if new data is empty and we have existing data
                 if (newDeployments.length === 0 && currentDeployments.length > 0) {
-                    console.warn(`Ignoring empty deployments update for wallet ${currentWallet} to preserve cache`);
+                    console.warn(`Ignoring empty deployments update for wallet ${walletToUse} to preserve cache`);
                     return;
                 }
                 
                 // Don't update if new data seems invalid
                 if (newDeployments.some(dep => !dep.Name || !dep.RepoUrl)) {
-                    console.warn(`Ignoring invalid deployments update for wallet ${currentWallet}`);
+                    console.warn(`Ignoring invalid deployments update for wallet ${walletToUse}`);
                     return;
                 }
                 
                 // If we have no existing data, just set the new data
                 if (currentDeployments.length === 0) {
-                    console.log(`Setting initial deployments for wallet ${currentWallet}:`, newDeployments.length);
+                    console.log(`Setting initial deployments for wallet ${walletToUse}:`, newDeployments.length);
                     set({ 
                         deployments: newDeployments,
                         lastDeploymentsFetch: Date.now()

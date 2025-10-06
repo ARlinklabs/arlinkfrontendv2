@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { Search, Grid, List, Plus, RocketIcon } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -30,23 +30,6 @@ const Dashboardcomp = () => {
     const navigate = useNavigate();
     const [managerProcessExists, setManagerProcessExists] = useState<boolean>(true);
     const [showNoDeployments, setShowNoDeployments] = useState<boolean>(false);
-    
-    // Debug logging
-    useEffect(() => {
-        console.log("Dashboard state:", {
-            walletAddress,
-            managerProcess,
-            deploymentsCount: deployments.length,
-            isRefreshing,
-            managerProcessExists,
-            cardsLimit,
-            shouldShowLoading: shouldShowLoading(),
-            showNoDeployments
-        });
-        if (deployments.length > 0) {
-            console.log("Deployments data:", deployments);
-        }
-    }, [walletAddress, managerProcess, deployments.length, isRefreshing, managerProcessExists, cardsLimit, showNoDeployments]);
 
     const formatProjectData = (deployments: TDeployment[]) => {
         return deployments.map((dep: TDeployment) => ({
@@ -92,62 +75,30 @@ const Dashboardcomp = () => {
             });
     }, [projects, searchTerm, sortBy]);
 
-    // Debug filtered projects
-    useEffect(() => {
-        if (deployments.length > 0) {
-            console.log("Filtered projects:", filteredAndSortedProjects);
-            console.log("Cards limit:", cardsLimit);
-            console.log("Projects to display:", filteredAndSortedProjects.slice(0, cardsLimit));
-        }
-    }, [filteredAndSortedProjects, cardsLimit, deployments.length]);
-
-    useEffect(() => {
-        // Ensure cardsLimit is always at least 12 or the number of deployments, whichever is smaller
-        if (deployments.length > 0 && cardsLimit < Math.min(deployments.length, 12)) {
-            setCardsLimit(Math.min(deployments.length, 12));
-        }
-    }, [deployments, cardsLimit]);
-
-    useEffect(() => {
-        if (managerProcess) {
-            setManagerProcessExists(true);
-        } else {
-            setManagerProcessExists(false);
-        }
-    }, [managerProcess]);
-
-    // Handle showing "no deployments found" with a delay to prevent flashing during wallet switches
-    useEffect(() => {
-        if (deployments.length > 0) {
-            setShowNoDeployments(false);
-        } else if (walletAddress && managerProcess && !isRefreshing) {
-            // Add a small delay before showing "no deployments found"
-            const timer = setTimeout(() => {
-                setShowNoDeployments(true);
-            }, 1000);
-            return () => clearTimeout(timer);
-        } else {
-            setShowNoDeployments(false);
-        }
-    }, [deployments.length, walletAddress, managerProcess, isRefreshing]);
-
-    // Reset showNoDeployments when wallet changes
-    useEffect(() => {
-        setShowNoDeployments(false);
-    }, [walletAddress]);
-
-    // Determine if we should show loading state
-    const shouldShowLoading = () => {
-        // Show loading if:
-        // 1. Currently refreshing deployments
-        // 2. Have a wallet but no manager process yet
-        // 3. Have wallet and manager process but no deployments and haven't decided to show "no deployments" yet
+    // Determine if we should show loading state (memoized to prevent re-renders)
+    const shouldShowLoading = useCallback(() => {
         return (
             isRefreshing || 
             (walletAddress && !managerProcess) ||
             (walletAddress && managerProcess && deployments.length === 0 && !showNoDeployments)
         );
-    };
+    }, [isRefreshing, walletAddress, managerProcess, deployments.length, showNoDeployments]);
+
+    // Update manager process existence state
+    useEffect(() => {
+        setManagerProcessExists(!!managerProcess);
+    }, [managerProcess]);
+
+    // Handle showing "no deployments found"
+    useEffect(() => {
+        if (deployments.length > 0) {
+            setShowNoDeployments(false);
+        } else if (walletAddress && managerProcess && !isRefreshing) {
+            setShowNoDeployments(true);
+        } else {
+            setShowNoDeployments(false);
+        }
+    }, [deployments.length, walletAddress, managerProcess, isRefreshing]);
 
     return (
         <Layout>
