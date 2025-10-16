@@ -13,7 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { submitTemplate } from "@/actions/github/template";
 import { toast } from "sonner";
-import { useApi } from "@arweave-wallet-kit/react";
+import { useApi } from "@/lib/wallet-strategies";
 import {
     InputOTP,
     InputOTPGroup,

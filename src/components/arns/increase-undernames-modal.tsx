@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { getpriceinfo, IncreaseUndername } from "@/actions/arns/arnslater";
-import { useActiveAddress } from "@arweave-wallet-kit/react";
+import { useActiveAddress } from "@/lib/wallet-strategies";
 import { toast } from "@/components/ui/use-toast";
 import { Minus, Plus } from "lucide-react";
 

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { getArNSRecordInfo, extendLease, checkBalance } from "@/actions/arns/arnslater";
 import { getIncreaseLeaseCost } from "@/actions/arns/arnsutils";
-import { useActiveAddress } from "@arweave-wallet-kit/react";
+import { useActiveAddress } from "@/lib/wallet-strategies";
 import { toast } from "@/components/ui/use-toast";
 import { Minus, Plus, Calendar, AlertTriangle, ExternalLink } from "lucide-react";
 import { InsufficientBalanceModal } from "./insufficient-balance-modal";

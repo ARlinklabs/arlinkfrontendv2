@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useGlobalState } from "@/store/useGlobalState";
 import { useWalletState } from "./use-wallet-state";
 import { runLua, spawnProcess } from "@/lib/ao-vars";
-import { useApi } from "@arweave-wallet-kit/react";
+import { useApi } from "@/lib/wallet-strategies";
 import { gql, GraphQLClient } from "graphql-request";
 import { GetDemploymentHistoryReturnType } from "@/types";
 import { executeWithRetry } from "@/lib/ao-vars";

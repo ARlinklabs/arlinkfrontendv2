@@ -35,6 +35,9 @@ importers:
       '@arweave-wallet-kit/webwallet-strategy':
         specifier: 0.0.1-beta.4
         version: 0.0.1-beta.4(@arweave-wallet-kit/browser-wallet-strategy@0.1.1(@arweave-wallet-kit/core@0.1.1))(@arweave-wallet-kit/core@0.1.1)(arweave-wallet-connector@1.0.2(bufferutil@4.0.9)(utf-8-validate@5.0.10))
+      '@dha-team/arbundles':
+        specifier: 1.0.3
+        version: 1.0.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       '@octokit/rest':
         specifier: ^21.0.2
         version: 21.0.2
@@ -980,9 +983,6 @@ packages:
 
   '@dabh/diagnostics@2.0.3':
     resolution: {integrity: sha512-hrlQOIi7hAfzsMqlGSFyVucrx38O+j6wiGOf//H2ecvIEqYN4ADBSS2iLMh5UFyDunCNniUIPk/q3riFv45xRA==}
-
-  '@dha-team/arbundles@1.0.1':
-    resolution: {integrity: sha512-cgVxhZJLK1HG2+vcRBZ0CYGpxz7mA2QvLaspcw2gOzb2V/ZUxlifUu1aufBK3iz63Ww2OhgO0j9DstRJqrG1uA==}
 
   '@dha-team/arbundles@1.0.3':
     resolution: {integrity: sha512-/XelOo5V/1o1M8VchCQ+F7N5kxwirWh5jD5zg1KECaV80Qld6aKBSgG19VLlBsRUXbRUfjM+LDRPJm9Hjfmycg==}
@@ -7179,7 +7179,7 @@ snapshots:
 
   '@ar.io/sdk@3.10.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
     dependencies:
-      '@dha-team/arbundles': 1.0.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      '@dha-team/arbundles': 1.0.4(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       '@permaweb/aoconnect': 0.0.57
       arweave: 1.15.5
       axios: 1.8.4
@@ -7193,7 +7193,6 @@ snapshots:
     transitivePeerDependencies:
       - bufferutil
       - debug
-      - encoding
       - supports-color
       - utf-8-validate
 
@@ -8043,31 +8042,6 @@ snapshots:
       colorspace: 1.1.4
       enabled: 2.0.0
       kuler: 2.0.0
-
-  '@dha-team/arbundles@1.0.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
-    dependencies:
-      '@ethersproject/bytes': 5.7.0
-      '@ethersproject/hash': 5.7.0
-      '@ethersproject/providers': 5.7.2(bufferutil@4.0.9)(utf-8-validate@5.0.10)
-      '@ethersproject/signing-key': 5.7.0
-      '@ethersproject/transactions': 5.7.0
-      '@ethersproject/wallet': 5.7.0
-      '@noble/ed25519': 1.7.3
-      arweave: 1.15.5
-      base64url: 3.0.1
-      bs58: 4.0.1
-      keccak: 3.0.4
-      secp256k1: 5.0.1
-    optionalDependencies:
-      '@randlabs/myalgo-connect': 1.4.2
-      algosdk: 1.24.1
-      arweave-stream-tx: 1.2.2(arweave@1.15.5)
-      multistream: 4.1.0
-      tmp-promise: 3.0.3
-    transitivePeerDependencies:
-      - bufferutil
-      - encoding
-      - utf-8-validate
 
   '@dha-team/arbundles@1.0.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
     dependencies:
@@ -9290,7 +9264,7 @@ snapshots:
 
   '@permaweb/aoconnect@0.0.77(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
     dependencies:
-      '@dha-team/arbundles': 1.0.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      '@dha-team/arbundles': 1.0.4(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       '@permaweb/ao-scheduler-utils': 0.0.25
       '@permaweb/protocol-tag-utils': 0.0.2
       axios: 1.7.9(debug@4.4.0)
@@ -9305,7 +9279,6 @@ snapshots:
       zod: 3.24.1
     transitivePeerDependencies:
       - bufferutil
-      - encoding
       - supports-color
       - utf-8-validate
 

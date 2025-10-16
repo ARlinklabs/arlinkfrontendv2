@@ -1,13 +1,10 @@
-import { Menu, Copy, UserIcon, User, LogOut, Wallet, Mail } from "lucide-react";
+import { Menu, UserIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import WAuthStrategy, { WAuthProviders } from "@wauth/strategy";
-
-
-import { toast } from "sonner";
 import { getPrimaryname } from "@/lib/utils";
 import { useWalletState } from "@/hooks/use-wallet-state";
+import ProfileModal from "@/components/shared/profile-modal";
 type NavLink = {
     name: string;
     url: string;
@@ -45,13 +42,6 @@ export const Nav = () => {
         setDisconnecting(true);
         await disconnect();
         setDisconnecting(false);
-    };
-
-    const copyAddress = () => {
-        if (address) {
-            navigator.clipboard.writeText(address);
-            toast("Address copied to clipboard");
-        }
     };
 
     useEffect(() => {
@@ -133,97 +123,14 @@ export const Nav = () => {
                     )}
                 </div>
                 <div className="third_column">
-                    {connected ? (
-                        <Dialog>
-                            <DialogTrigger asChild>
-                                <button className="bg-white text-black pr-2 flex items-center font-semibold px-1 gap-2 py-1 rounded-md">
-                                    <div className="bg-[#151516] size-8 flex items-center justify-center text-white rounded-md">
-                                        <User className="size-4" />
-                                    </div>
-                                    <span>{userEmail || `${address?.slice(
-                                        0,
-                                        5,
-                                    )}...${address?.slice(
-                                        address.length - 5,
-                                        address.length - 1,
-                                    )}`}</span>
-                                </button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-[400px]  bg-[#09090b] border-neutral-800 border text-white">
-                                <div className="text-lg font-semibold">
-                                    Profile
-                                </div>
-
-                                <div className="flex flex-col items-center gap-2 mb-4">
-                                    <div className="size-32 overflow-hidden border-2 border-neutral-700 rounded-full bg-gradient-to-b from-[#0C9142] relative to-black flex items-center justify-center">
-                                        {avatarUrl ? (
-                                            <img
-                                                src={avatarUrl}
-                                                className="absolute h-full w-full"
-                                            />
-                                        ) : (
-                                            <User className="size-12" />
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-col gap-3">
-                                    {userEmail && (
-                                        <div className="flex items-center justify-between bg-[#18171c] rounded-lg p-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="size-10 rounded-md flex items-center justify-center border border-[#302e36] ">
-                                                    <Mail />
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-sm text-gray-400">
-                                                        Email
-                                                    </span>
-                                                    <span className="font-medium">{userEmail}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                    
-                                    <div className="flex items-center justify-between bg-[#18171c] rounded-lg p-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="size-10 rounded-md flex items-center justify-center border border-[#302e36] ">
-                                                <Wallet />
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-sm text-gray-400">
-                                                    Wallet Address
-                                                </span>
-                                                <span className="font-medium">{`${address?.slice(
-                                                    0,
-                                                    5,
-                                                )}...${address?.slice(
-                                                    address.length - 5,
-                                                    address.length - 1,
-                                                )}`}</span>
-                                            </div>
-                                        </div>
-                                        <button
-                                            onClick={copyAddress}
-                                            className="text-gray-400 hover:text-white transition-colors"
-                                        >
-                                            <Copy className="size-5" />
-                                        </button>
-                                    </div>
-
-                                    <button
-                                        onClick={disConnect}
-                                        className="flex items-center justify-center gap-2 w-full bg-transparent hover:bg-[#302e36] transition-colors rounded-lg py-2 border border-[#302e36]"
-                                    >
-                                        <LogOut className="size-5" />
-                                        <span className="font-medium">
-                                            {disconnecting
-                                                ? "Disconnecting..."
-                                                : "Disconnect"}
-                                        </span>
-                                    </button>
-                                </div>
-                            </DialogContent>
-                        </Dialog>
+                    {connected && address ? (
+                        <ProfileModal
+                            address={address}
+                            avatarUrl={avatarUrl}
+                            userEmail={userEmail}
+                            onDisconnect={disConnect}
+                            disconnecting={disconnecting}
+                        />
                     ) : (
                         <button
                             onClick={connecting}
@@ -252,97 +159,14 @@ export const Nav = () => {
                     </div>
                 </div>
                 <div className="third_column">
-                    {connected ? (
-                        <Dialog>
-                            <DialogTrigger asChild>
-                                <button className="bg-white text-black pr-2 flex items-center font-semibold px-1 gap-2 py-1 rounded-md">
-                                    <div className="bg-[#151516] size-8 flex items-center justify-center text-white rounded-md">
-                                        <User className="size-4" />
-                                    </div>
-                                    <span>{userEmail || `${address?.slice(
-                                        0,
-                                        5,
-                                    )}...${address?.slice(
-                                        address.length - 5,
-                                        address.length - 1,
-                                    )}`}</span>
-                                </button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-[400px] rounded-xl  bg-[#09090b] border-neutral-800 border text-white">
-                                <div className="text-lg font-semibold">
-                                    Profile
-                                </div>
-
-                                <div className="flex flex-col items-center gap-2 mb-4">
-                                    <div className="size-32 overflow-hidden border-2 border-neutral-700 rounded-full bg-gradient-to-b from-[#0C9142] relative to-black flex items-center justify-center">
-                                        {avatarUrl ? (
-                                            <img
-                                                src={avatarUrl}
-                                                className="absolute h-full w-full"
-                                            />
-                                        ) : (
-                                            <User className="size-12" />
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-col gap-3">
-                                    {userEmail && (
-                                        <div className="flex items-center justify-between bg-[#18171c] rounded-lg p-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="size-10 rounded-md flex items-center justify-center border border-[#302e36] ">
-                                                    <Mail />
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-sm text-gray-400">
-                                                        Email
-                                                    </span>
-                                                    <span className="font-medium">{userEmail}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                    
-                                    <div className="flex items-center justify-between bg-[#18171c] rounded-lg p-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="size-10 rounded-md flex items-center justify-center border border-[#302e36] ">
-                                                <Wallet />
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-sm text-gray-400">
-                                                    Wallet Address
-                                                </span>
-                                                <span className="font-medium">{`${address?.slice(
-                                                    0,
-                                                    5,
-                                                )}...${address?.slice(
-                                                    address.length - 5,
-                                                    address.length - 1,
-                                                )}`}</span>
-                                            </div>
-                                        </div>
-                                        <button
-                                            onClick={copyAddress}
-                                            className="text-gray-400 hover:text-white transition-colors"
-                                        >
-                                            <Copy className="size-5" />
-                                        </button>
-                                    </div>
-
-                                    <button
-                                        onClick={disConnect}
-                                        className="flex items-center justify-center gap-2 w-full bg-transparent hover:bg-[#302e36] transition-colors rounded-lg py-2 border border-[#302e36]"
-                                    >
-                                        <LogOut className="size-5" />
-                                        <span className="font-medium">
-                                            {disconnecting
-                                                ? "Disconnecting..."
-                                                : "Disconnect"}
-                                        </span>
-                                    </button>
-                                </div>
-                            </DialogContent>
-                        </Dialog>
+                    {connected && address ? (
+                        <ProfileModal
+                            address={address}
+                            avatarUrl={avatarUrl}
+                            userEmail={userEmail}
+                            onDisconnect={disConnect}
+                            disconnecting={disconnecting}
+                        />
                     ) : (
                         <button
                             onClick={connecting}

@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
-import { useApi } from "@arweave-wallet-kit/react";
+import { useApi } from "@/lib/wallet-strategies";
 import { useGlobalState } from "@/store/useGlobalState";
 import { runLua } from "@/lib/ao-vars";
 import { toast } from "sonner";

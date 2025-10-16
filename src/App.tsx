@@ -8,13 +8,12 @@ import {
 } from "react-router-dom";
 import { useSearchParams } from "react-router-dom";
 import { lazy, Suspense, useEffect } from "react";
-import { useConnection, useActiveAddress } from "@arweave-wallet-kit/react";
+import { useConnection, useActiveAddress, fixConnection } from "@/lib/wallet-strategies";
 import { useGlobalState } from "@/store/useGlobalState";
 import Navbar from "./components/shared/navbar";
 import { Toaster } from "./components/ui/sonner";
 import ErrorBoundary from "./components/ui/error-boundary";
 import { handleGitHubCallback } from "@/actions/github";
-import { fixConnection  } from "@wauth/strategy"
 
 
 // Lazy-loaded components

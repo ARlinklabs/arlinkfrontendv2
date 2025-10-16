@@ -2,12 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.tsx";
 import "./globals.css";
-import { ArweaveWalletKit } from "@arweave-wallet-kit/react";
-import WanderStrategy from "@arweave-wallet-kit/wander-strategy";
-import WAuthStrategy, { WAuthProviders } from "@wauth/strategy";
-
-
-
+import { WalletProvider } from "./lib/wallet-strategies/WalletProvider";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PostHogProvider } from 'posthog-js/react'
@@ -48,7 +43,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
             <PostHogProvider apiKey="phc_WY4XjaGylQgKdnvlaEIFM179W36iLQrtHTHusc4P5KF" options={options}>
 
         <QueryClientProvider client={queryClient}>
-            <ArweaveWalletKit
+            <WalletProvider
                 theme={{
                     displayTheme: "dark",
                 }}
@@ -60,15 +55,10 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
                         "DISPATCH",
                     ],
                     ensurePermissions: true,
-                    strategies: [
-                        // new WanderStrategy(),
-                        new WAuthStrategy({ provider: WAuthProviders.Github }),
-
-                    ],
                 }}
             >
                 <App />
-            </ArweaveWalletKit>
+            </WalletProvider>
         </QueryClientProvider>
         </PostHogProvider>
     </React.StrictMode>

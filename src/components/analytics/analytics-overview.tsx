@@ -1,6 +1,6 @@
 import { fetchAnalytics } from "@/actions/analytics";
 import { lazy, Suspense } from "react";
-import { useApi } from "@arweave-wallet-kit/react";
+import { useApi } from "@/lib/wallet-strategies";
 const WorldMapCard = lazy(() => import("../world-map-card.tsx"));
 import {
     AnalyticsData,

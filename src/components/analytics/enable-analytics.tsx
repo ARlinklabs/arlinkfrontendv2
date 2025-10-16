@@ -1,6 +1,6 @@
 import { enableAnalytics } from "@/actions/analytics";
 import { useState } from "react";
-import { useApi } from "@arweave-wallet-kit/react";
+import { useApi } from "@/lib/wallet-strategies";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {

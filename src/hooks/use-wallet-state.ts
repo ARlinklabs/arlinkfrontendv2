@@ -1,4 +1,4 @@
-import { useConnection, useActiveAddress, useProfileModal } from "@arweave-wallet-kit/react";
+import { useConnection, useActiveAddress, useProfileModal } from "@/lib/wallet-strategies";
 import { useGlobalState } from "@/store/useGlobalState";
 import { useEffect, useRef } from "react";
 /**

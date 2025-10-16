@@ -1,7 +1,7 @@
 import { generateSubmissionCode } from "@/actions/github/template";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { useApi } from "@arweave-wallet-kit/react";
+import { useApi } from "@/lib/wallet-strategies";
 
 const Generate = () => {
     const api = useApi();
