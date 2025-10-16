@@ -7,7 +7,7 @@ import {
     useNavigate,
 } from "react-router-dom";
 import { useSearchParams } from "react-router-dom";
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 import { useConnection, useActiveAddress, fixConnection } from "@/lib/wallet-strategies";
 import { useGlobalState } from "@/store/useGlobalState";
 import Navbar from "./components/shared/navbar";
@@ -55,14 +55,19 @@ const Loading = () => <div className="text-center p-4"></div>;
 function WalletManager() {
     const { connected, disconnect } = useConnection();
     const address = useActiveAddress();
+    const disconnectRef = useRef(disconnect);
     
-    // Apply connection fix to handle page refreshes and connection state issues
+    // Keep disconnect ref updated
     useEffect(() => {
-        // Only call fixConnection if we have the address and connection state is inconsistent
-        if (address && connected) {
-            fixConnection(address, connected, disconnect);
-        }
-    }, [address, connected, disconnect]);
+        disconnectRef.current = disconnect;
+    }, [disconnect]);
+    
+    // Apply connection fix to handle edge cases where we're connected but have no address
+    // Use ref for disconnect to avoid infinite loops
+    useEffect(() => {
+        // Only clean up bad states (connected without address)
+        fixConnection(address || undefined, connected, disconnectRef.current);
+    }, [address, connected]);
 
     const setWalletAddress = useGlobalState(state => state.setWalletAddress);
     const clearWalletData = useGlobalState(state => state.clearWalletData);

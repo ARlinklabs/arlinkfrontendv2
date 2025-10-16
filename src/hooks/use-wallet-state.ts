@@ -20,11 +20,20 @@ export function useWalletState() {
     const profileModal = useProfileModal();
     const reconnectAttemptedRef = useRef(false);
 
-  
+    // Store function references in refs to prevent infinite loops
+    const connectRef = useRef(connect);
+    const disconnectRef = useRef(disconnect);
+    const profileModalRef = useRef(profileModal);
+    
+    // Keep refs updated
+    useEffect(() => {
+        connectRef.current = connect;
+        disconnectRef.current = disconnect;
+        profileModalRef.current = profileModal;
+    }, [connect, disconnect, profileModal]);
 
     // Use global state as the source of truth for wallet address
     const walletAddress = useGlobalState(state => state.walletAddress);
-    const clearWalletData = useGlobalState(state => state.clearWalletData);
     
     // Use the most reliable address source
     const address = kitAddress || walletAddress;
@@ -39,7 +48,7 @@ export function useWalletState() {
         // If wallet is already connected with an active address, close the profile modal
         // This prevents the modal from opening repeatedly on page refresh
         if ((kitAddress || walletAddress) && connected) {
-            profileModal.setOpen(false);
+            profileModalRef.current.setOpen(false);
         }
         
         // Log current wallet state for debugging
@@ -59,7 +68,7 @@ export function useWalletState() {
             reconnectAttemptedRef.current = true;
             
             // Try to connect
-            connect().then(() => {
+            connectRef.current().then(() => {
                 // console.log('useWalletState: Wallet connection successful');
             }).catch((_error) => {
                 // console.warn('useWalletState: Wallet connection failed:', _error.message);
@@ -72,9 +81,9 @@ export function useWalletState() {
         // If we're connected but have no address, something is wrong - disconnect
         if (connected && !address) {
             // console.warn('useWalletState: Connected but no address available, disconnecting...');
-            disconnect().catch(console.error);
+            disconnectRef.current().catch(console.error);
         }
-    }, [kitAddress, walletAddress, connected, connect, disconnect, clearWalletData, profileModal]);
+    }, [kitAddress, walletAddress, connected, address]);
     
     // A wallet is truly connected when we have ANY valid address
     // This covers both traditional wallet connections and OAuth/WAUTH scenarios
