@@ -232,25 +232,15 @@ export default function Navbar() {
                                                 <User className="size-12" />
                                             )}
                                         </div>
+                                        {userEmail && (
+                                            <div className="flex items-center gap-2 text-gray-400">
+                                                <Mail className="size-4" />
+                                                <span className="text-sm">{userEmail}</span>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="flex flex-col gap-3">
-                                        {userEmail && (
-                                            <div className="flex items-center justify-between bg-[#18171c] rounded-lg p-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="size-10 rounded-md flex items-center justify-center border border-[#302e36] ">
-                                                        <Mail />
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <span className="text-sm text-gray-400">
-                                                            Email
-                                                        </span>
-                                                        <span className="font-medium">{userEmail}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                        
                                         <div className="flex items-center justify-between bg-[#18171c] rounded-lg p-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="size-10 rounded-md flex items-center justify-center border border-[#302e36] ">
