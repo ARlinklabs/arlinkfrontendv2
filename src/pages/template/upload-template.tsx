@@ -13,7 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { submitTemplate } from "@/actions/github/template";
 import { toast } from "sonner";
-import { useApi } from "@/lib/wallet-strategies";
+import { useSigner } from "@/lib/wallet-strategies";
 import {
     InputOTP,
     InputOTPGroup,
@@ -25,7 +25,7 @@ import { GitHubSignInTemplate } from "@/components/ui/github-sign-in";
 const UploadTemplate = () => {
     const [step, setStep] = useState<"import" | "upload" | "code">("import");
     const { githubToken } = useGlobalState();
-    const api = useApi();
+    const signer = useSigner();
     const [selectRepoUrl, setSelectRepoUrl] = useState("");
     const [code, setCode] = useState<string>("");
 
@@ -406,7 +406,7 @@ const Upload = ({
         if (validateForm()) {
             setIsLoading(true);
             try {
-                const response = await submitTemplate(formData, api?.getAoSigner?.());
+                const response = await submitTemplate(formData, signer);
                 toast.success("Template submitted successfully");
                 navigate(`/templates`);
                 console.log(response);

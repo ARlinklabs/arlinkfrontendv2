@@ -1,10 +1,10 @@
 import { generateSubmissionCode } from "@/actions/github/template";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { useApi } from "@/lib/wallet-strategies";
+import { useSigner } from "@/lib/wallet-strategies";
 
 const Generate = () => {
-    const api = useApi();
+    const signer = useSigner();
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string>("");
     const [generatedCode, setGeneratedCode] = useState<string>("");
@@ -14,7 +14,7 @@ const Generate = () => {
         setError("");
         setCopied(false);
         setLoading(true);
-        const token = await generateSubmissionCode(api?.getAoSigner?.());
+        const token = await generateSubmissionCode(signer);
         if (token.error) {
             setError(token.error);
         } else if (!token.code) {

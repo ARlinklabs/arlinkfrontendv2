@@ -4,7 +4,7 @@ import EnableAnalytics from "@/components/analytics/enable-analytics";
 import { AnalyticsDashboardSkeleton } from "@/components/skeletons";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGlobalState } from "@/store/useGlobalState";
-import { useActiveAddress, useApi } from "@/lib/wallet-strategies";
+import { useActiveAddress, useSigner } from "@/lib/wallet-strategies";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -15,7 +15,7 @@ const Analytics = () => {
     const navigate = useNavigate();
     const projectName = searchParams.get("repo");
     const { deployments } = useGlobalState();
-    const api = useApi();
+    const signer = useSigner();
     const [deployment, setDeployment] = useState<TDeployment | null>(null);
     const walletAddress = useActiveAddress();
     const [completedAnalyticsProcess, setCompletedAnalyticsProcess] =
@@ -58,7 +58,7 @@ const Analytics = () => {
                 const processId = await checkProcessId(
                     deployment.Name,
                     walletAddress,
-                    api?.getAoSigner?.(),
+                    signer,
                 );
                 setProcessId(processId);
                 console.log(processId);

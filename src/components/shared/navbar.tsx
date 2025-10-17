@@ -6,6 +6,7 @@ import { UserIcon } from "lucide-react";
 import { useWalletState } from "@/hooks/use-wallet-state";
 import WAuthStrategy, { WAuthProviders } from "@wauth/strategy";
 import ProfileModal from "@/components/shared/profile-modal";
+import LoginModal from "@/components/shared/login-modal";
 
 export default function Navbar() {
     // Use centralized wallet state hook for consistency
@@ -29,14 +30,18 @@ export default function Navbar() {
     const [connectingToWallet, setConnectingToWallet] = useState(false);
     const [disconnectingToWallet, setDisconnectingToWallet] = useState(false);
     const [userEmail, setUserEmail] = useState<string | null>(null);
+    const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
 
     const [searchParams] = useSearchParams();
     const repo = searchParams.get("repo");
 
-    const connectToWallet = async () => {
+    const handleGithubLogin = async () => {
         setConnectingToWallet(true);
-        await connect();
-        setConnectingToWallet(false);
+        try {
+            await connect();
+        } finally {
+            setConnectingToWallet(false);
+        }
     };
     const disconnectWallet = async () => {
         setDisconnectingToWallet(true);
@@ -195,17 +200,23 @@ export default function Navbar() {
                                 triggerClassName="bg-[#131314] text-white border-2 border-[#262626] pr-2 flex items-center font-semibold px-1 gap-2 py-1 rounded-md"
                             />
                         ) : (
-                            <button
-                                onClick={connectToWallet}
-                                className="bg-[#131314] border-[#262626] border-2 text-white pr-2 flex items-center font-semibold px-1 gap-2 py-1 rounded-md"
-                            >
-                                <div className="bg-white p-2 w-fit text-black rounded-md">
-                                    <UserIcon className="size-4" />
-                                </div>
-                                {connectingToWallet
-                                    ? "Connecting..."
-                                    : "Connect"}
-                            </button>
+                            <>
+                                <button
+                                    onClick={() => setShowLoginModal(true)}
+                                    className="bg-[#131314] border-[#262626] border-2 text-white pr-2 flex items-center font-semibold px-1 gap-2 py-1 rounded-md"
+                                >
+                                    <div className="bg-white p-2 w-fit text-black rounded-md">
+                                        <UserIcon className="size-4" />
+                                    </div>
+                                    Log in
+                                </button>
+                                <LoginModal
+                                    open={showLoginModal}
+                                    onOpenChange={setShowLoginModal}
+                                    onGithubLogin={handleGithubLogin}
+                                    loading={connectingToWallet}
+                                />
+                            </>
                         )}
                     </div>
                 </div>

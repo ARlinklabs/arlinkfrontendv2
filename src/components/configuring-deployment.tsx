@@ -13,7 +13,7 @@ import { AlertTriangle, ChevronDown, ChevronLeft, Loader2 } from "lucide-react"
 import type React from "react"
 import { useEffect, useState } from "react"
 import RootDirectoryDrawer from "./rootdir-drawer"
-import { useActiveAddress, useApi } from "@/lib/wallet-strategies"
+import { useActiveAddress, useSigner } from "@/lib/wallet-strategies"
 import { toast } from "sonner"
 import DomainSelection from "./shared/domain-selection"
 import useDeploymentManager from "@/hooks/use-deployment-manager"
@@ -48,7 +48,7 @@ const ConfiguringDeploymentProject = ({
   const { refresh, deployments } = useDeploymentManager()
   const navigate = useNavigate()
   const activeAddress = useActiveAddress()
-  const api = useApi()
+  const signer = useSigner()
 
   const [frameWork, setFrameWork] = useState<{
     name: string
@@ -356,10 +356,6 @@ const ConfiguringDeploymentProject = ({
     if (!githubToken) return
 
     // Get signer and validate it's available
-    if (!api) {
-      return toast.error("Wallet API not available. Please ensure your wallet is connected properly.");
-    }
-    const signer = api.getAoSigner();
     if (!signer) {
       return toast.error("Wallet signer not available. Please ensure your wallet is connected properly.");
     }

@@ -1,15 +1,12 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { connect } from "@permaweb/aoconnect";
-import { ANT, AOProcess, ARIO, ArconnectSigner , ARIO_MAINNET_PROCESS_ID } from "@ar.io/sdk/web";
+import { ANT, AOProcess, ARIO, ARIO_MAINNET_PROCESS_ID } from "@ar.io/sdk/web";
+import { walletManager } from "./wallet-strategies/wallet-manager";
 
-// Helper function to get signer - can be called from components that have useApi access
-export function getSigner(api?: any) {
-    if (api && api.getAoSigner) {
-        return api.getAoSigner();
-    }
-    // No fallback - signer should be provided
-    return undefined;
+// Helper function to get signer - uses the wallet manager
+export function getSigner() {
+    return walletManager.getSigner();
 }
 
 export function cn(...inputs: ClassValue[]) {
@@ -94,8 +91,9 @@ export async function setUndername(
 
 export async function getPrimaryname(walletaddy: string, signer?: any) {
     try {
-        // Check if wallet is available
-        if (!signer && (!window.arweaveWallet || typeof window.arweaveWallet.getActiveAddress !== 'function')) {
+        // Get signer from wallet manager if not provided
+        const activeSigner = signer || walletManager.getSigner();
+        if (!activeSigner) {
             console.warn('Wallet not ready for getPrimaryname');
             return null;
         }
@@ -118,7 +116,7 @@ export async function getPrimaryname(walletaddy: string, signer?: any) {
                         GATEWAY_URL: "https://arweave.net",
                     }),
                 }),
-                signer: signer || new ArconnectSigner(window.arweaveWallet),
+                signer: activeSigner,
             });
 
             // step 2 get primary name from wallet
@@ -145,7 +143,7 @@ export async function getPrimaryname(walletaddy: string, signer?: any) {
 
             // step 4 get logo from process id
             const ant = ANT.init({
-                signer: signer || new ArconnectSigner(window.arweaveWallet),
+                signer: activeSigner,
                 processId: pid,
             });
 

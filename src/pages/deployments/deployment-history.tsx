@@ -62,7 +62,7 @@ import {
     extractRepoName,
     handleFetchExistingArnsName,
 } from "../utilts";
-import { useActiveAddress, useApi } from "@/lib/wallet-strategies";
+import { useActiveAddress, useSigner } from "@/lib/wallet-strategies";
 import { TransactionDialog } from "@/components/transactionBlock";
 import { revertNonArnsProject } from "@/actions/deploy";
 
@@ -93,7 +93,7 @@ export default function DeploymentHistory() {
         useState<boolean>(false);
     const [, setHistoryError] = useState<string | null>("");
     const activeAddress = useActiveAddress();
-    const api = useApi();
+    const signer = useSigner();
     
     // Show loading state during wallet transitions or when refreshing
     if ((isRefreshing || (walletAddress && deployments.length === 0)) && !foundDeployment) {
@@ -146,7 +146,7 @@ export default function DeploymentHistory() {
             const { history, error } = await getDeploymentHistory(
                 foundDeployment?.Name,
                 managerProcess,
-                api?.getAoSigner?.(),
+                signer,
             );
 
             console.log(history);
@@ -687,7 +687,7 @@ const ArnsTabSelector = ({
             selectedArns.processId,
             currentDeployment.DeploymentId,
             newUndername,
-            api?.getAoSigner?.() || undefined,
+            signer || undefined,
         );
         if (txid) {
             setTransactionId(currentDeployment.DeploymentId);

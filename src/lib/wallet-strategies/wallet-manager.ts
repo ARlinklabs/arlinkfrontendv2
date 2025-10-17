@@ -1,5 +1,7 @@
 import { WalletStrategy, WalletConnectionState } from './types';
 import { WAuthStrategy, WAuthProviders } from './wauth';
+import { ArweaveWalletStrategy } from './arweave';
+import { MetaMaskWalletStrategy } from './metamask';
 
 export class WalletManager {
     private strategies: Map<string, WalletStrategy> = new Map();
@@ -12,9 +14,12 @@ export class WalletManager {
         strategy: null
     };
     private stateListeners: ((state: WalletConnectionState) => void)[] = [];
+    private readonly STRATEGY_CACHE_KEY = 'arlink_wallet_strategy';
+    private readonly ADDRESS_CACHE_KEY = 'arlink_wallet_address';
 
     constructor() {
         this.initializeStrategies();
+        this.loadCachedStrategy();
     }
 
     private initializeStrategies() {
@@ -31,12 +36,68 @@ export class WalletManager {
             this.strategies.set(strategy.id, strategy);
         });
 
-        // Set default strategy (GitHub WAuth)
+        // Initialize Arweave native wallet strategy
+        const arweaveStrategy = new ArweaveWalletStrategy();
+        this.strategies.set(arweaveStrategy.id, arweaveStrategy);
+
+        // Initialize MetaMask wallet strategy
+        const metamaskStrategy = new MetaMaskWalletStrategy();
+        this.strategies.set(metamaskStrategy.id, metamaskStrategy);
+
+        // Set default strategy (GitHub WAuth) - will be overridden by cached strategy if exists
         const defaultStrategyId = `wauth-${WAuthProviders.Github}`;
         const defaultStrategy = this.strategies.get(defaultStrategyId);
         if (defaultStrategy) {
             this.currentStrategy = defaultStrategy;
             this.updateState({ strategy: defaultStrategy });
+        }
+    }
+
+    private loadCachedStrategy() {
+        try {
+            const cachedStrategyId = localStorage.getItem(this.STRATEGY_CACHE_KEY);
+            if (cachedStrategyId) {
+                const strategy = this.strategies.get(cachedStrategyId);
+                if (strategy) {
+                    this.currentStrategy = strategy;
+                    this.updateState({ strategy });
+                    console.log('Loaded cached wallet strategy:', cachedStrategyId);
+                }
+            }
+        } catch (error) {
+            console.warn('Failed to load cached strategy:', error);
+        }
+    }
+
+    private cacheStrategy(strategyId: string | null) {
+        try {
+            if (strategyId) {
+                localStorage.setItem(this.STRATEGY_CACHE_KEY, strategyId);
+            } else {
+                localStorage.removeItem(this.STRATEGY_CACHE_KEY);
+            }
+        } catch (error) {
+            console.warn('Failed to cache strategy:', error);
+        }
+    }
+
+    private cacheAddress(address: string | null) {
+        try {
+            if (address) {
+                localStorage.setItem(this.ADDRESS_CACHE_KEY, address);
+            } else {
+                localStorage.removeItem(this.ADDRESS_CACHE_KEY);
+            }
+        } catch (error) {
+            console.warn('Failed to cache address:', error);
+        }
+    }
+
+    public getCachedAddress(): string | null {
+        try {
+            return localStorage.getItem(this.ADDRESS_CACHE_KEY);
+        } catch (error) {
+            return null;
         }
     }
 
@@ -53,6 +114,7 @@ export class WalletManager {
         if (strategy) {
             this.currentStrategy = strategy;
             this.updateState({ strategy });
+            // Don't cache here - only cache on successful connection
             return true;
         }
         return false;
@@ -82,12 +144,27 @@ export class WalletManager {
             throw new Error('No wallet strategy selected');
         }
 
+        console.log('🔌 WalletManager: Starting connection with strategy:', this.currentStrategy.id);
+
         try {
             await this.currentStrategy.connect(permissions);
+            console.log('✅ WalletManager: Strategy connect() completed');
             
             const address = await this.currentStrategy.getActiveAddress();
+            console.log('✅ WalletManager: Got address:', address);
+            
             const publicKey = await this.currentStrategy.getActivePublicKey();
+            console.log('✅ WalletManager: Got public key:', publicKey);
+            
             const walletPermissions = await this.currentStrategy.getPermissions();
+            console.log('✅ WalletManager: Got permissions:', walletPermissions);
+
+            console.log('📝 WalletManager: Updating state with:', {
+                connected: true,
+                address,
+                publicKey,
+                strategyId: this.currentStrategy.id
+            });
 
             this.updateState({
                 connected: true,
@@ -96,6 +173,14 @@ export class WalletManager {
                 permissions: walletPermissions,
                 strategy: this.currentStrategy
             });
+
+            console.log('💾 WalletManager: State updated, current state:', this.getState());
+
+            // Cache the strategy and address on successful connection
+            this.cacheStrategy(this.currentStrategy.id);
+            this.cacheAddress(address);
+            
+            console.log('🎉 WalletManager: Connection complete!');
         } catch (error) {
             console.error('Failed to connect wallet:', error);
             throw error;
@@ -109,6 +194,10 @@ export class WalletManager {
 
         try {
             await this.currentStrategy.disconnect();
+            
+            // Clear current strategy reference
+            this.currentStrategy = null;
+            
             this.updateState({
                 connected: false,
                 address: null,
@@ -116,6 +205,10 @@ export class WalletManager {
                 permissions: [],
                 strategy: null
             });
+
+            // Clear cached data on disconnect
+            this.cacheStrategy(null);
+            this.cacheAddress(null);
         } catch (error) {
             console.error('Failed to disconnect wallet:', error);
             throw error;
@@ -251,6 +344,94 @@ export class WalletManager {
         }
 
         return this.currentStrategy.getAoSigner();
+    }
+
+    /**
+     * Get the appropriate signer based on the current wallet strategy
+     * Returns either window.arweaveWallet for native Arweave wallets,
+     * MetaMask AO signer for MetaMask (compatible with arbundles),
+     * or WAuth signer for OAuth-based connections
+     */
+    public getSigner(): any {
+        if (!this.currentStrategy) {
+            return null;
+        }
+
+        // Check if it's an Arweave native wallet
+        if (this.currentStrategy.id === 'arweave-native') {
+            return typeof window !== 'undefined' ? window.arweaveWallet : null;
+        }
+
+        // Check if it's MetaMask
+        if (this.currentStrategy.id === 'metamask') {
+            // Use the strategy's getAoSigner method which returns the correct signer
+            return this.currentStrategy.getAoSigner?.() || null;
+        }
+
+        // For WAuth strategies, return the AO signer
+        return this.getAoSigner();
+    }
+
+    /**
+     * Check if current strategy is WAuth-based
+     */
+    public isWAuthStrategy(): boolean {
+        return this.currentStrategy?.id.startsWith('wauth-') || false;
+    }
+
+    /**
+     * Check if current strategy is Arweave native wallet
+     */
+    public isArweaveNativeStrategy(): boolean {
+        return this.currentStrategy?.id === 'arweave-native';
+    }
+
+    /**
+     * Check if current strategy is MetaMask
+     */
+    public isMetaMaskStrategy(): boolean {
+        return this.currentStrategy?.id === 'metamask';
+    }
+
+    /**
+     * Auto-reconnect to the cached wallet strategy
+     * Should be called on app initialization
+     */
+    public async autoReconnect(): Promise<boolean> {
+        const cachedStrategyId = localStorage.getItem(this.STRATEGY_CACHE_KEY);
+        const cachedAddress = this.getCachedAddress();
+
+        if (!cachedStrategyId || !cachedAddress) {
+            console.log('No cached wallet found');
+            return false;
+        }
+
+        try {
+            console.log('Attempting to reconnect to:', cachedStrategyId);
+            
+            // Set the strategy
+            const success = this.setStrategy(cachedStrategyId);
+            if (!success) {
+                throw new Error('Failed to set cached strategy');
+            }
+
+            // Try to reconnect
+            if (this.currentStrategy?.reconnect) {
+                await this.currentStrategy.reconnect();
+            } else {
+                // For strategies without reconnect, try regular connect
+                await this.connect();
+            }
+
+            console.log('Auto-reconnect successful');
+            return true;
+        } catch (error) {
+            console.warn('Auto-reconnect failed:', error);
+            // Clear cache if reconnect fails
+            this.cacheStrategy(null);
+            this.cacheAddress(null);
+            return false;
+        }
     }
 }
 

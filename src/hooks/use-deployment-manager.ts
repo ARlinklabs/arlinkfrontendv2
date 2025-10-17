@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useGlobalState } from "@/store/useGlobalState";
 import { useWalletState } from "./use-wallet-state";
 import { runLua, spawnProcess } from "@/lib/ao-vars";
-import { useApi } from "@/lib/wallet-strategies";
+import { useSigner } from "@/lib/wallet-strategies";
 import { gql, GraphQLClient } from "graphql-request";
 import { GetDemploymentHistoryReturnType } from "@/types";
 import { executeWithRetry } from "@/lib/ao-vars";
@@ -143,7 +143,7 @@ export default function useDeploymentManager() {
     
     // Use the centralized wallet state for consistency
     const walletAddress = address || globalWalletAddress;
-    const api = useApi();
+    const signer = useSigner();
     const [isRefreshing, setIsRefreshing] = useState(false);
     const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const retryCountRef = useRef(0);
@@ -152,29 +152,40 @@ export default function useDeploymentManager() {
 
     // Handle manager process setup when wallet connects or changes
     useEffect(() => {
+        console.log('🔍 Deployment Manager Effect Check:', {
+            connected,
+            address,
+            hasAddress: !!address,
+            managerProcess,
+            globalWalletAddress,
+            shouldSetup: connected && address && !managerProcess
+        });
+        
         if (connected && address && !managerProcess) {
             // Only proceed if the wallet is connected and we don't have a manager process yet
             console.log(`Setting up manager process for wallet: ${address}`);
             getManagerProcessFromAddress(address).then((id) => {
                 if (id) {
-                    console.log(`Found existing manager process: ${id}`);
+                    console.log(`✅ Found existing manager process for ${address.slice(0, 8)}...`);
+                    console.log(`📦 Manager Process ID: ${id}`);
                     setManagerProcess(id);
                 } else {
-                    console.log("No manager process found, spawning new one");
+                    console.log("❌ No manager process found, spawning new one");
                     //@ts-ignore
-                    spawnProcess("ARlink-Manager", undefined, undefined, api?.getAoSigner()).then(async (newId) => {
-                        console.log(`Spawned new manager process: ${newId}`);
+                    spawnProcess("ARlink-Manager", undefined, undefined, signer).then(async (newId) => {
+                        console.log(`🆕 Spawned new manager process: ${newId}`);
+                        console.log(`📦 New Manager Process ID: ${newId}`);
                         try {
-                            await runLua(setupCommands, newId, undefined, api?.getAoSigner());
-                            console.log(`Setup commands completed for process: ${newId}`);
+                            await runLua(setupCommands, newId, undefined, signer);
+                            console.log(`✅ Setup commands completed for process: ${newId}`);
                             setManagerProcess(newId);
                         } catch (error) {
-                            console.error("Failed to setup commands for new process:", error);
+                            console.error("❌ Failed to setup commands for new process:", error);
                             // Still set the process ID, as it might work on retry
                             setManagerProcess(newId);
                         }
                     }).catch((error) => {
-                        console.error("Failed to spawn manager process:", error);
+                        console.error("❌ Failed to spawn manager process:", error);
                     });
                 }
             }).catch((error) => {
@@ -196,7 +207,8 @@ export default function useDeploymentManager() {
         // Fetch deployments if we have manager process and connected wallet
         // Always refresh when manager process changes, even if we have deployments
         if (managerProcess && connected && address) {
-            console.log(`Scheduling deployment fetch for wallet: ${address}`);
+            console.log(`🔄 Scheduling deployment fetch for wallet: ${address.slice(0, 8)}...`);
+            console.log(`📦 Using Manager Process ID: ${managerProcess}`);
             refreshTimeoutRef.current = setTimeout(() => {
                 refresh();
             }, 1000); // 1 second delay for new processes
@@ -235,7 +247,8 @@ export default function useDeploymentManager() {
 
         isRefreshingRef.current = true;
         setIsRefreshing(true);
-        console.log(`Refreshing deployments for wallet: ${address}`);
+        console.log(`🔄 Refreshing deployments for wallet: ${address.slice(0, 8)}...`);
+        console.log(`📦 Manager Process ID: ${managerProcess}`);
 
         try {
             const result = await executeWithRetry(async (ao) => {
@@ -262,11 +275,12 @@ export default function useDeploymentManager() {
             const deployments = JSON.parse(Messages[0].Data);
             
             // Always update deployments since we validated the context at the start
-            console.log(`Successfully fetched ${deployments.length} deployments for wallet: ${address}`);
+            console.log(`✅ Successfully fetched ${deployments.length} deployments for wallet: ${address.slice(0, 8)}...`);
+            console.log(`📦 Manager Process ID: ${managerProcess}`);
             // Use safe update to preserve existing cache if new data is invalid
             // Pass the wallet address as fallback in case global state doesn't have it yet
             safeUpdateDeployments(deployments, address);
-            console.log(`Deployments stored successfully for wallet: ${address}`);
+            console.log(`💾 Deployments stored successfully for wallet: ${address.slice(0, 8)}...`);
             
             retryCountRef.current = 0; // Reset retry count on success
             setIsRefreshing(false);
@@ -280,7 +294,7 @@ export default function useDeploymentManager() {
             if (retryCountRef.current <= maxRetries) {
                 try {
                     console.log(`Attempting to setup commands for process ${managerProcess}, retry ${retryCountRef.current}/${maxRetries}`);
-                    await runLua(setupCommands, managerProcess, undefined, api?.getAoSigner());
+                    await runLua(setupCommands, managerProcess, undefined, signer);
                     
                     // Exponential backoff for retries
                     const delay = Math.min(500 * Math.pow(2, retryCountRef.current - 1), 5000);
@@ -323,7 +337,7 @@ export default function useDeploymentManager() {
 
 // Primary and fallback GraphQL endpoints
 const PRIMARY_GQL_ENDPOINT = "https://arweave-search.goldsky.com/graphql";
-const FALLBACK_GQL_ENDPOINT = "https://arweave.net/graphql";
+const FALLBACK_GQL_ENDPOINT = "https://arweave-search.goldsky.com/graphql";
 
 export async function getManagerProcessFromAddress(address: string) {
     // Initialize client with primary endpoint
@@ -331,23 +345,30 @@ export async function getManagerProcessFromAddress(address: string) {
     let currentEndpoint = PRIMARY_GQL_ENDPOINT;
 
     const query = gql`
-        query {
-            transactions(
-                owners: ["${address}"]
-                tags: [
-                    { name: "App-Name", values: ["ARlink"] }
-                    { name: "Name", values: ["ARlink-Manager"] }
-                ],
-                sort: HEIGHT_ASC
-            ) {
-                edges {
-                    node {
-                        block { height }
-                        id
-                    }
-                }
-            }
-        }
+       query {
+  transactions(
+    owners: ["${address}"]
+    tags: [
+      { name: "App-Name", values: ["ARlink"] }
+      { name: "Name", values: ["ARlink-Manager"] }
+    ],
+    sort: HEIGHT_DESC
+    first: 100
+    after: "your_last_cursor_here"
+  ) {
+    pageInfo {
+      hasNextPage
+    }
+    edges {
+      cursor
+      node {
+        id
+        block { height }
+      }
+    }
+  }
+}
+
     `;
 
     type Response = {
@@ -401,7 +422,7 @@ export async function getManagerProcessFromAddress(address: string) {
     }
 
     // If transactions exist and fewer than 12, run the second query
-    if (edges.length > 0 && edges.length < 12) {
+    if (edges.length > 0 && edges.length < 20) {
         const processIds = edges.map(edge => edge.node.id);
 
         const secondQuery = gql`

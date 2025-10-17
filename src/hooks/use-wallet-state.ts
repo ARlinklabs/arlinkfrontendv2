@@ -90,16 +90,17 @@ export function useWalletState() {
     const isConnected = !!address;
     
     // Debug logging for isConnected state
-    // useEffect(() => {
-    //     console.log('useWalletState: State update -', { 
-    //         connected, 
-    //         kitAddress, 
-    //         walletAddress, 
-    //         address, 
-    //         isConnected,
-    //         addressExists: !!address
-    //     });
-    // }, [connected, kitAddress, walletAddress, address, isConnected]);
+    useEffect(() => {
+        console.log('🔍 useWalletState: State update -', { 
+            connected, 
+            kitAddress, 
+            walletAddress, 
+            address, 
+            isConnected,
+            addressExists: !!address,
+            kitConnected: connected
+        });
+    }, [connected, kitAddress, walletAddress, address, isConnected]);
     
     return {
         isConnected,

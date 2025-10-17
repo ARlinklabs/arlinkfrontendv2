@@ -2,7 +2,7 @@ import useDeploymentManager, {
     historyTable,
 } from "@/hooks/use-deployment-manager";
 import { ArnsName, BuildSettings, Steps } from "@/types";
-import { useActiveAddress, useApi } from "@/lib/wallet-strategies";
+import { useActiveAddress, useSigner } from "@/lib/wallet-strategies";
 import { useState } from "react";
 import { ChevronLeft } from "lucide-react";
 import NewDeploymentCard from "@/components/shared/new-deployment-card";
@@ -28,7 +28,7 @@ const ConfigureProtocolLandProject = ({
 }) => {
     const { managerProcess, refresh, deployments } = useDeploymentManager();
     const navigate = useNavigate();
-    const api = useApi();
+    const signer = useSigner();
     const activeAddress = useActiveAddress();
 
     // project states
@@ -105,10 +105,6 @@ const ConfigureProtocolLandProject = ({
             
 
         // Get signer and validate it's available
-        if (!api) {
-            return toast.error("Wallet API not available. Please ensure your wallet is connected properly.");
-        }
-        const signer = api.getAoSigner();
         if (!signer) {
             return toast.error("Wallet signer not available. Please ensure your wallet is connected properly.");
         }

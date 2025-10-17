@@ -5,6 +5,7 @@ import WAuthStrategy, { WAuthProviders } from "@wauth/strategy";
 import { getPrimaryname } from "@/lib/utils";
 import { useWalletState } from "@/hooks/use-wallet-state";
 import ProfileModal from "@/components/shared/profile-modal";
+import LoginModal from "@/components/shared/login-modal";
 type NavLink = {
     name: string;
     url: string;
@@ -17,6 +18,7 @@ export const Nav = () => {
     const [disconnecting, setDisconnecting] = useState<boolean>(false);
     const [primaryLogo, setPrimaryLogo] = useState<string | null>(null);
     const [userEmail, setUserEmail] = useState<string | null>(null);
+    const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
 
     const links: NavLink[] = [
         { name: "Home", url: "#home" },
@@ -32,10 +34,15 @@ export const Nav = () => {
         { name: "Templates", url: "/templates" },
     ];
 
-    const connecting = async () => {
+    const handleGithubLogin = async () => {
         setLoading(true);
-        await connect();
-        setLoading(false);
+        try {
+            // The connect() from useWalletState uses the current strategy
+            // which defaults to GitHub, so this will work correctly
+            await connect();
+        } finally {
+            setLoading(false);
+        }
     };
 
     const disConnect = async () => {
@@ -132,15 +139,23 @@ export const Nav = () => {
                             disconnecting={disconnecting}
                         />
                     ) : (
-                        <button
-                            onClick={connecting}
-                            className="bg-white text-black pr-2 flex items-center font-semibold px-1 gap-2 py-1 rounded-md"
-                        >
-                            <div className="bg-[#151516] p-2 w-fit text-white rounded-md">
-                                <UserIcon className="size-4" />
-                            </div>
-                            {loading ? "Connecting..." : "Connect"}
-                        </button>
+                        <>
+                            <button
+                                onClick={() => setShowLoginModal(true)}
+                                className="bg-white text-black pr-2 flex items-center font-semibold px-1 gap-2 py-1 rounded-md"
+                            >
+                                <div className="bg-[#151516] p-2 w-fit text-white rounded-md">
+                                    <UserIcon className="size-4" />
+                                </div>
+                                Log in
+                            </button>
+                            <LoginModal
+                                open={showLoginModal}
+                                onOpenChange={setShowLoginModal}
+                                onGithubLogin={handleGithubLogin}
+                                loading={loading}
+                            />
+                        </>
                     )}
                 </div>
             </nav>
@@ -168,15 +183,23 @@ export const Nav = () => {
                             disconnecting={disconnecting}
                         />
                     ) : (
-                        <button
-                            onClick={connecting}
-                            className="bg-white text-black pr-2 flex items-center font-semibold px-1 gap-2 py-1 rounded-md"
-                        >
-                            <div className="bg-[#151516] p-2 w-fit text-white rounded-md">
-                                <UserIcon className="size-4" />
-                            </div>
-                            {loading ? "Connecting..." : "Connect"}
-                        </button>
+                        <>
+                            <button
+                                onClick={() => setShowLoginModal(true)}
+                                className="bg-white text-black pr-2 flex items-center font-semibold px-1 gap-2 py-1 rounded-md"
+                            >
+                                <div className="bg-[#151516] p-2 w-fit text-white rounded-md">
+                                    <UserIcon className="size-4" />
+                                </div>
+                                Log in
+                            </button>
+                            <LoginModal
+                                open={showLoginModal}
+                                onOpenChange={setShowLoginModal}
+                                onGithubLogin={handleGithubLogin}
+                                loading={loading}
+                            />
+                        </>
                     )}
                 </div>
             </nav>

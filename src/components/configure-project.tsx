@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
-import { useApi } from "@/lib/wallet-strategies";
+import { useSigner } from "@/lib/wallet-strategies";
 import { useGlobalState } from "@/store/useGlobalState";
 import { runLua } from "@/lib/ao-vars";
 import { toast } from "sonner";
@@ -36,7 +36,7 @@ interface DeploymentComponentProps {
 const ConfigureProject = ({ deployment }: DeploymentComponentProps) => {
     const globalState = useGlobalState();
     const { refresh } = useDeploymentManager();
-    const api = useApi();
+    const signer = useSigner();
 
     const [isEditing, setIsEditing] = useState(false);
     const [editedConfig, setEditedConfig] = useState({
@@ -77,7 +77,7 @@ const ConfigureProject = ({ deployment }: DeploymentComponentProps) => {
             ]]
             `;
             
-            const res = await runLua(query, globalState.managerProcess, undefined, api.getAoSigner());
+            const res = await runLua(query, globalState.managerProcess, undefined, signer);
             if (res.Error) {
                 toast.error(res.Error);
                 return;

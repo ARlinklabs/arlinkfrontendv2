@@ -8,7 +8,7 @@ import {
 } from "react-router-dom";
 import { useSearchParams } from "react-router-dom";
 import { lazy, Suspense, useEffect, useRef } from "react";
-import { useConnection, useActiveAddress, fixConnection } from "@/lib/wallet-strategies";
+import { useConnection, useActiveAddress, fixConnection, walletManager } from "@/lib/wallet-strategies";
 import { useGlobalState } from "@/store/useGlobalState";
 import Navbar from "./components/shared/navbar";
 import { Toaster } from "./components/ui/sonner";
@@ -56,11 +56,33 @@ function WalletManager() {
     const { connected, disconnect } = useConnection();
     const address = useActiveAddress();
     const disconnectRef = useRef(disconnect);
+    const autoReconnectAttempted = useRef(false);
     
     // Keep disconnect ref updated
     useEffect(() => {
         disconnectRef.current = disconnect;
     }, [disconnect]);
+
+    // Auto-reconnect on app initialization
+    useEffect(() => {
+        // Only attempt auto-reconnect once on mount
+        if (!autoReconnectAttempted.current && !connected) {
+            autoReconnectAttempted.current = true;
+            
+            console.log('Attempting auto-reconnect from cached wallet...');
+            walletManager.autoReconnect()
+                .then((success) => {
+                    if (success) {
+                        console.log('Auto-reconnect successful');
+                    } else {
+                        console.log('No cached wallet or auto-reconnect failed');
+                    }
+                })
+                .catch((error) => {
+                    console.warn('Auto-reconnect error:', error);
+                });
+        }
+    }, []); // Run only once on mount
     
     // Apply connection fix to handle edge cases where we're connected but have no address
     // Use ref for disconnect to avoid infinite loops

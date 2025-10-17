@@ -12,7 +12,12 @@ export function useConnection(): WalletHookReturn {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const unsubscribe = walletManager.onStateChange(setState);
+        console.log('🔌 useConnection: Initial state from walletManager:', walletManager.getState());
+        
+        const unsubscribe = walletManager.onStateChange((newState) => {
+            console.log('🔌 useConnection: State changed to:', newState);
+            setState(newState);
+        });
         return unsubscribe;
     }, []);
 
@@ -212,4 +217,49 @@ export function useWalletStrategies() {
         currentStrategy,
         setStrategy
     };
+}
+
+/**
+ * Hook to get the appropriate signer based on current wallet strategy
+ * Returns window.arweaveWallet for native Arweave wallets
+ * Returns WAuth signer for OAuth-based connections
+ */
+export function useSigner() {
+    const [signer, setSigner] = useState<any>(walletManager.getSigner());
+
+    useEffect(() => {
+        // Update signer when wallet state changes
+        const unsubscribe = walletManager.onStateChange(() => {
+            setSigner(walletManager.getSigner());
+        });
+
+        return unsubscribe;
+    }, []);
+
+    return signer;
+}
+
+/**
+ * Hook to get wallet type information
+ */
+export function useWalletType() {
+    const [walletType, setWalletType] = useState({
+        isWAuth: walletManager.isWAuthStrategy(),
+        isArweaveNative: walletManager.isArweaveNativeStrategy(),
+        strategyId: walletManager.getCurrentStrategy()?.id || null
+    });
+
+    useEffect(() => {
+        const unsubscribe = walletManager.onStateChange(() => {
+            setWalletType({
+                isWAuth: walletManager.isWAuthStrategy(),
+                isArweaveNative: walletManager.isArweaveNativeStrategy(),
+                strategyId: walletManager.getCurrentStrategy()?.id || null
+            });
+        });
+
+        return unsubscribe;
+    }, []);
+
+    return walletType;
 }

@@ -61,6 +61,7 @@
         "dotenv": "^16.4.7",
         "dotted-map": "^2.2.3",
         "emoji-toolkit": "^9.0.1",
+        "ethers": "^6.15.0",
         "framer-motion": "^11.15.0",
         "graphql-request": "^7.1.2",
         "input-otp": "^1.4.2",
@@ -87,6 +88,7 @@
         "tailwindcss-animate": "^1.0.7",
         "use-debounce": "^10.0.4",
         "vaul": "^1.1.2",
+        "viem": "^2.38.3",
         "vite-plugin-node-polyfills": "^0.22.0",
         "web": "link:@ar.io/sdk/web",
         "zustand": "^5.0.1"

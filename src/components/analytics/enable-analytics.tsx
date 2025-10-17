@@ -1,6 +1,6 @@
 import { enableAnalytics } from "@/actions/analytics";
 import { useState } from "react";
-import { useApi } from "@/lib/wallet-strategies";
+import { useSigner } from "@/lib/wallet-strategies";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,7 +30,7 @@ const EnableAnalytics = ({
     handleProcessId,
     processId,
 }: EnableAnalyticsProps) => {
-    const api = useApi();
+    const signer = useSigner();
     const [enablingAnalytics, setEnablingAnalytics] = useState<boolean>(false);
     const [copied, setCopied] = useState<boolean>(false);
     const [isHovered, setIsHovered] = useState<boolean>(false);
@@ -75,7 +75,7 @@ const EnableAnalytics = ({
         if (!walletAddress) return;
         setEnablingAnalytics(true);
         try {
-            const result = await enableAnalytics(projectName, walletAddress, api?.getAoSigner?.());
+            const result = await enableAnalytics(projectName, walletAddress, signer);
             if (result) {
                 setInnerProcessId(result);
                 // Track analytics enabled event

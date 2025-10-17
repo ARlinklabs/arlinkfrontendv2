@@ -1,6 +1,6 @@
 import { fetchAnalytics } from "@/actions/analytics";
 import { lazy, Suspense } from "react";
-import { useApi } from "@/lib/wallet-strategies";
+import { useSigner } from "@/lib/wallet-strategies";
 const WorldMapCard = lazy(() => import("../world-map-card.tsx"));
 import {
     AnalyticsData,
@@ -20,7 +20,7 @@ import { HorizontalChartCard } from "./horizontal-chart-card";
 import { AnalyticsDashboardSkeleton } from "../skeletons.tsx";
 
 const AnalyticsOverview = ({ processId }: { processId: string }) => {
-    const api = useApi();
+    const signer = useSigner();
     const [analyticsData, setAnaalyticsData] = useState<AnalyticsData | null>(
         null,
     );
@@ -33,7 +33,7 @@ const AnalyticsOverview = ({ processId }: { processId: string }) => {
         const data = async () => {
             try {
                 console.log("fetching analytics...");
-                const data = await fetchAnalytics(processId, api?.getAoSigner?.());
+                const data = await fetchAnalytics(processId, signer);
                 setAnaalyticsData(data);
                 console.log(data);
             } catch (error) {
