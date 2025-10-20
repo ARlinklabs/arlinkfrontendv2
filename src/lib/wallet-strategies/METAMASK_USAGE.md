@@ -354,7 +354,8 @@ If you were using the old ethers-based code:
 
 **Before:**
 ```typescript
-const provider = new ethers.providers.Web3Provider(window.ethereum);
+const provider = (createBrowserEthereumDataItemSigner(new ethers.providers.Web3Provider(window.ethereum!)) as any);
+
 const signer = provider.getSigner();
 const address = await signer.getAddress();
 ```

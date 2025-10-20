@@ -143,7 +143,7 @@ export default function useDeploymentManager() {
     
     // Use the centralized wallet state for consistency
     const walletAddress = address || globalWalletAddress;
-    const signer = useSigner();
+    const { signer, isLoading: signerLoading } = useSigner();
     const [isRefreshing, setIsRefreshing] = useState(false);
     const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const retryCountRef = useRef(0);
@@ -161,7 +161,7 @@ export default function useDeploymentManager() {
             shouldSetup: connected && address && !managerProcess
         });
         
-        if (connected && address && !managerProcess) {
+        if (connected && address && !managerProcess && signer && !signerLoading) {
             // Only proceed if the wallet is connected and we don't have a manager process yet
             console.log(`Setting up manager process for wallet: ${address}`);
             getManagerProcessFromAddress(address).then((id) => {
@@ -192,7 +192,7 @@ export default function useDeploymentManager() {
                 console.error("Failed to get manager process from address:", error);
             });
         }
-    }, [connected, address, managerProcess, setManagerProcess]);
+    }, [connected, address, managerProcess, setManagerProcess, signer, signerLoading]);
 
     // Handle deployment fetching when manager process is ready
     useEffect(() => {
@@ -206,7 +206,7 @@ export default function useDeploymentManager() {
         
         // Fetch deployments if we have manager process and connected wallet
         // Always refresh when manager process changes, even if we have deployments
-        if (managerProcess && connected && address) {
+        if (managerProcess && connected && address && signer && !signerLoading) {
             console.log(`🔄 Scheduling deployment fetch for wallet: ${address.slice(0, 8)}...`);
             console.log(`📦 Using Manager Process ID: ${managerProcess}`);
             refreshTimeoutRef.current = setTimeout(() => {
@@ -219,7 +219,7 @@ export default function useDeploymentManager() {
                 clearTimeout(refreshTimeoutRef.current);
             }
         };
-    }, [managerProcess, address, connected]); // Remove deployments.length dependency
+    }, [managerProcess, address, connected, signer, signerLoading]); // Remove deployments.length dependency
 
     async function refresh(isRetry = false) {
         // Prevent duplicate concurrent refresh calls
@@ -232,6 +232,8 @@ export default function useDeploymentManager() {
         if (!managerProcess || 
             !address || 
             !connected || 
+            !signer ||
+            signerLoading ||
             isRefreshing) {
             console.log('Skipping refresh - invalid context');
             return;

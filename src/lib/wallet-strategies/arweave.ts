@@ -10,11 +10,11 @@ declare global {
 
 export class ArweaveWalletStrategy implements WalletStrategy {
     public id: string = "arweave-native";
-    public name: string = "Arweave";
-    public description: string = "Native Arweave Wallet (ArConnect, etc.)";
+    public name: string = "Wander";
+    public description: string = "Native Arweave Wallet (Wander, etc.)";
     public theme: string = "0,0,0";
-    public logo: string = ""; // Will be set to an Arweave logo
-    public url: string = "https://arconnect.io";
+    public logo: string = "/logos/wander.png";
+    public url: string = "https://wander.app";
     
     private addressListeners: ((address: string) => void)[] = [];
     private isConnected: boolean = false;
@@ -64,7 +64,7 @@ export class ArweaveWalletStrategy implements WalletStrategy {
         const perms = permissions || this.permissions;
         
         if (!window.arweaveWallet) {
-            throw new Error('Arweave wallet not found. Please install ArConnect or another Arweave wallet extension.');
+            throw new Error('Arweave wallet not found. Please install Wander or another Arweave wallet extension.');
         }
 
         try {

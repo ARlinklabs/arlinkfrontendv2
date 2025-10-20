@@ -2,6 +2,8 @@ import { WalletStrategy, WalletConnectionState } from './types';
 import { WAuthStrategy, WAuthProviders } from './wauth';
 import { ArweaveWalletStrategy } from './arweave';
 import { MetaMaskWalletStrategy } from './metamask';
+import { createBrowserEthereumDataItemSigner } from './signer-utils';
+import { BrowserProvider } from 'ethers';
 
 export class WalletManager {
     private strategies: Map<string, WalletStrategy> = new Map();
@@ -352,7 +354,7 @@ export class WalletManager {
      * MetaMask AO signer for MetaMask (compatible with arbundles),
      * or WAuth signer for OAuth-based connections
      */
-    public getSigner(): any {
+    public async getSigner(): Promise<any> {
         if (!this.currentStrategy) {
             return null;
         }
@@ -362,10 +364,15 @@ export class WalletManager {
             return typeof window !== 'undefined' ? window.arweaveWallet : null;
         }
 
-        // Check if it's MetaMask
-        if (this.currentStrategy.id === 'metamask') {
-            // Use the strategy's getAoSigner method which returns the correct signer
-            return this.currentStrategy.getAoSigner?.() || null;
+        // Check if it's an Ethereum wallet (MetaMask or other Ethereum wallets)
+        if (this.currentStrategy.id === 'metamask' || this.isEthereumWallet()) {
+            // For Ethereum wallets, use the specific signer pattern
+            if (typeof window !== 'undefined' && window.ethereum) {
+                const provider = new BrowserProvider(window.ethereum!);
+                await provider.getSigner(); // Ensure signer is available
+                return createBrowserEthereumDataItemSigner(provider);
+            }
+            return null;
         }
 
         // For WAuth strategies, return the AO signer
@@ -377,6 +384,15 @@ export class WalletManager {
      */
     public isWAuthStrategy(): boolean {
         return this.currentStrategy?.id.startsWith('wauth-') || false;
+    }
+
+    /**
+     * Check if current strategy is an Ethereum wallet
+     */
+    public isEthereumWallet(): boolean {
+        return this.currentStrategy?.id === 'metamask' || 
+               this.currentStrategy?.description?.toLowerCase().includes('ethereum') ||
+               false;
     }
 
     /**

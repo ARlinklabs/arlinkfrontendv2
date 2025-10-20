@@ -335,7 +335,7 @@ export const AnalyticsDashboardSkeleton = ({
             title: "Top Wallets",
             description: "Crypto wallets that your visitors have installed",
             data: [
-                { name: "ArConnect", value: 40 },
+                { name: "Wander", value: 40 },
                 { name: "Phantom", value: 20 },
                 { name: "Meta mask", value: 15 },
                 { name: "Japan", value: 10 }, // Note: This looks like a data error in your original

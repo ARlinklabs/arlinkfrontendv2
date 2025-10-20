@@ -29,8 +29,7 @@ export {
     isArweaveWallet,
     isMetaMaskWallet,
     getArioSigner,
-    getWalletStrategyId,
-    createBrowserEthereumDataItemSigner
+    getWalletStrategyId
 } from './signer-utils';
 export {
     connectMetaMask,
@@ -40,5 +39,6 @@ export {
     switchMetaMaskNetwork,
     addMetaMaskNetwork,
     getMetaMaskChainId,
-    signMessageWithMetaMask
+    signMessageWithMetaMask,
+    createBrowserEthereumDataItemSigner
 } from './metamask-utils';

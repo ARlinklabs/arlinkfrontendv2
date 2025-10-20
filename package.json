@@ -48,6 +48,7 @@
         "@vela-ventures/aosync-strategy": "^1.0.13",
         "@wauth/sdk": "^0.0.18",
         "@wauth/strategy": "^0.0.18",
+        "arbundles": "0.11.2",
         "arweave": "^1.15.5",
         "arweave-indexer": "^1.1.0",
         "arweave-wallet-kit": "^1.0.8",

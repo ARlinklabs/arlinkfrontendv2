@@ -1,4 +1,4 @@
-import { connect } from "@permaweb/aoconnect";
+import { connect, createDataItemSigner } from "@permaweb/aoconnect";
 
 export const AppVersion = "1.0.0";
 export const AOModule = "u1Ju_X8jiuq4rX9Nh-ZGRQuYQZgV2MKLMT3CZsykk54"; // sqlite
@@ -120,7 +120,7 @@ export async function spawnProcess(
 
         // Only add signer if it's defined and not null
         if (signer) {
-            spawnOptions.signer = signer;
+            spawnOptions.signer = signer as any;
         }
 
         const result = await ao.spawn(spawnOptions);
@@ -156,7 +156,7 @@ export async function runLua(code: string, process: string, tags?: Tag[], signer
 
         // Only add signer if it's defined and not null
         if (signer) {
-            messageOptions.signer = signer;
+            messageOptions.signer = createDataItemSigner(signer);
         }
 
         const message = await ao.message(messageOptions);
@@ -196,7 +196,7 @@ export async function monitor(process: string, signer?: any) {
 
         // Only add signer if it's defined and not null
         if (signer) {
-            monitorOptions.signer = signer;
+            monitorOptions.signer = createDataItemSigner(signer);
         }
 
         const r = await ao.monitor(monitorOptions);
@@ -214,7 +214,7 @@ export async function unmonitor(process: string, signer?: any) {
 
         // Only add signer if it's defined and not null
         if (signer) {
-            unmonitorOptions.signer = signer;
+            unmonitorOptions.signer = createDataItemSigner(signer);
         }
 
         const r = await ao.unmonitor(unmonitorOptions);
@@ -307,7 +307,7 @@ export async function setArnsName(
 
             // Only add signer if it's defined and not null
             if (signer) {
-                messageOptions.signer = signer;
+                messageOptions.signer = createDataItemSigner(signer);
             }
 
             const result = await ao.message(messageOptions);
@@ -342,7 +342,7 @@ export async function setArnsUnderName(
 
             // Only add signer if it's defined and not null
             if (signer) {
-                messageOptions.signer = signer;
+                messageOptions.signer = createDataItemSigner(signer);
             }
 
             const result = await ao.message(messageOptions);

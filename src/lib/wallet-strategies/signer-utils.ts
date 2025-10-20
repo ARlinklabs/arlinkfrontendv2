@@ -6,14 +6,14 @@
  */
 
 import { walletManager } from './wallet-manager';
-import { createData, InjectedEthereumSigner } from "@dha-team/arbundles";
+import { createData, InjectedEthereumSigner } from "arbundles/web";
 import { BrowserProvider } from 'ethers';
 
 /**
  * Get the current signer based on active wallet strategy
  * 
  * Returns:
- * - window.arweaveWallet for native Arweave wallets (ArConnect)
+ * - window.arweaveWallet for native Arweave wallets (Wander)
  * - WAuth AO signer for OAuth-based wallets (GitHub, Google, etc.)
  * 
  * @example
@@ -59,7 +59,7 @@ export function isWAuthWallet(): boolean {
  * import { isArweaveWallet } from '@/lib/wallet-strategies/signer-utils';
  * 
  * if (isArweaveWallet()) {
- *   // This is ArConnect or another native Arweave wallet
+ *   // This is Wander or another native Arweave wallet
  *   console.log('Using native Arweave wallet');
  * }
  * ```
@@ -148,8 +148,10 @@ export function createBrowserEthereumDataItemSigner(
    * with a stub
    */
   const signer = async ({ data, tags, target, anchor }: any) => {
+    // Get the ethers signer once at the beginning
     const ethersSigner = await ethersProvider.getSigner();
 
+    // Create provider object that returns the already-resolved signer
     const provider = {
       getSigner: () => ({
         signMessage: async (message: string) => {

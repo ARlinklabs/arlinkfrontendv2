@@ -225,18 +225,35 @@ export function useWalletStrategies() {
  * Returns WAuth signer for OAuth-based connections
  */
 export function useSigner() {
-    const [signer, setSigner] = useState<any>(walletManager.getSigner());
+    const [signer, setSigner] = useState<any>(null);
+    const [isLoading, setIsLoading] = useState(false);
+
+    const updateSigner = async () => {
+        setIsLoading(true);
+        try {
+            const newSigner = await walletManager.getSigner();
+            setSigner(newSigner);
+        } catch (error) {
+            console.error('Failed to get signer:', error);
+            setSigner(null);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     useEffect(() => {
+        // Initial signer load
+        updateSigner();
+
         // Update signer when wallet state changes
         const unsubscribe = walletManager.onStateChange(() => {
-            setSigner(walletManager.getSigner());
+            updateSigner();
         });
 
         return unsubscribe;
     }, []);
 
-    return signer;
+    return { signer, isLoading };
 }
 
 /**
@@ -246,6 +263,7 @@ export function useWalletType() {
     const [walletType, setWalletType] = useState({
         isWAuth: walletManager.isWAuthStrategy(),
         isArweaveNative: walletManager.isArweaveNativeStrategy(),
+        isEthereum: walletManager.isEthereumWallet(),
         strategyId: walletManager.getCurrentStrategy()?.id || null
     });
 
@@ -254,6 +272,7 @@ export function useWalletType() {
             setWalletType({
                 isWAuth: walletManager.isWAuthStrategy(),
                 isArweaveNative: walletManager.isArweaveNativeStrategy(),
+                isEthereum: walletManager.isEthereumWallet(),
                 strategyId: walletManager.getCurrentStrategy()?.id || null
             });
         });

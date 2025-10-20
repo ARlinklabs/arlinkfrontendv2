@@ -54,7 +54,7 @@ export default function LoginModal({
             onOpenChange(false);
         } catch (error: any) {
             console.error("Arweave login failed:", error);
-            toast.error(error.message || "Failed to connect Arweave wallet. Please make sure ArConnect is installed.");
+            toast.error(error.message || "Failed to connect Arweave wallet. Please make sure Wander is installed.");
         } finally {
             setIsLoggingIn(false);
         }
@@ -173,20 +173,18 @@ export default function LoginModal({
 
                     {/* Web3 Wallets - Smaller Rectangles */}
                     <div className="grid grid-cols-2 gap-3">
-                        {/* Arweave Wallet */}
+                        {/* Wander Wallet */}
                         <button
                             onClick={handleArweaveLogin}
                             disabled={isLoggingIn || loading}
                             className="flex flex-col items-center justify-center bg-[#18171c] hover:bg-[#1f1e24] transition-all rounded-lg p-4 border border-[#302e36] group disabled:opacity-50 disabled:cursor-not-allowed h-[100px]"
                         >
                             <div className="size-10 rounded-md flex items-center justify-center bg-[#302e36] group-hover:bg-[#3a3840] transition-colors mb-2">
-                                {/* Arweave Logo */}
-                                <svg className="size-5 text-white" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" />
-                                </svg>
+                                {/* Wander Logo */}
+                                <img src="/logos/wander.png" alt="Wander" className="size-full" />
                             </div>
-                            <span className="font-medium text-sm">Arweave</span>
-                            <span className="text-xs text-gray-500">ArConnect</span>
+                            <span className="font-medium text-sm">Wander</span>
+                            <span className="text-xs text-gray-500">Arweave</span>
                         </button>
 
                         {/* MetaMask */}
@@ -197,7 +195,7 @@ export default function LoginModal({
                         >
                             <div className="size-10 rounded-md flex items-center justify-center bg-[#302e36] group-hover:bg-[#3a3840] transition-colors mb-2">
                                 {/* MetaMask Logo */}
-                                <Wallet className="size-5 text-[#f5841f]" />
+                                <img src="/logos/metamask.svg" alt="MetaMask" className="size-full" />
                             </div>
                             <span className="font-medium text-sm">MetaMask</span>
                             <span className="text-xs text-gray-500">Ethereum</span>
