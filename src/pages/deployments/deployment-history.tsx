@@ -93,7 +93,7 @@ export default function DeploymentHistory() {
         useState<boolean>(false);
     const [, setHistoryError] = useState<string | null>("");
     const activeAddress = useActiveAddress();
-    const signer = useSigner();
+    const { signer, isLoading: signerLoading } = useSigner();
     
     // Show loading state during wallet transitions or when refreshing
     if ((isRefreshing || (walletAddress && deployments.length === 0)) && !foundDeployment) {
@@ -290,9 +290,18 @@ const DeploymentHistoryCard = ({
         if (!currentDeployment.ArnsProcess) {
             setRollBackTransactionIdFetched(false);
             setRollBackStarted(true);
+            
+            if (!signer || signerLoading) {
+                toast.error("Please connect your wallet to rollback");
+                setRollBackStarted(false);
+                return;
+            }
+            
             const txid = await setArnsName(
                 currentDeployment.ArnsProcess,
                 deploymentID,
+                "@",
+                signer,
             );
 
             setRollBackStarted(false);
@@ -645,9 +654,17 @@ const ArnsTabSelector = ({
     const handleSwitchToAnotherArns = async () => {
         setNewUndername("");
         if (!selectedArns) return toast.error("please select an arns");
+        
+        if (!signer || signerLoading) {
+            toast.error("Please connect your wallet to switch ArNS");
+            return;
+        }
+        
         const txid = await setArnsName(
             selectedArns.processId,
             deployment.DeploymentID,
+            "@",
+            signer,
         );
         if (txid) {
             setTransactionId(selectedArns.processId);
@@ -683,17 +700,26 @@ const ArnsTabSelector = ({
             return toast.error("please enter an undername value");
 
         setAssigningANewUndername(true);
+        
+        if (!signer || signerLoading) {
+            toast.error("Please connect your wallet to assign undername");
+            setAssigningANewUndername(false);
+            return;
+        }
+        
         const txid = await setUndername(
             selectedArns.processId,
             currentDeployment.DeploymentId,
             newUndername,
-            signer || undefined,
+            signer,
         );
         if (txid) {
             setTransactionId(currentDeployment.DeploymentId);
             await runLua(
                 `db:exec[[UPDATE Deployments SET UnderName='${newUndername}' WHERE Name='${currentDeployment.Name}']]`,
                 globalState.managerProcess,
+                undefined,
+                signer,
             );
             setAssigningANewUndername(false);
         } else {

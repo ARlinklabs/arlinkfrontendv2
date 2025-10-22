@@ -21,6 +21,7 @@ import { extractGithubPath } from "../utilts";
 import { useDeploymentStore } from "@/store/use-deployment-store";
 import { Loader2 } from "lucide-react";
 import TwitterShareButton from "@/components/ui/twitter-share-button";
+import { useSigner } from "@/lib/wallet-strategies";
 
 interface DeploymentComponentProps {
     deployment: TDeployment;
@@ -36,6 +37,7 @@ export default function DeploymentOverview({
     // @ts-ignore
     const { managerProcess, deployments, refresh } = useDeploymentManager();
     const { name } = useParams();
+    const { signer, isLoading: signerLoading } = useSigner();
 
     // states
     const [, setBuildOutput] = useState("");
@@ -73,6 +75,11 @@ export default function DeploymentOverview({
     })();
 
     const updateUnderName = async (underName: string) => {
+        if (!signer || signerLoading) {
+            console.warn('Cannot update UnderName: wallet not connected or signer loading');
+            return { success: false, error: 'Wallet not connected' };
+        }
+
         try {
             await runLua(
                 `local res = db:exec[[
@@ -80,12 +87,16 @@ export default function DeploymentOverview({
                   ADD COLUMN UnderName TEXT
                 ]]`,
                 managerProcess,
+                undefined,
+                signer,
             );
             // console.log("Table altered:", alter);
 
             await runLua(
                 `db:exec[[UPDATE Deployments SET UnderName='${underName}' WHERE Name='${deployment.Name}']]`,
                 managerProcess,
+                undefined,
+                signer,
             );
             // console.log("UnderName updated:", updateQuery);
 
@@ -111,11 +122,13 @@ export default function DeploymentOverview({
         };
 
         const updateDeploymentInDB = async (newDeploymentUrl: string) => {
-            if (!globalState.managerProcess || !newDeploymentUrl) return;
+            if (!globalState.managerProcess || !newDeploymentUrl || !signer || signerLoading) return;
 
             await runLua(
                 `db:exec[[UPDATE Deployments SET DeploymentId='${newDeploymentUrl}' WHERE Name='${deployment.Name}']]`,
                 globalState.managerProcess,
+                undefined,
+                signer,
             );
         };
 
@@ -172,15 +185,19 @@ export default function DeploymentOverview({
                         onChainDataId: deployment.DeploymentId,
                     });
 
-                    await runLua(
-                        `db:exec[[
-                                INSERT INTO NewDeploymentHistory (Name, DeploymentID, AssignedUndername, Date) VALUES
-                                ('${
-                                    deployment.Name
-                                }', '${newDeploymentUrl}', '${arnsUnderName}', '${getTime()}')
-                            ]]`,
-                        globalState.managerProcess,
-                    );
+                    if (signer && !signerLoading) {
+                        await runLua(
+                            `db:exec[[
+                                    INSERT INTO NewDeploymentHistory (Name, DeploymentID, AssignedUndername, Date) VALUES
+                                    ('${
+                                        deployment.Name
+                                    }', '${newDeploymentUrl}', '${arnsUnderName}', '${getTime()}')
+                                ]]`,
+                            globalState.managerProcess,
+                            undefined,
+                            signer,
+                        );
+                    }
                 } else {
                     console.log("no new deployment was found.");
                 }
@@ -209,8 +226,11 @@ export default function DeploymentOverview({
         };
 
         // Add deployment and refresh as dependencies to prevent unnecessary re-runs
-        fetchDeploymentUrl();
-    }, [globalState.managerProcess]);
+        // Only run when we have a signer
+        if (signer && !signerLoading) {
+            fetchDeploymentUrl();
+        }
+    }, [globalState.managerProcess, signer, signerLoading]);
 
     useEffect(() => {
         if (!deployment?.RepoUrl) return;
@@ -248,7 +268,7 @@ export default function DeploymentOverview({
                 setBuildOutput(safeLogsData);
 
                 // Create table if it doesn't exist and update logs
-                if (globalState.managerProcess) {
+                if (globalState.managerProcess && signer && !signerLoading) {
                     await runLua(
                         `
                             db:exec[[
@@ -265,6 +285,8 @@ export default function DeploymentOverview({
                             ]])
                         `,
                         globalState.managerProcess,
+                        undefined,
+                        signer,
                     );
                 }
             } catch (error) {
@@ -291,7 +313,7 @@ export default function DeploymentOverview({
 
         // First try to get logs from the database
         const fetchLogsFromDB = async () => {
-            if (globalState.managerProcess) {
+            if (globalState.managerProcess && signer && !signerLoading) {
                 try {
                     const result = await runLua(
                         `
@@ -302,6 +324,8 @@ export default function DeploymentOverview({
             return res[1] and res[1].Logs or ''
           `,
                         globalState.managerProcess,
+                        undefined,
+                        signer,
                     );
 
                     if (result && typeof result === "string") {
@@ -342,7 +366,7 @@ export default function DeploymentOverview({
                 setBuildOutput(safeLogsData);
 
                 // Update logs in the database
-                if (globalState.managerProcess) {
+                if (globalState.managerProcess && signer && !signerLoading) {
                     await runLua(
                         `
                           db:exec([[
@@ -353,6 +377,8 @@ export default function DeploymentOverview({
                           ]])
                         `,
                         globalState.managerProcess,
+                        undefined,
+                        signer,
                     );
                 }
             } catch (error) {
@@ -363,11 +389,13 @@ export default function DeploymentOverview({
             }
         };
 
-        // Execute both operations
-        fetchLogsFromDB();
-        fetchLatestLogs();
+        // Execute both operations only when we have a signer
+        if (signer && !signerLoading) {
+            fetchLogsFromDB();
+            fetchLatestLogs();
+        }
 
-        // Fetch ArNS info
+        // Fetch ArNS info (this is a read operation so doesn't need signer)
         connect({
             CU_URL: "https://cu.ardrive.io",
             MODE: "legacy",
@@ -397,7 +425,7 @@ export default function DeploymentOverview({
                     "Failed to fetch latest ArNS information. Using last known value.",
                 );
             });
-    }, [globalState.managerProcess]);
+    }, [globalState.managerProcess, signer, signerLoading]);
 
     const updateArns = async () => {
         if (!deployment || !deploymentUrl) {
@@ -405,9 +433,14 @@ export default function DeploymentOverview({
             return;
         }
 
+        if (!signer || signerLoading) {
+            toast.error("Please connect your wallet to update ArNS");
+            return;
+        }
+
         setUpdatingArns(true);
         try {
-            await setArnsName(deployment.ArnsProcess, deployment.DeploymentId);
+            await setArnsName(deployment.ArnsProcess, deployment.DeploymentId, "@", signer);
             toast.success(
                 "ArNS update initiated successfully. This may take approximately 5 minutes to fully update.",
             );

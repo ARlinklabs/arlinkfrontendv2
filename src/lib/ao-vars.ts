@@ -4,6 +4,53 @@ export const AppVersion = "1.0.0";
 export const AOModule = "u1Ju_X8jiuq4rX9Nh-ZGRQuYQZgV2MKLMT3CZsykk54"; // sqlite
 export const AOScheduler = "_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA";
 
+/**
+ * Prepares a signer for use with AO operations
+ * - If signer is a function (WAuth/MetaMask AO signer), use it directly
+ * - If signer is an object (window.arweaveWallet), wrap with createDataItemSigner
+ * - Returns undefined for invalid/null signers (will skip signer in AO operations)
+ */
+export function prepareAoSigner(signer: any): any {
+    console.log('[prepareAoSigner] Input:', {
+        signer,
+        type: typeof signer,
+        isNull: signer === null,
+        isUndefined: signer === undefined,
+        isFunction: typeof signer === 'function',
+        isObject: typeof signer === 'object'
+    });
+    
+    // Return undefined for null, undefined, or invalid signers
+    if (!signer) {
+        console.log('[prepareAoSigner] Signer is null/undefined, returning undefined');
+        return undefined;
+    }
+    
+    // If it's already a function (AO signer from WAuth or MetaMask), use it directly
+    if (typeof signer === 'function') {
+        console.log('[prepareAoSigner] Signer is a function (WAuth/MetaMask), using directly');
+        return signer;
+    }
+    
+    // If it's an object (window.arweaveWallet), wrap it with createDataItemSigner
+    // Verify it's a valid object with necessary methods before wrapping
+    if (typeof signer === 'object' && signer !== null) {
+        try {
+            console.log('[prepareAoSigner] Signer is an object (Arweave wallet), wrapping with createDataItemSigner');
+            const wrapped = createDataItemSigner(signer);
+            console.log('[prepareAoSigner] Successfully wrapped signer');
+            return wrapped;
+        } catch (error) {
+            console.error('[prepareAoSigner] Failed to create data item signer:', error);
+            return undefined;
+        }
+    }
+    
+    // For any other unexpected types, return undefined
+    console.warn('[prepareAoSigner] Invalid signer type:', typeof signer);
+    return undefined;
+}
+
 // Array of CU URLs for cycling through in case of slow responses
 const CU_URLS = [
     "https://cu.ardrive.io",
@@ -103,6 +150,16 @@ export async function spawnProcess(
     newProcessModule?: string,
     signer?: any,
 ) {
+    console.log('[spawnProcess] Called with:', {
+        name,
+        hasTags: !!tags,
+        newProcessModule,
+        signer,
+        signerType: typeof signer,
+        signerIsNull: signer === null,
+        signerIsUndefined: signer === undefined
+    });
+    
     return executeWithRetry(async (ao) => {
         if (tags) {
             tags = [...CommonTags, ...tags];
@@ -120,8 +177,32 @@ export async function spawnProcess(
 
         // Only add signer if it's defined and not null
         if (signer) {
-            spawnOptions.signer = signer as any;
+            const preparedSigner = prepareAoSigner(signer);
+            console.log('[spawnProcess] Prepared signer:', {
+                original: signer,
+                prepared: preparedSigner,
+                preparedType: typeof preparedSigner,
+                willAddToOptions: !!preparedSigner
+            });
+            
+            if (preparedSigner) {
+                spawnOptions.signer = preparedSigner;
+            } else {
+                // If signer was provided but couldn't be prepared, throw error
+                throw new Error('Failed to prepare signer for AO operation. Please ensure your wallet is connected properly.');
+            }
+        } else {
+            // Signer is required for spawn operations
+            console.error('[spawnProcess] No signer provided for spawn operation');
+            throw new Error('Wallet signer is required to spawn a process. Please connect your wallet and try again.');
         }
+
+        console.log('[spawnProcess] Spawn options:', {
+            hasModule: !!spawnOptions.module,
+            hasScheduler: !!spawnOptions.scheduler,
+            hasSigner: !!spawnOptions.signer,
+            signerType: typeof spawnOptions.signer
+        });
 
         const result = await ao.spawn(spawnOptions);
         return result;
@@ -129,21 +210,22 @@ export async function spawnProcess(
 }
 
 export async function runLua(code: string, process: string, tags?: Tag[], signer?: any) {
+    console.log('[runLua] Called with:', {
+        process,
+        hasTags: !!tags,
+        hasCode: !!code,
+        signer,
+        signerType: typeof signer,
+        signerIsNull: signer === null,
+        signerIsUndefined: signer === undefined
+    });
+    
     return executeWithRetry(async (ao) => {
         if (tags) {
             tags = [...CommonTags, ...tags];
         } else {
             tags = CommonTags;
         }
-
-        // if (!window.arweaveWallet) {
-        //   const dryMessage = await ao.dryrun({
-        //     process,
-        //     data: code,
-        //     tags,
-        //   });
-        //   return dryMessage
-        // }
 
         tags = [...tags, { name: "Action", value: "Eval" }];
 
@@ -154,10 +236,33 @@ export async function runLua(code: string, process: string, tags?: Tag[], signer
             tags,
         };
 
-        // Only add signer if it's defined and not null
+        // Only add signer if it's defined and prepareAoSigner returns a valid signer
         if (signer) {
-            messageOptions.signer = createDataItemSigner(signer);
+            const preparedSigner = prepareAoSigner(signer);
+            console.log('[runLua] Prepared signer:', {
+                original: signer,
+                prepared: preparedSigner,
+                preparedType: typeof preparedSigner,
+                willAddToOptions: !!preparedSigner
+            });
+            
+            if (preparedSigner) {
+                messageOptions.signer = preparedSigner;
+            } else {
+                // If signer was provided but couldn't be prepared, throw error
+                throw new Error('Failed to prepare signer for AO operation. Please ensure your wallet is connected properly.');
+            }
+        } else {
+            // Signer is required for write operations (message)
+            console.error('[runLua] No signer provided for write operation');
+            throw new Error('Wallet signer is required for this operation. Please connect your wallet and try again.');
         }
+
+        console.log('[runLua] Message options:', {
+            hasProcess: !!messageOptions.process,
+            hasSigner: !!messageOptions.signer,
+            signerType: typeof messageOptions.signer
+        });
 
         const message = await ao.message(messageOptions);
 
@@ -194,9 +299,12 @@ export async function monitor(process: string, signer?: any) {
             process,
         };
 
-        // Only add signer if it's defined and not null
+        // Only add signer if it's defined and prepareAoSigner returns a valid signer
         if (signer) {
-            monitorOptions.signer = createDataItemSigner(signer);
+            const preparedSigner = prepareAoSigner(signer);
+            if (preparedSigner) {
+                monitorOptions.signer = preparedSigner;
+            }
         }
 
         const r = await ao.monitor(monitorOptions);
@@ -212,9 +320,12 @@ export async function unmonitor(process: string, signer?: any) {
             process,
         };
 
-        // Only add signer if it's defined and not null
+        // Only add signer if it's defined and prepareAoSigner returns a valid signer
         if (signer) {
-            unmonitorOptions.signer = createDataItemSigner(signer);
+            const preparedSigner = prepareAoSigner(signer);
+            if (preparedSigner) {
+                unmonitorOptions.signer = preparedSigner;
+            }
         }
 
         const r = await ao.unmonitor(unmonitorOptions);
@@ -305,9 +416,18 @@ export async function setArnsName(
                 data: "",
             };
 
-            // Only add signer if it's defined and not null
+            // Only add signer if it's defined and prepareAoSigner returns a valid signer
             if (signer) {
-                messageOptions.signer = createDataItemSigner(signer);
+                const preparedSigner = prepareAoSigner(signer);
+                if (preparedSigner) {
+                    messageOptions.signer = preparedSigner;
+                } else {
+                    throw new Error('Failed to prepare signer for setArnsName operation. Please ensure your wallet is connected properly.');
+                }
+            } else {
+                // Signer is required for setting ArNS
+                console.error('[setArnsName] No signer provided');
+                throw new Error('Wallet signer is required to set ArNS name. Please connect your wallet and try again.');
             }
 
             const result = await ao.message(messageOptions);
@@ -315,7 +435,7 @@ export async function setArnsName(
             return result;
         } catch (e) {
             console.error(e);
-            return null;
+            throw e; // Re-throw instead of returning null so the error propagates
         }
     });
 }
@@ -340,9 +460,18 @@ export async function setArnsUnderName(
                 data: "",
             };
 
-            // Only add signer if it's defined and not null
+            // Only add signer if it's defined and prepareAoSigner returns a valid signer
             if (signer) {
-                messageOptions.signer = createDataItemSigner(signer);
+                const preparedSigner = prepareAoSigner(signer);
+                if (preparedSigner) {
+                    messageOptions.signer = preparedSigner;
+                } else {
+                    throw new Error('Failed to prepare signer for setArnsUnderName operation. Please ensure your wallet is connected properly.');
+                }
+            } else {
+                // Signer is required for setting ArNS undername
+                console.error('[setArnsUnderName] No signer provided');
+                throw new Error('Wallet signer is required to set ArNS undername. Please connect your wallet and try again.');
             }
 
             const result = await ao.message(messageOptions);
@@ -350,7 +479,7 @@ export async function setArnsUnderName(
             return result;
         } catch (e) {
             console.error(e);
-            return null;
+            throw e; // Re-throw instead of returning null so the error propagates
         }
     });
 }

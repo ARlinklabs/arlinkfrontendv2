@@ -3,6 +3,14 @@ import { walletManager } from './wallet-manager';
 import { WalletConnectionState, WalletHookReturn } from './types';
 
 /**
+ * Debug logging - enable by setting localStorage.WALLET_DEBUG = 'true'
+ * To enable: localStorage.setItem('WALLET_DEBUG', 'true')
+ * To disable: localStorage.removeItem('WALLET_DEBUG')
+ */
+const DEBUG = import.meta.env.DEV && localStorage.getItem('WALLET_DEBUG') === 'true';
+const log = (...args: any[]) => DEBUG && console.log('[useConnection]', ...args);
+
+/**
  * Hook that provides wallet connection state and methods
  * This replaces useConnection from @arweave-wallet-kit/react
  */
@@ -12,10 +20,10 @@ export function useConnection(): WalletHookReturn {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        console.log('🔌 useConnection: Initial state from walletManager:', walletManager.getState());
+        log('Initial state from walletManager:', walletManager.getState());
         
         const unsubscribe = walletManager.onStateChange((newState) => {
-            console.log('🔌 useConnection: State changed to:', newState);
+            log('State changed to:', newState);
             setState(newState);
         });
         return unsubscribe;
@@ -228,18 +236,20 @@ export function useSigner() {
     const [signer, setSigner] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(false);
 
-    const updateSigner = async () => {
+    const updateSigner = useCallback(async () => {
         setIsLoading(true);
         try {
             const newSigner = await walletManager.getSigner();
-            setSigner(newSigner);
+            // IMPORTANT: When setting a function to state, wrap it in an arrow function
+            // Otherwise React treats it as a lazy initializer and calls it immediately
+            setSigner(() => newSigner);
         } catch (error) {
             console.error('Failed to get signer:', error);
             setSigner(null);
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         // Initial signer load
@@ -251,7 +261,7 @@ export function useSigner() {
         });
 
         return unsubscribe;
-    }, []);
+    }, [updateSigner]);
 
     return { signer, isLoading };
 }

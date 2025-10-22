@@ -1,6 +1,11 @@
 import { useConnection, useActiveAddress, useProfileModal } from "@/lib/wallet-strategies";
 import { useGlobalState } from "@/store/useGlobalState";
 import { useEffect, useRef } from "react";
+
+// Debug logging - enable by setting localStorage.WALLET_DEBUG = 'true'
+const DEBUG = import.meta.env.DEV && localStorage.getItem('WALLET_DEBUG') === 'true';
+const log = (...args: any[]) => DEBUG && console.log('[useWalletState]', ...args);
+
 /**
  * Custom hook that provides consistent wallet state across the entire application.
  * This ensures that all components use the same logic to determine wallet connection status.
@@ -91,7 +96,7 @@ export function useWalletState() {
     
     // Debug logging for isConnected state
     useEffect(() => {
-        console.log('🔍 useWalletState: State update -', { 
+        log('State update:', { 
             connected, 
             kitAddress, 
             walletAddress, 

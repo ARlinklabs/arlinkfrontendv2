@@ -75,12 +75,22 @@ export async function setUndername(
         { name: "TTL-Seconds", value: "900" },
     ];
     try {
-        const result = await ao.message({
+        // Import prepareAoSigner at the top of the file if needed
+        const { prepareAoSigner } = await import("./ao-vars");
+        const messageOptions: any = {
             process: antProcess,
             tags: msgtags,
-            signer: signer,
             data: "",
-        });
+        };
+        
+        if (signer) {
+            const preparedSigner = prepareAoSigner(signer);
+            if (preparedSigner) {
+                messageOptions.signer = preparedSigner;
+            }
+        }
+        
+        const result = await ao.message(messageOptions);
         console.log("set arns message officially sent out ", result);
         return result;
     } catch (e) {

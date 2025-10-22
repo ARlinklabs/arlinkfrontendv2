@@ -28,7 +28,7 @@ const ConfigureProtocolLandProject = ({
 }) => {
     const { managerProcess, refresh, deployments } = useDeploymentManager();
     const navigate = useNavigate();
-    const signer = useSigner();
+    const { signer, isLoading: signerLoading } = useSigner();
     const activeAddress = useActiveAddress();
 
     // project states

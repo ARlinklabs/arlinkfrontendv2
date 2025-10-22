@@ -8,13 +8,17 @@ import WAuthStrategy, { WAuthProviders } from "@wauth/strategy";
 import ProfileModal from "@/components/shared/profile-modal";
 import LoginModal from "@/components/shared/login-modal";
 
+// Debug logging - enable by setting localStorage.WALLET_DEBUG = 'true'
+const DEBUG = import.meta.env.DEV && localStorage.getItem('WALLET_DEBUG') === 'true';
+const log = (...args: any[]) => DEBUG && console.log('[Navbar]', ...args);
+
 export default function Navbar() {
     // Use centralized wallet state hook for consistency
     const { isConnected, address, connect, disconnect, kitConnected, kitAddress, walletAddress } = useWalletState();
     
     // Debug logging to track navbar state
     useEffect(() => {
-        console.log('Navbar state:', { 
+        log('State:', { 
             isConnected, 
             address, 
             kitConnected, 

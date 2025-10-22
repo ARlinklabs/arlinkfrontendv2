@@ -30,7 +30,7 @@ const EnableAnalytics = ({
     handleProcessId,
     processId,
 }: EnableAnalyticsProps) => {
-    const signer = useSigner();
+    const { signer, isLoading: signerLoading } = useSigner();
     const [enablingAnalytics, setEnablingAnalytics] = useState<boolean>(false);
     const [copied, setCopied] = useState<boolean>(false);
     const [isHovered, setIsHovered] = useState<boolean>(false);
@@ -72,7 +72,28 @@ const EnableAnalytics = ({
   </script>`;
 
     const activateAnalytics = async (projectName: string) => {
-        if (!walletAddress) return;
+        if (!walletAddress) {
+            console.warn('[activateAnalytics] No wallet address');
+            return;
+        }
+        
+        if (signerLoading) {
+            console.warn('[activateAnalytics] Signer is still loading, please wait...');
+            return;
+        }
+        
+        if (!signer) {
+            console.warn('[activateAnalytics] No signer available');
+            return;
+        }
+        
+        console.log('[activateAnalytics] Starting with:', {
+            projectName,
+            walletAddress,
+            signer,
+            signerType: typeof signer
+        });
+        
         setEnablingAnalytics(true);
         try {
             const result = await enableAnalytics(projectName, walletAddress, signer);

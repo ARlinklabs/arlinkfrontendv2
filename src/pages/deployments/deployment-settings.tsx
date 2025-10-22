@@ -45,7 +45,7 @@ import {
     extractRepoName,
     handleFetchExistingArnsName,
 } from "../utilts";
-import { useActiveAddress } from "@/lib/wallet-strategies";
+import { useActiveAddress, useSigner } from "@/lib/wallet-strategies";
 import { Popover, PopoverContent } from "@/components/ui/popover";
 import { ArnsName } from "@/types";
 import {
@@ -86,6 +86,7 @@ export default function DeploymentSetting() {
 
     // arns data
     const activeAddress = useActiveAddress();
+    const { signer, isLoading: signerLoading } = useSigner();
     // const [arnsNames, setArnsNames] = useState<ArnsName[]>([
     //     { name: "my-app-1.arweave", processId: "process-123" },
     //     { name: "my-app-2.arweave", processId: "process-456" },
@@ -192,11 +193,22 @@ export default function DeploymentSetting() {
     const hanldeUpdateArns = async () => {
         try {
             setUpdatingArns(true);
-            if (!arnsName) toast.error("select an arns name");
+            if (!arnsName) {
+                toast.error("select an arns name");
+                return;
+            }
+            
+            if (!signer || signerLoading) {
+                toast.error("Please connect your wallet to update ArNS");
+                return;
+            }
+            
             if (deployment && arnsName) {
                 const txid = await setArnsNameWithProcessId(
                     arnsName.processId,
                     deployment.DeploymentId,
+                    "@",
+                    signer,
                 );
                 setTransactionId(txid);
 
@@ -207,6 +219,8 @@ export default function DeploymentSetting() {
                         WHERE Name = '${deployment.Name}'
                     ]]`,
                     globalState.managerProcess,
+                    undefined,
+                    signer,
                 );
                
             }

@@ -22,6 +22,7 @@ import { AlertTriangle, ChevronDown, ChevronLeft, Loader2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import RootDirectoryDrawer from "./rootdir-drawer";
 import { useWalletState } from "@/hooks/use-wallet-state";
+import { useSigner } from "@/lib/wallet-strategies";
 import { toast } from "sonner";
 import DomainSelection from "./shared/domain-selection";
 import useDeploymentManager from "@/hooks/use-deployment-manager";
@@ -49,6 +50,7 @@ const ConfigureTemplateDeployment = ({ repoUrl }: { repoUrl: string }) => {
     const { refresh, deployments } = useDeploymentManager();
     const navigate = useNavigate();
     const { address: activeAddress } = useWalletState();
+    const { signer, isLoading: signerLoading } = useSigner();
     
 
     
@@ -537,6 +539,8 @@ const ConfigureTemplateDeployment = ({ repoUrl }: { repoUrl: string }) => {
                             }' WHERE Name='${projectName}';
                         ]]`,
                         mgProcess,
+                        undefined,
+                        signer,
                     ),
 
                     
@@ -546,6 +550,8 @@ const ConfigureTemplateDeployment = ({ repoUrl }: { repoUrl: string }) => {
                     const userArns = await setArnsNameWithProcessId(
                         arnsName.processId,
                         response.data.result,
+                        "@",
+                        signer,
                     );
                     dbOperations.push(
                         runLua(
@@ -559,6 +565,8 @@ const ConfigureTemplateDeployment = ({ repoUrl }: { repoUrl: string }) => {
                             }, '${getTime()}')
                         ]]`,
                             mgProcess,
+                            undefined,
+                            signer,
                         ),
                     );
                 }
@@ -574,6 +582,8 @@ const ConfigureTemplateDeployment = ({ repoUrl }: { repoUrl: string }) => {
                     }', '${response.data.finalUnderName}', '${getTime()}')
                             ]]`,
                     mgProcess,
+                    undefined,
+                    signer,
                 );
                 // Add small delay to allow database operations to fully propagate
                 await new Promise(resolve => setTimeout(resolve, 2000));

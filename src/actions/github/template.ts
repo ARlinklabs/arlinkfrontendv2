@@ -5,6 +5,7 @@ import {
 } from "@/types";
 import { Octokit } from "@octokit/rest";
 import { connect } from "@permaweb/aoconnect";
+import { prepareAoSigner } from "@/lib/ao-vars";
 
 const TARGET_PROCESS = "6M87yicVAKQzGkMrjLZKaomLbBj2BdRCWM-WUFpWHr4";
 
@@ -36,7 +37,8 @@ export async function submitTemplate(template: TemplateSubmission, signer?: any)
     });
 
     try {
-        const message = await ao.message({
+        // Prepare message options
+        const messageOptions: any = {
             process: TARGET_PROCESS,
             tags: [
                 { name: "Action", value: "SubmitTemplate" },
@@ -50,8 +52,21 @@ export async function submitTemplate(template: TemplateSubmission, signer?: any)
                 { name: "SubmissionCode", value: template.submissionCode },
                 { name: "DemoUrl", value: template.demoUrl },
             ],
-            signer: signer,
-        });
+        };
+
+        // Only add signer if provided
+        if (signer) {
+            const preparedSigner = prepareAoSigner(signer);
+            if (preparedSigner) {
+                messageOptions.signer = preparedSigner;
+            } else {
+                throw new Error('Failed to prepare signer for template submission. Please ensure your wallet is connected properly.');
+            }
+        } else {
+            throw new Error('Wallet signer is required to submit template. Please connect your wallet and try again.');
+        }
+
+        const message = await ao.message(messageOptions);
 
         // console.log("Template submission message sent with ID:", message);
 
@@ -174,11 +189,23 @@ export async function generateSubmissionCode(signer?: any): Promise<SubmissionCo
     });
 
     try {
-        const message = await ao.message({
+        const messageOptions: any = {
             process: TARGET_PROCESS,
             tags: [{ name: "Action", value: "GenerateSubmissionCode" }],
-            signer: signer,
-        });
+        };
+        
+        if (signer) {
+            const preparedSigner = prepareAoSigner(signer);
+            if (preparedSigner) {
+                messageOptions.signer = preparedSigner;
+            } else {
+                throw new Error('Failed to prepare signer for code generation. Please ensure your wallet is connected properly.');
+            }
+        } else {
+            throw new Error('Wallet signer is required to generate submission code. Please connect your wallet and try again.');
+        }
+        
+        const message = await ao.message(messageOptions);
 
         // console.log("🎫 Code generation message sent with ID:", message);
 

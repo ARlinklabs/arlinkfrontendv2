@@ -1,6 +1,7 @@
 import { spawnReportProcess } from "@/hooks/use-report-manager";
 import { AnalyticsResponse } from "@/types";
 import { connect } from "@permaweb/aoconnect";
+import { prepareAoSigner } from "@/lib/ao-vars";
 
 const REGISTRY_PROCESS = "-M03tLhxzgf552RFPGiSCTOhqhvtRsk4bRsXKJ06CzE";
 
@@ -90,7 +91,8 @@ export async function getProjectPID(
     });
 
     try {
-        const message = await ao.message({
+        // Prepare message options
+        const messageOptions: any = {
             process: TARGET_PROCESS,
             tags: [
                 { name: "Action", value: "GetProjectPID" },
@@ -100,8 +102,21 @@ export async function getProjectPID(
                     value: walletAddress,
                 },
             ],
-            signer: signer,
-        });
+        };
+
+        // Only add signer if provided
+        if (signer) {
+            const preparedSigner = prepareAoSigner(signer);
+            if (preparedSigner) {
+                messageOptions.signer = preparedSigner;
+            } else {
+                throw new Error('Failed to prepare signer for analytics operation. Please ensure your wallet is connected properly.');
+            }
+        } else {
+            throw new Error('Wallet signer is required for this operation. Please connect your wallet and try again.');
+        }
+
+        const message = await ao.message(messageOptions);
 
         const { Messages, Error } = (await ao.result({
             message: message,
@@ -153,8 +168,17 @@ export async function enableAnalytics(
     walletAddress: string,
     signer?: any,
 ) {
+    console.log('[enableAnalytics] Called with:', {
+        projectName,
+        walletAddress,
+        signer,
+        signerType: typeof signer,
+        signerIsNull: signer === null,
+        signerIsUndefined: signer === undefined
+    });
+    
     try {
-        const pid = await spawnReportProcess(projectName);
+        const pid = await spawnReportProcess(projectName, signer);
         console.log("registering procject with the processId", pid);
 
         try {
@@ -199,8 +223,8 @@ export async function registerProject(
     });
 
     try {
-        // Send registration message
-        const message = await ao.message({
+        // Prepare message options
+        const messageOptions: any = {
             process: TARGET_PROCESS,
             tags: [
                 { name: "Action", value: "RegisterProject" },
@@ -208,8 +232,22 @@ export async function registerProject(
                 { name: "ProcessID", value: processId },
                 { name: "walletaddr", value: walletAddress },
             ],
-            signer: signer,
-        });
+        };
+
+        // Only add signer if provided
+        if (signer) {
+            const preparedSigner = prepareAoSigner(signer);
+            if (preparedSigner) {
+                messageOptions.signer = preparedSigner;
+            } else {
+                throw new Error('Failed to prepare signer for analytics registration. Please ensure your wallet is connected properly.');
+            }
+        } else {
+            throw new Error('Wallet signer is required to register project. Please connect your wallet and try again.');
+        }
+
+        // Send registration message
+        const message = await ao.message(messageOptions);
 
         console.log("Registration message sent with ID:", message);
 
@@ -276,11 +314,23 @@ export async function getAnalytics(
     });
 
     try {
-        const message = await ao.message({
+        const messageOptions: any = {
             process: processId,
             tags: [{ name: "Action", value: "GetAnalytics" }],
-            signer: signer,
-        });
+        };
+        
+        if (signer) {
+            const preparedSigner = prepareAoSigner(signer);
+            if (preparedSigner) {
+                messageOptions.signer = preparedSigner;
+            } else {
+                throw new Error('Failed to prepare signer for analytics fetch. Please ensure your wallet is connected properly.');
+            }
+        } else {
+            throw new Error('Wallet signer is required to fetch analytics. Please connect your wallet and try again.');
+        }
+        
+        const message = await ao.message(messageOptions);
 
         console.log("Analytics request sent with ID:", message);
 

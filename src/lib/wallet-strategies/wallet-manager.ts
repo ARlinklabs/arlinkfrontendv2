@@ -5,6 +5,21 @@ import { MetaMaskWalletStrategy } from './metamask';
 import { createBrowserEthereumDataItemSigner } from './signer-utils';
 import { BrowserProvider } from 'ethers';
 
+/**
+ * Wallet Manager
+ * 
+ * Manages wallet strategies and connection state.
+ * 
+ * Debug Mode:
+ * To enable verbose logging for debugging wallet connection issues, run this in the browser console:
+ *   localStorage.setItem('WALLET_DEBUG', 'true')
+ * 
+ * To disable debug mode:
+ *   localStorage.removeItem('WALLET_DEBUG')
+ * 
+ * Note: WAuth strategies are lazy-loaded to reduce initialization spam.
+ * They are only created when needed (on selection or when listing all strategies).
+ */
 export class WalletManager {
     private strategies: Map<string, WalletStrategy> = new Map();
     private currentStrategy: WalletStrategy | null = null;
@@ -18,53 +33,64 @@ export class WalletManager {
     private stateListeners: ((state: WalletConnectionState) => void)[] = [];
     private readonly STRATEGY_CACHE_KEY = 'arlink_wallet_strategy';
     private readonly ADDRESS_CACHE_KEY = 'arlink_wallet_address';
+    private readonly DEBUG = import.meta.env.DEV && localStorage.getItem('WALLET_DEBUG') === 'true';
 
     constructor() {
         this.initializeStrategies();
         this.loadCachedStrategy();
     }
 
+    private log(...args: any[]) {
+        if (this.DEBUG) {
+            console.log('[WalletManager]', ...args);
+        }
+    }
+
     private initializeStrategies() {
-        // Initialize WAuth strategies for different providers
-        const wauthStrategies = [
-            { provider: WAuthProviders.Github },
-            { provider: WAuthProviders.Google },
-            { provider: WAuthProviders.Discord },
-            { provider: WAuthProviders.X }
-        ];
-
-        wauthStrategies.forEach(({ provider }) => {
-            const strategy = new WAuthStrategy({ provider });
-            this.strategies.set(strategy.id, strategy);
-        });
-
-        // Initialize Arweave native wallet strategy
+        // Initialize non-WAuth strategies immediately (they don't spam logs)
         const arweaveStrategy = new ArweaveWalletStrategy();
         this.strategies.set(arweaveStrategy.id, arweaveStrategy);
 
-        // Initialize MetaMask wallet strategy
         const metamaskStrategy = new MetaMaskWalletStrategy();
         this.strategies.set(metamaskStrategy.id, metamaskStrategy);
 
-        // Set default strategy (GitHub WAuth) - will be overridden by cached strategy if exists
-        const defaultStrategyId = `wauth-${WAuthProviders.Github}`;
-        const defaultStrategy = this.strategies.get(defaultStrategyId);
-        if (defaultStrategy) {
-            this.currentStrategy = defaultStrategy;
-            this.updateState({ strategy: defaultStrategy });
+        // WAuth strategies will be lazy-loaded when needed
+        // This prevents creating 4 WAuth SDK instances that all log initialization
+    }
+
+    /**
+     * Lazy-load a WAuth strategy when needed
+     */
+    private getOrCreateWAuthStrategy(provider: WAuthProviders): WalletStrategy {
+        const strategyId = `wauth-${provider}`;
+        
+        if (!this.strategies.has(strategyId)) {
+            this.log('Creating WAuth strategy:', provider);
+            const strategy = new WAuthStrategy({ provider });
+            this.strategies.set(strategyId, strategy);
         }
+        
+        return this.strategies.get(strategyId)!;
     }
 
     private loadCachedStrategy() {
         try {
             const cachedStrategyId = localStorage.getItem(this.STRATEGY_CACHE_KEY);
             if (cachedStrategyId) {
-                const strategy = this.strategies.get(cachedStrategyId);
-                if (strategy) {
+                // Lazy-load WAuth strategies if needed
+                if (cachedStrategyId.startsWith('wauth-')) {
+                    const provider = cachedStrategyId.replace('wauth-', '') as WAuthProviders;
+                    const strategy = this.getOrCreateWAuthStrategy(provider);
                     this.currentStrategy = strategy;
                     this.updateState({ strategy });
-                    console.log('Loaded cached wallet strategy:', cachedStrategyId);
+                } else {
+                    const strategy = this.strategies.get(cachedStrategyId);
+                    if (strategy) {
+                        this.currentStrategy = strategy;
+                        this.updateState({ strategy });
+                    }
                 }
+                this.log('Loaded cached wallet strategy:', cachedStrategyId);
             }
         } catch (error) {
             console.warn('Failed to load cached strategy:', error);
@@ -104,6 +130,18 @@ export class WalletManager {
     }
 
     public getStrategies(): WalletStrategy[] {
+        // Ensure all WAuth strategies are available (lazy-load them)
+        const wauthProviders = [
+            WAuthProviders.Github,
+            WAuthProviders.Google,
+            WAuthProviders.Discord,
+            WAuthProviders.X
+        ];
+        
+        wauthProviders.forEach(provider => {
+            this.getOrCreateWAuthStrategy(provider);
+        });
+        
         return Array.from(this.strategies.values());
     }
 
@@ -112,7 +150,16 @@ export class WalletManager {
     }
 
     public setStrategy(strategyId: string): boolean {
-        const strategy = this.strategies.get(strategyId);
+        let strategy: WalletStrategy | undefined;
+        
+        // Lazy-load WAuth strategies if needed
+        if (strategyId.startsWith('wauth-')) {
+            const provider = strategyId.replace('wauth-', '') as WAuthProviders;
+            strategy = this.getOrCreateWAuthStrategy(provider);
+        } else {
+            strategy = this.strategies.get(strategyId);
+        }
+        
         if (strategy) {
             this.currentStrategy = strategy;
             this.updateState({ strategy });
@@ -146,22 +193,22 @@ export class WalletManager {
             throw new Error('No wallet strategy selected');
         }
 
-        console.log('🔌 WalletManager: Starting connection with strategy:', this.currentStrategy.id);
+        this.log('🔌 Starting connection with strategy:', this.currentStrategy.id);
 
         try {
             await this.currentStrategy.connect(permissions);
-            console.log('✅ WalletManager: Strategy connect() completed');
+            this.log('✅ Strategy connect() completed');
             
             const address = await this.currentStrategy.getActiveAddress();
-            console.log('✅ WalletManager: Got address:', address);
+            this.log('✅ Got address:', address);
             
             const publicKey = await this.currentStrategy.getActivePublicKey();
-            console.log('✅ WalletManager: Got public key:', publicKey);
+            this.log('✅ Got public key:', publicKey);
             
             const walletPermissions = await this.currentStrategy.getPermissions();
-            console.log('✅ WalletManager: Got permissions:', walletPermissions);
+            this.log('✅ Got permissions:', walletPermissions);
 
-            console.log('📝 WalletManager: Updating state with:', {
+            this.log('📝 Updating state with:', {
                 connected: true,
                 address,
                 publicKey,
@@ -176,13 +223,13 @@ export class WalletManager {
                 strategy: this.currentStrategy
             });
 
-            console.log('💾 WalletManager: State updated, current state:', this.getState());
+            this.log('💾 State updated, current state:', this.getState());
 
             // Cache the strategy and address on successful connection
             this.cacheStrategy(this.currentStrategy.id);
             this.cacheAddress(address);
             
-            console.log('🎉 WalletManager: Connection complete!');
+            this.log('🎉 Connection complete!');
         } catch (error) {
             console.error('Failed to connect wallet:', error);
             throw error;
@@ -350,9 +397,14 @@ export class WalletManager {
 
     /**
      * Get the appropriate signer based on the current wallet strategy
-     * Returns either window.arweaveWallet for native Arweave wallets,
-     * MetaMask AO signer for MetaMask (compatible with arbundles),
-     * or WAuth signer for OAuth-based connections
+     * 
+     * Returns different types of signers depending on the wallet:
+     * - Native Arweave wallet: Returns window.arweaveWallet (object) - needs to be wrapped with createDataItemSigner
+     * - MetaMask: Returns createBrowserEthereumDataItemSigner(provider) (function) - already AO-compatible, use directly
+     * - WAuth: Returns getAoSigner() (function) - already AO-compatible, use directly
+     * 
+     * IMPORTANT: When using this signer with AO operations, use prepareAoSigner() from ao-vars.ts
+     * which automatically handles the wrapping logic based on signer type.
      */
     public async getSigner(): Promise<any> {
         if (!this.currentStrategy) {
@@ -418,12 +470,12 @@ export class WalletManager {
         const cachedAddress = this.getCachedAddress();
 
         if (!cachedStrategyId || !cachedAddress) {
-            console.log('No cached wallet found');
+            this.log('No cached wallet found');
             return false;
         }
 
         try {
-            console.log('Attempting to reconnect to:', cachedStrategyId);
+            this.log('Attempting to reconnect to:', cachedStrategyId);
             
             // Set the strategy
             const success = this.setStrategy(cachedStrategyId);
@@ -439,7 +491,7 @@ export class WalletManager {
                 await this.connect();
             }
 
-            console.log('Auto-reconnect successful');
+            this.log('Auto-reconnect successful');
             return true;
         } catch (error) {
             console.warn('Auto-reconnect failed:', error);

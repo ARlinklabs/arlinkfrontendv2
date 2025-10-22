@@ -7,6 +7,10 @@ import { gql, GraphQLClient } from "graphql-request";
 import { GetDemploymentHistoryReturnType } from "@/types";
 import { executeWithRetry } from "@/lib/ao-vars";
 
+// Debug logging - enable by setting localStorage.WALLET_DEBUG = 'true'
+const DEBUG = import.meta.env.DEV && localStorage.getItem('WALLET_DEBUG') === 'true';
+const log = (...args: any[]) => DEBUG && console.log('[DeploymentManager]', ...args);
+
 const setupCommands = `
     json = require "json"
 
@@ -152,7 +156,7 @@ export default function useDeploymentManager() {
 
     // Handle manager process setup when wallet connects or changes
     useEffect(() => {
-        console.log('🔍 Deployment Manager Effect Check:', {
+        log('Effect Check:', {
             connected,
             address,
             hasAddress: !!address,
@@ -163,21 +167,21 @@ export default function useDeploymentManager() {
         
         if (connected && address && !managerProcess && signer && !signerLoading) {
             // Only proceed if the wallet is connected and we don't have a manager process yet
-            console.log(`Setting up manager process for wallet: ${address}`);
+            log(`Setting up manager process for wallet: ${address}`);
             getManagerProcessFromAddress(address).then((id) => {
                 if (id) {
-                    console.log(`✅ Found existing manager process for ${address.slice(0, 8)}...`);
-                    console.log(`📦 Manager Process ID: ${id}`);
+                    log(`✅ Found existing manager process for ${address.slice(0, 8)}...`);
+                    log(`📦 Manager Process ID: ${id}`);
                     setManagerProcess(id);
                 } else {
-                    console.log("❌ No manager process found, spawning new one");
+                    log("❌ No manager process found, spawning new one");
                     //@ts-ignore
                     spawnProcess("ARlink-Manager", undefined, undefined, signer).then(async (newId) => {
-                        console.log(`🆕 Spawned new manager process: ${newId}`);
-                        console.log(`📦 New Manager Process ID: ${newId}`);
+                        log(`🆕 Spawned new manager process: ${newId}`);
+                        log(`📦 New Manager Process ID: ${newId}`);
                         try {
                             await runLua(setupCommands, newId, undefined, signer);
-                            console.log(`✅ Setup commands completed for process: ${newId}`);
+                            log(`✅ Setup commands completed for process: ${newId}`);
                             setManagerProcess(newId);
                         } catch (error) {
                             console.error("❌ Failed to setup commands for new process:", error);
@@ -207,8 +211,8 @@ export default function useDeploymentManager() {
         // Fetch deployments if we have manager process and connected wallet
         // Always refresh when manager process changes, even if we have deployments
         if (managerProcess && connected && address && signer && !signerLoading) {
-            console.log(`🔄 Scheduling deployment fetch for wallet: ${address.slice(0, 8)}...`);
-            console.log(`📦 Using Manager Process ID: ${managerProcess}`);
+            log(`🔄 Scheduling deployment fetch for wallet: ${address.slice(0, 8)}...`);
+            log(`📦 Using Manager Process ID: ${managerProcess}`);
             refreshTimeoutRef.current = setTimeout(() => {
                 refresh();
             }, 1000); // 1 second delay for new processes
@@ -249,8 +253,8 @@ export default function useDeploymentManager() {
 
         isRefreshingRef.current = true;
         setIsRefreshing(true);
-        console.log(`🔄 Refreshing deployments for wallet: ${address.slice(0, 8)}...`);
-        console.log(`📦 Manager Process ID: ${managerProcess}`);
+        log(`🔄 Refreshing deployments for wallet: ${address.slice(0, 8)}...`);
+        log(`📦 Manager Process ID: ${managerProcess}`);
 
         try {
             const result = await executeWithRetry(async (ao) => {
@@ -277,12 +281,12 @@ export default function useDeploymentManager() {
             const deployments = JSON.parse(Messages[0].Data);
             
             // Always update deployments since we validated the context at the start
-            console.log(`✅ Successfully fetched ${deployments.length} deployments for wallet: ${address.slice(0, 8)}...`);
-            console.log(`📦 Manager Process ID: ${managerProcess}`);
+            log(`✅ Successfully fetched ${deployments.length} deployments for wallet: ${address.slice(0, 8)}...`);
+            log(`📦 Manager Process ID: ${managerProcess}`);
             // Use safe update to preserve existing cache if new data is invalid
             // Pass the wallet address as fallback in case global state doesn't have it yet
             safeUpdateDeployments(deployments, address);
-            console.log(`💾 Deployments stored successfully for wallet: ${address.slice(0, 8)}...`);
+            log(`💾 Deployments stored successfully for wallet: ${address.slice(0, 8)}...`);
             
             retryCountRef.current = 0; // Reset retry count on success
             setIsRefreshing(false);

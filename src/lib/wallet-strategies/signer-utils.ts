@@ -3,6 +3,13 @@
  * 
  * This file provides helper functions to get the correct signer based on the current wallet strategy.
  * Use these utilities throughout the app instead of directly accessing window.arweaveWallet or api?.getAoSigner()
+ * 
+ * IMPORTANT FOR AO OPERATIONS:
+ * When using signers with AO message/spawn operations, always use prepareAoSigner() from ao-vars.ts
+ * to ensure the signer is properly formatted:
+ * - Native Arweave wallets return window.arweaveWallet (object) - needs wrapping with createDataItemSigner
+ * - WAuth wallets return an AO signer function - use directly, no wrapping needed
+ * - MetaMask wallets return an AO signer function - use directly, no wrapping needed
  */
 
 import { walletManager } from './wallet-manager';
@@ -12,20 +19,29 @@ import { BrowserProvider } from 'ethers';
 /**
  * Get the current signer based on active wallet strategy
  * 
- * Returns:
- * - window.arweaveWallet for native Arweave wallets (Wander)
- * - WAuth AO signer for OAuth-based wallets (GitHub, Google, etc.)
+ * Returns different types based on the wallet:
+ * - Native Arweave wallet (Wander): window.arweaveWallet (object)
+ * - WAuth (OAuth): AO signer function
+ * - MetaMask: AO signer function
+ * 
+ * IMPORTANT: For AO operations, use prepareAoSigner() from ao-vars.ts to wrap this signer correctly.
  * 
  * @example
  * ```typescript
  * import { getCurrentSigner } from '@/lib/wallet-strategies/signer-utils';
+ * import { spawnProcess, prepareAoSigner } from '@/lib/ao-vars';
  * 
- * const signer = getCurrentSigner();
- * if (signer) {
- *   // Use the signer for transactions
+ * const rawSigner = await getCurrentSigner();
+ * 
+ * // For AO operations - use prepareAoSigner
+ * const processId = await spawnProcess("MyProcess", undefined, undefined, rawSigner);
+ * // prepareAoSigner is called internally in ao-vars functions
+ * 
+ * // For other uses (ARIO, etc.)
+ * if (rawSigner) {
  *   const ario = ARIO.init({
  *     process: new AOProcess({ processId: ARIO_PROCESS_ID }),
- *     signer: new ArconnectSigner(signer, Arweave.init({}))
+ *     signer: new ArconnectSigner(rawSigner, Arweave.init({}))
  *   });
  * }
  * ```

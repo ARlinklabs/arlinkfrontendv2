@@ -15,6 +15,7 @@ import { runLua } from "@/lib/ao-vars";
 import { TESTING_FETCH } from "@/lib/utils";
 import { toast } from "sonner";
 import type { TDeployment } from "@/types";
+import { useSigner } from "@/lib/wallet-strategies";
 
 const DeploymentLogs = () => {
     // hooks and global state
@@ -22,6 +23,7 @@ const DeploymentLogs = () => {
     const globalState = useGlobalState();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
+    const { signer, isLoading: signerLoading } = useSigner();
 
     // repo and deployment variable
     const repo = searchParams.get("repo");
@@ -62,7 +64,7 @@ const DeploymentLogs = () => {
             .split("/")
             .pop();
         const fetchLogsFromDB = async () => {
-            if (globalState.managerProcess) {
+            if (globalState.managerProcess && signer && !signerLoading) {
                 try {
                     const result = await runLua(
                         `
@@ -73,6 +75,8 @@ const DeploymentLogs = () => {
         		          return res[1] and res[1].Logs or ''
         		        `,
                         globalState.managerProcess,
+                        undefined,
+                        signer,
                     );
 
                     console.log({
@@ -120,7 +124,7 @@ const DeploymentLogs = () => {
                 const safeLogsData = trimmedLogs.logs.join("\n");
 
                 // Update logs in the database
-                if (globalState.managerProcess) {
+                if (globalState.managerProcess && signer && !signerLoading) {
                     await runLua(
                         `
 							db:exec([[
@@ -129,6 +133,8 @@ const DeploymentLogs = () => {
 							]])
           				`,
                         globalState.managerProcess,
+                        undefined,
+                        signer,
                     );
                 }
             } catch (error) {
@@ -143,9 +149,12 @@ const DeploymentLogs = () => {
             }
         };
 
-        fetchLogsFromDB();
-        fetchLatestLogs();
-    }, [deployment, globalState.managerProcess]);
+        // Only run when we have a signer
+        if (signer && !signerLoading) {
+            fetchLogsFromDB();
+            fetchLatestLogs();
+        }
+    }, [deployment, globalState.managerProcess, signer, signerLoading]);
 
     // Loading state while searching for deployment
     if (!deployment) {

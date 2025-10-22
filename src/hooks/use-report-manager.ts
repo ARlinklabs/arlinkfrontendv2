@@ -246,6 +246,14 @@ print("ok")
 `;
 
 export const spawnReportProcess = async (projectName: string, signer?: any) => {
+    console.log('[spawnReportProcess] Called with:', {
+        projectName,
+        signer,
+        signerType: typeof signer,
+        signerIsNull: signer === null,
+        signerIsUndefined: signer === undefined
+    });
+    
     const processId = await spawnProcess(`${projectName}-report-manager`, undefined, undefined, signer);
     console.log("spawned process", processId);
 

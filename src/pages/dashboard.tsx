@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Layout from "@/layouts/layout";
 import useDeploymentManager from "@/hooks/use-deployment-manager";
+import { useWalletType } from "@/lib/wallet-strategies";
 
 import type { TDeployment } from "@/types";
 import {
@@ -26,10 +27,24 @@ const Dashboardcomp = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [sortBy, setSortBy] = useState("activity");
     const { managerProcess, deployments, isRefreshing, walletAddress } = useDeploymentManager();
+    const walletType = useWalletType();
     const [cardsLimit, setCardsLimit] = useState(12);
     const navigate = useNavigate();
     const [managerProcessExists, setManagerProcessExists] = useState<boolean>(true);
     const [showNoDeployments, setShowNoDeployments] = useState<boolean>(false);
+
+    // Log wallet type information
+    useEffect(() => {
+        if (walletAddress) {
+            console.log('📱 Connected Wallet Type:', {
+                isWAuth: walletType.isWAuth,
+                isArweaveNative: walletType.isArweaveNative,
+                isEthereum: walletType.isEthereum,
+                strategyId: walletType.strategyId,
+                address: walletAddress
+            });
+        }
+    }, [walletAddress, walletType]);
 
     const formatProjectData = (deployments: TDeployment[]) => {
         return deployments.map((dep: TDeployment) => ({

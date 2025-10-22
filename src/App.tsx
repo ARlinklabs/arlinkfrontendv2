@@ -69,18 +69,10 @@ function WalletManager() {
         if (!autoReconnectAttempted.current && !connected) {
             autoReconnectAttempted.current = true;
             
-            console.log('Attempting auto-reconnect from cached wallet...');
-            walletManager.autoReconnect()
-                .then((success) => {
-                    if (success) {
-                        console.log('Auto-reconnect successful');
-                    } else {
-                        console.log('No cached wallet or auto-reconnect failed');
-                    }
-                })
-                .catch((error) => {
-                    console.warn('Auto-reconnect error:', error);
-                });
+            // Auto-reconnect happens silently unless debug mode is enabled
+            walletManager.autoReconnect().catch((error) => {
+                console.warn('Auto-reconnect error:', error);
+            });
         }
     }, []); // Run only once on mount
     
@@ -100,26 +92,15 @@ function WalletManager() {
         if (connected && address) {
             // Only update if address actually changed to prevent unnecessary updates
             if (currentWalletAddress !== address) {
-                console.log('WalletManager: Wallet connected, setting address:', address);
                 setWalletAddress(address);
             }
         } else if (!connected) {
             // Clear wallet data when disconnected, but only if we have data to clear
             if (currentWalletAddress) {
-                console.log('WalletManager: Wallet disconnected, clearing data');
                 clearWalletData();
             }
         }
     }, [connected, address, setWalletAddress, clearWalletData]);
-    
-    // Debug logging to help identify connection state issues
-    useEffect(() => {
-        console.log('WalletManager state:', { 
-            connected, 
-            address, 
-            globalWalletAddress: useGlobalState.getState().walletAddress 
-        });
-    }, [connected, address]);
     
     return null; // This component doesn't render anything
 }
