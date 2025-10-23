@@ -91,9 +91,10 @@ const Dashboardcomp = () => {
     }, [projects, searchTerm, sortBy]);
 
     // Determine if we should show loading state (memoized to prevent re-renders)
+    // Only show loading if we don't have deployments yet, not during background refreshes
     const shouldShowLoading = useCallback(() => {
         return (
-            isRefreshing || 
+            (deployments.length === 0 && isRefreshing) || 
             (walletAddress && !managerProcess) ||
             (walletAddress && managerProcess && deployments.length === 0 && !showNoDeployments)
         );

@@ -44,8 +44,9 @@ export default function DeploymentCard({}) {
         setShowNotFound(false);
     }, [walletAddress]);
 
-    // Show loading state during wallet transitions or when refreshing
-    if (isRefreshing || (walletAddress && deployments.length === 0 && !showNotFound)) {
+    // Show loading state only when we don't have the deployment data yet
+    // Don't show loading if we're just refreshing existing data
+    if (!deployment && (isRefreshing || (walletAddress && deployments.length === 0 && !showNotFound))) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[50vh] text-neutral-100">
                 <div className="animate-spin rounded-full h-12 w-12 border-2 border-neutral-300 border-t-transparent mb-4"></div>

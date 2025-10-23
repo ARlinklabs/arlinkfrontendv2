@@ -95,8 +95,9 @@ export default function DeploymentHistory() {
     const activeAddress = useActiveAddress();
     const { signer, isLoading: signerLoading } = useSigner();
     
-    // Show loading state during wallet transitions or when refreshing
-    if ((isRefreshing || (walletAddress && deployments.length === 0)) && !foundDeployment) {
+    // Show loading state only when we don't have the deployment data yet
+    // Don't show loading if we're just refreshing existing data
+    if (!foundDeployment && (isRefreshing || (walletAddress && deployments.length === 0))) {
         return (
             <div className="min-h-screen text-neutral-200">
                 <div className="container mx-auto px-4 py-10 md:px-10">
