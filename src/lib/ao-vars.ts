@@ -83,7 +83,7 @@ export function createAoConnection(options: { MODE?: "legacy" | "mainnet" } = {}
     } else {
         return connect({
             CU_URL: getNextCuUrl(),
-            MODE: "mainnet" as const,
+            MODE: "legacy" as const,
             GATEWAY_URL: "https://arweave.net",
             MU_URL: "https://mu.ao-testnet.xyz",
         });

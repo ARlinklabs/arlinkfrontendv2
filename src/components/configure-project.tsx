@@ -36,7 +36,7 @@ interface DeploymentComponentProps {
 const ConfigureProject = ({ deployment }: DeploymentComponentProps) => {
     const globalState = useGlobalState();
     const { refresh } = useDeploymentManager();
-    const signer = useSigner();
+    const { signer, isLoading: signerLoading } = useSigner();
 
     const [isEditing, setIsEditing] = useState(false);
     const [editedConfig, setEditedConfig] = useState({

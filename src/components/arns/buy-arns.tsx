@@ -33,7 +33,7 @@ type AvailableArns = ArnsData & {
 
 const BuyArns = ({ arnsName }: BuyArnsProps) => {
     const address = useActiveAddress();
-    const signer = useSigner();
+    const { signer, isLoading: signerLoading } = useSigner();
     const { data: antVersion } = useLatestANTVersion();
     const [checking, setChecking] = useState<boolean>(true);
     const [error, setError] = useState<string | null>("");

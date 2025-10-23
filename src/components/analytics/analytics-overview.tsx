@@ -20,7 +20,7 @@ import { HorizontalChartCard } from "./horizontal-chart-card";
 import { AnalyticsDashboardSkeleton } from "../skeletons.tsx";
 
 const AnalyticsOverview = ({ processId }: { processId: string }) => {
-    const signer = useSigner();
+    const { signer, isLoading: signerLoading } = useSigner();
     const [analyticsData, setAnaalyticsData] = useState<AnalyticsData | null>(
         null,
     );

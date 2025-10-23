@@ -279,6 +279,8 @@ const ConfigureProtocolLandProject = ({
                     userArns = await setArnsNameWithProcessId(
                         arnsName.processId,
                         txid.result,
+                        "@",
+                        signer,
                     );
                 }
 

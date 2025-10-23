@@ -48,7 +48,7 @@ const ConfiguringDeploymentProject = ({
   const { refresh, deployments } = useDeploymentManager()
   const navigate = useNavigate()
   const activeAddress = useActiveAddress()
-  const signer = useSigner()
+  const { signer, isLoading: signerLoading } = useSigner()
 
   const [frameWork, setFrameWork] = useState<{
     name: string
@@ -356,6 +356,10 @@ const ConfiguringDeploymentProject = ({
     if (!githubToken) return
 
     // Get signer and validate it's available
+    if (signerLoading) {
+      return toast.error("Wallet is still connecting. Please wait a moment and try again.");
+    }
+    
     if (!signer) {
       return toast.error("Wallet signer not available. Please ensure your wallet is connected properly.");
     }
@@ -585,7 +589,7 @@ const ConfiguringDeploymentProject = ({
         ]
 
         if (activeTab === "existing" && arnsName) {
-          const userArns = await setArnsNameWithProcessId(arnsName.processId, response.data.result)
+          const userArns = await setArnsNameWithProcessId(arnsName.processId, response.data.result, "@", signer)
           dbOperations.push(
             runLua(
               `db:exec[[
