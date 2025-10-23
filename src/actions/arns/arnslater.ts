@@ -678,3 +678,28 @@ export async function extendLease(name: string, years: number) {
         throw err;
       }
 }
+
+export async function addcontroller(walletAddress: string, processId: string) {
+
+    try {
+    const signer = walletManager.getSigner();
+    const ant = ANT.init({
+        // @ts-ignore
+        signer: new ArconnectSigner(signer, Arweave.init({})),
+        processId: processId
+    });
+    const { id } = await ant.addController(
+        { controller: walletAddress }
+    );
+    return { success: true, transactionId: id };
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+        return {
+            success: false,
+            error: errorMessage
+        };
+    }
+
+}
+
+    

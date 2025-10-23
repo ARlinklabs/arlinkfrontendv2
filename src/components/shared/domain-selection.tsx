@@ -14,7 +14,17 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import type { DomainSelectionType } from "@/types";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverTrigger } from "@radix-ui/react-popover";
-import { Check, ChevronDown, ChevronsUpDown, Loader2 } from "lucide-react";
+import { Check, ChevronDown, ChevronsUpDown, Loader2, Download } from "lucide-react";
+import { useWalletType } from "@/lib/wallet-strategies/hooks";
+import { addcontroller } from "@/actions/arns/arnslater";
+import { useState } from "react";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+} from "@/components/ui/dialog";
 
 export default function DomainSelection({
     activeTab,
@@ -34,6 +44,9 @@ export default function DomainSelection({
     handleArnsSelection,
 }: // ----
 DomainSelectionType) {
+    const { isWAuth } = useWalletType();
+    const [isImportNamesModalOpen, setIsImportNamesModalOpen] = useState(false);
+
     return (
         <>
             <p className="text-sm text-neutral-400 font-medium mb-3">Domain</p>
@@ -144,6 +157,21 @@ DomainSelectionType) {
                                                     </CommandItem>
                                                 ))}
                                             </CommandGroup>
+                                            {isWAuth && (
+                                                <div className="border-t border-neutral-800 p-2">
+                                                    <Button
+                                                        variant="ghost"
+                                                        className="w-full justify-start text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800"
+                                                        onClick={() => {
+                                                            setIsImportNamesModalOpen(true);
+                                                            setArnsDropDownModal(false);
+                                                        }}
+                                                    >
+                                                        <Download className="mr-2 h-4 w-4" />
+                                                        Import Names
+                                                    </Button>
+                                                </div>
+                                            )}
                                         </CommandList>
                                     </Command>
                                 </PopoverContent>
@@ -152,6 +180,32 @@ DomainSelectionType) {
                     )}
                 </TabsContent>
             </Tabs>
+
+            {/* Import Names Modal */}
+            <Dialog open={isImportNamesModalOpen} onOpenChange={setIsImportNamesModalOpen}>
+                <DialogContent className="bg-neutral-950 border-neutral-800 text-neutral-100 sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-semibold">Import ArNS Names</DialogTitle>
+                        <DialogDescription className="text-neutral-400">
+                            Import your ArNS names from external sources or wallets.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4 py-4">
+                        <p className="text-sm text-neutral-400">
+                            This feature allows you to import ArNS names that are associated with your WAuth wallet but may not be automatically detected.
+                        </p>
+                        
+                        {/* Placeholder content - can be extended based on requirements */}
+                        <div className="flex items-center justify-center py-8 text-neutral-500">
+                            <div className="text-center space-y-2">
+                                <Download className="h-12 w-12 mx-auto opacity-50" />
+                                <p className="text-sm">Import functionality coming soon</p>
+                            </div>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }
