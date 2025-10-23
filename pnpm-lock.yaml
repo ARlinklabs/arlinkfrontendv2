@@ -120,8 +120,8 @@ importers:
         specifier: ^1.0.13
         version: 1.0.13(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       '@wauth/sdk':
-        specifier: ^0.0.18
-        version: 0.0.18(bufferutil@4.0.9)(pocketbase@0.26.2)(rollup@4.28.1)(utf-8-validate@5.0.10)(vite@5.4.11(@types/node@20.17.10))
+        specifier: ^0.0.19
+        version: 0.0.19(bufferutil@4.0.9)(pocketbase@0.26.2)(rollup@4.28.1)(utf-8-validate@5.0.10)(vite@5.4.11(@types/node@20.17.10))
       '@wauth/strategy':
         specifier: ^0.0.18
         version: 0.0.18(bufferutil@4.0.9)(pocketbase@0.26.2)(rollup@4.28.1)(utf-8-validate@5.0.10)(vite@5.4.11(@types/node@20.17.10))
@@ -3157,6 +3157,12 @@ packages:
 
   '@wauth/sdk@0.0.18':
     resolution: {integrity: sha512-Z4KxeF2phGQyyvS4wZ8ovt81pbiFGNhYGwX+AmD/LcgJqfi475HTbZudIzQjWCoT4E46OuHhXCfGYASLQJ/d6A==}
+    engines: {node: '>=20.0.0'}
+    peerDependencies:
+      pocketbase: ^0.26.1
+
+  '@wauth/sdk@0.0.19':
+    resolution: {integrity: sha512-PXHi8FwrWya9wXRK0RfpW77Xy4KUzISwmRn0R0Byb/o4e7cTByodp7xapC9/6Eo4Bv9EIZgJZHm1n2U3eMc0SQ==}
     engines: {node: '>=20.0.0'}
     peerDependencies:
       pocketbase: ^0.26.1
@@ -10731,6 +10737,26 @@ snapshots:
   '@wauth/sdk@0.0.18(bufferutil@4.0.9)(pocketbase@0.26.2)(rollup@4.28.1)(utf-8-validate@5.0.10)(vite@5.4.11(@types/node@20.17.10))':
     dependencies:
       '@dha-team/arbundles': 1.0.4(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      '@permaweb/aoconnect': 0.0.85(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      arconnect: 1.0.4
+      arweave: 2.0.0-ec.2
+      axios: 1.12.2
+      formidable: 3.5.4
+      pocketbase: 0.26.2
+      superagent: 10.2.3
+      vite-plugin-node-polyfills: 0.24.0(rollup@4.28.1)(vite@5.4.11(@types/node@20.17.10))
+    transitivePeerDependencies:
+      - bufferutil
+      - debug
+      - encoding
+      - rollup
+      - supports-color
+      - utf-8-validate
+      - vite
+
+  '@wauth/sdk@0.0.19(bufferutil@4.0.9)(pocketbase@0.26.2)(rollup@4.28.1)(utf-8-validate@5.0.10)(vite@5.4.11(@types/node@20.17.10))':
+    dependencies:
+      '@dha-team/arbundles': 1.0.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       '@permaweb/aoconnect': 0.0.85(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       arconnect: 1.0.4
       arweave: 2.0.0-ec.2

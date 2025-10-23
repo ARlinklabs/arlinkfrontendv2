@@ -47,7 +47,7 @@
         "@tanstack/react-virtual": "^3.11.0",
         "@types/react-syntax-highlighter": "^15.5.13",
         "@vela-ventures/aosync-strategy": "^1.0.13",
-        "@wauth/sdk": "^0.0.18",
+        "@wauth/sdk": "^0.0.19",
         "@wauth/strategy": "^0.0.18",
         "arbundles": "0.11.2",
         "arweave": "^1.15.5",
