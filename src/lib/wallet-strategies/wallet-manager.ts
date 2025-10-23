@@ -2,8 +2,6 @@ import { WalletStrategy, WalletConnectionState } from './types';
 import { WAuthStrategy, WAuthProviders } from './wauth';
 import { ArweaveWalletStrategy } from './arweave';
 import { MetaMaskWalletStrategy } from './metamask';
-import { createBrowserEthereumDataItemSigner } from './signer-utils';
-import { BrowserProvider } from 'ethers';
 
 /**
  * Wallet Manager
@@ -400,7 +398,7 @@ export class WalletManager {
      * 
      * Returns different types of signers depending on the wallet:
      * - Native Arweave wallet: Returns window.arweaveWallet (object) - needs to be wrapped with createDataItemSigner
-     * - MetaMask: Returns createBrowserEthereumDataItemSigner(provider) (function) - already AO-compatible, use directly
+     * - MetaMask: Returns getAoSigner() (function) - already AO-compatible, use directly
      * - WAuth: Returns getAoSigner() (function) - already AO-compatible, use directly
      * 
      * IMPORTANT: When using this signer with AO operations, use prepareAoSigner() from ao-vars.ts
@@ -416,18 +414,7 @@ export class WalletManager {
             return typeof window !== 'undefined' ? window.arweaveWallet : null;
         }
 
-        // Check if it's an Ethereum wallet (MetaMask or other Ethereum wallets)
-        if (this.currentStrategy.id === 'metamask' || this.isEthereumWallet()) {
-            // For Ethereum wallets, use the specific signer pattern
-            if (typeof window !== 'undefined' && window.ethereum) {
-                const provider = new BrowserProvider(window.ethereum!);
-                await provider.getSigner(); // Ensure signer is available
-                return createBrowserEthereumDataItemSigner(provider);
-            }
-            return null;
-        }
-
-        // For WAuth strategies, return the AO signer
+        // For all other strategies (MetaMask, WAuth), use their getAoSigner method
         return this.getAoSigner();
     }
 
@@ -464,6 +451,9 @@ export class WalletManager {
     /**
      * Auto-reconnect to the cached wallet strategy
      * Should be called on app initialization
+     * 
+     * Note: WAuth strategies auto-reconnect on their own during initialization.
+     * This method handles syncing our state with their auto-reconnection.
      */
     public async autoReconnect(): Promise<boolean> {
         const cachedStrategyId = localStorage.getItem(this.STRATEGY_CACHE_KEY);
@@ -477,13 +467,47 @@ export class WalletManager {
         try {
             this.log('Attempting to reconnect to:', cachedStrategyId);
             
-            // Set the strategy
+            // Set the strategy first
             const success = this.setStrategy(cachedStrategyId);
             if (!success) {
                 throw new Error('Failed to set cached strategy');
             }
 
-            // Try to reconnect
+            // For WAuth strategies, they auto-reconnect during initialization
+            // We just need to wait a bit and sync our state
+            if (cachedStrategyId.startsWith('wauth-')) {
+                this.log('WAuth strategy detected - waiting for auto-reconnection...');
+                
+                // Give WAuth time to complete its auto-reconnect
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Check if WAuth successfully reconnected by checking the address
+                try {
+                    const address = await this.currentStrategy?.getActiveAddress();
+                    if (address) {
+                        this.log('WAuth auto-reconnect detected, syncing state');
+                        
+                        // Update our internal state to match
+                        const publicKey = await this.currentStrategy?.getActivePublicKey();
+                        const permissions = await this.currentStrategy?.getPermissions();
+                        
+                        this.updateState({
+                            connected: true,
+                            address,
+                            publicKey,
+                            permissions: permissions || [],
+                            strategy: this.currentStrategy
+                        });
+                        
+                        this.log('WAuth auto-reconnect successful');
+                        return true;
+                    }
+                } catch (e) {
+                    this.log('WAuth auto-reconnect not completed, will try manual reconnect');
+                }
+            }
+
+            // Try to reconnect for non-WAuth or if WAuth auto-reconnect didn't work
             if (this.currentStrategy?.reconnect) {
                 await this.currentStrategy.reconnect();
             } else {
@@ -495,9 +519,8 @@ export class WalletManager {
             return true;
         } catch (error) {
             console.warn('Auto-reconnect failed:', error);
-            // Clear cache if reconnect fails
-            this.cacheStrategy(null);
-            this.cacheAddress(null);
+            // Don't clear cache immediately - WAuth might still be connecting
+            // The wallet will auto-disconnect if connection truly failed
             return false;
         }
     }

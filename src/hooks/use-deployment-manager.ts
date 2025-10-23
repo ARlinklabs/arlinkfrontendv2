@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useGlobalState } from "@/store/useGlobalState";
 import { useWalletState } from "./use-wallet-state";
-import { runLua, spawnProcess } from "@/lib/ao-vars";
+import { runLua, spawnProcess, prepareAoSigner } from "@/lib/ao-vars";
 import { useSigner } from "@/lib/wallet-strategies";
 import { gql, GraphQLClient } from "graphql-request";
 import { GetDemploymentHistoryReturnType } from "@/types";
@@ -482,10 +482,20 @@ export async function getDeploymentHistory(
 ): Promise<GetDemploymentHistoryReturnType> {
     const TARGET_PROCESS = managerProcess;
 
+    // Validate and prepare signer before entering the retry loop
+    if (!signer) {
+        throw new Error('Wallet signer is required to fetch deployment history. Please connect your wallet and try again.');
+    }
+    
+    const preparedSigner = prepareAoSigner(signer);
+    if (!preparedSigner) {
+        throw new Error('Failed to prepare signer for deployment history. Please ensure your wallet is connected properly.');
+    }
+
     try {
         return await executeWithRetry(async (ao) => {
-            // Send get deployment history message
-            const message = await ao.message({
+            // Prepare message options
+            const messageOptions: any = {
                 process: TARGET_PROCESS,
                 tags: [
                     {
@@ -494,8 +504,11 @@ export async function getDeploymentHistory(
                     },
                     { name: "ProjectName", value: projectName },
                 ],
-                signer: signer,
-            });
+                signer: preparedSigner,
+            };
+
+            // Send get deployment history message
+            const message = await ao.message(messageOptions);
 
             console.log("Message sent with ID:", message);
 

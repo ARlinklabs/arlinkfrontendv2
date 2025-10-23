@@ -20,6 +20,7 @@
         "@arweave-wallet-kit/wander-strategy": "^0.1.2",
         "@arweave-wallet-kit/webwallet-strategy": "0.0.1-beta.4",
         "@dha-team/arbundles": "1.0.3",
+        "@ethersproject/providers": "^5.7.2",
         "@octokit/rest": "^21.0.2",
         "@permaweb/aoconnect": "^0.0.77",
         "@phosphor-icons/react": "^2.1.7",

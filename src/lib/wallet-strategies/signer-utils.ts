@@ -13,8 +13,8 @@
  */
 
 import { walletManager } from './wallet-manager';
-import { createData, InjectedEthereumSigner } from "arbundles/web";
-import { BrowserProvider } from 'ethers';
+import { InjectedEthereumSigner } from "arbundles/web";
+import { Web3Provider } from '@ethersproject/providers';
 
 /**
  * Get the current signer based on active wallet strategy
@@ -138,18 +138,20 @@ export function getWalletStrategyId(): string | null {
 }
 
 /**
- * Create a browser Ethereum data item signer for MetaMask using ethers
- * This creates an AO-compatible signer that can be used with arbundles
+ * Create a browser Ethereum data item signer for MetaMask using Web3Provider
+ * This creates an AO-compatible signer that follows the correct pattern for @permaweb/aoconnect
  * 
- * @param ethersProvider - An ethers BrowserProvider instance
+ * @param ethersProvider - A Web3Provider instance from @ethersproject/providers
  * @returns A signer function compatible with AO operations
+ * 
+ * Pattern: async (create, signatureType) => { signature, owner }
  * 
  * @example
  * ```typescript
  * import { createBrowserEthereumDataItemSigner } from '@/lib/wallet-strategies/signer-utils';
- * import { BrowserProvider } from 'ethers';
+ * import { Web3Provider } from '@ethersproject/providers';
  * 
- * const provider = new BrowserProvider(window.ethereum);
+ * const provider = new Web3Provider(window.ethereum);
  * const signer = createBrowserEthereumDataItemSigner(provider);
  * 
  * // Use with AO operations
@@ -157,63 +159,37 @@ export function getWalletStrategyId(): string | null {
  * ```
  */
 export function createBrowserEthereumDataItemSigner(
-  ethersProvider: BrowserProvider
+  ethersProvider: Web3Provider
 ) {
-  /**
-   * createDataItem can be passed here for the purposes of unit testing
-   * with a stub
-   */
-  const signer = async ({ data, tags, target, anchor }: any) => {
-    // Get the ethers signer once at the beginning
-    const ethersSigner = await ethersProvider.getSigner();
-
-    // Create provider object that returns the already-resolved signer
-    const provider = {
-      getSigner: () => ({
-        signMessage: async (message: string) => {
-          return await ethersSigner.signMessage(message);
-        },
-      }),
-    };
-
-    const ethSigner = new InjectedEthereumSigner(provider as any);
+  return async (create: any, _signatureType?: any) => {
+    console.log('[Ethereum Data Item Signer] Creating data item with Ethereum signature');
+    
+    // Initialize Ethereum signer - pass provider directly
+    const ethSigner = new InjectedEthereumSigner(ethersProvider);
     await ethSigner.setPublicKey();
 
-    const dataItem = createData(data, ethSigner, { tags, target, anchor });
+    console.log('[Ethereum Data Item Signer] Ethereum signer initialized, public key set');
 
-    console.log(dataItem);
+    // Call create() with Ethereum signature parameters
+    // type: 3 is SignatureConfig.ETHEREUM
+    const dataToSign = await create({
+      publicKey: ethSigner.publicKey, // 65-byte secp256k1 public key
+      type: 3, // SignatureConfig.ETHEREUM
+      alg: "secp256k1"
+    });
 
-    const res = await dataItem
-      .sign(ethSigner)
-      .then(async () => ({
-        id: await dataItem.id,
-        raw: await dataItem.getRaw(),
-      }))
-      .catch((e) => {
-        console.error(e);
-        return null; // Handle errors gracefully
-      });
+    console.log('[Ethereum Data Item Signer] Data to sign prepared, signing...');
 
-    console.dir(
-      {
-        valid: await InjectedEthereumSigner.verify(
-          ethSigner.publicKey,
-          await dataItem.getSignatureData(),
-          dataItem.rawSignature
-        ),
-        signature: dataItem.signature,
-        owner: dataItem.owner,
-        tags: dataItem.tags,
-        id: dataItem.id,
-        res,
-      },
-      { depth: 2 }
-    );
+    // Sign the data with Ethereum signer
+    const signature = await ethSigner.sign(dataToSign);
 
-    return res;
+    console.log('[Ethereum Data Item Signer] Signature created successfully');
+
+    return {
+      signature: signature,
+      owner: ethSigner.publicKey
+    };
   };
-
-  return signer;
 }
 
 /**

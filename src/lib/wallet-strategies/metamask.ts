@@ -2,7 +2,7 @@ import { WalletStrategy } from './types';
 import { createData, InjectedEthereumSigner } from "arbundles/web";
 import { createWalletClient, custom, type WalletClient } from 'viem';
 import { mainnet } from 'viem/chains';
-import { BrowserProvider } from 'ethers';
+import { Web3Provider } from '@ethersproject/providers';
 
 declare global {
     interface Window {
@@ -317,64 +317,6 @@ export class MetaMaskWalletStrategy implements WalletStrategy {
         }
     }
 
-    /**
-     * Create a browser Ethereum data item signer for MetaMask using ethers
-     * This creates an AO-compatible signer that can be used with arbundles
-     * 
-     * @param ethersProvider - An ethers BrowserProvider instance
-     * @returns A signer function compatible with AO operations
-     */
-    private createEthersDataItemSigner(ethersProvider: BrowserProvider) {
-        const signer = async ({ data, tags, target, anchor }: any) => {
-            // Get the ethers signer once at the beginning
-            const ethersSigner = await ethersProvider.getSigner();
-
-            // Create provider object that returns the already-resolved signer
-            const provider = {
-                getSigner: () => ({
-                    signMessage: async (message: string) => {
-                        return await ethersSigner.signMessage(message);
-                    },
-                }),
-            };
-
-            const ethSigner = new InjectedEthereumSigner(provider as any);
-            await ethSigner.setPublicKey();
-
-            const dataItem = createData(data, ethSigner, { tags, target, anchor });
-
-            const res = await dataItem
-                .sign(ethSigner)
-                .then(async () => ({
-                    id: await dataItem.id,
-                    raw: await dataItem.getRaw(),
-                }))
-                .catch((e) => {
-                    console.error(e);
-                    return null; // Handle errors gracefully
-                });
-
-            console.dir(
-                {
-                    valid: await InjectedEthereumSigner.verify(
-                        ethSigner.publicKey,
-                        await dataItem.getSignatureData(),
-                        dataItem.rawSignature
-                    ),
-                    signature: dataItem.signature,
-                    owner: dataItem.owner,
-                    tags: dataItem.tags,
-                    id: dataItem.id,
-                    res,
-                },
-                { depth: 2 }
-            );
-
-            return res;
-        };
-
-        return signer;
-    }
 
     /**
      * Creates a data item signer compatible with arbundles
@@ -480,10 +422,9 @@ export class MetaMaskWalletStrategy implements WalletStrategy {
 
     /**
      * Create a browser Ethereum data item signer
-     * Uses ethers BrowserProvider with the createBrowserEthereumDataItemSigner utility
-     * This returns a signer compatible with arbundles and AO operations
+     * Returns an AO-compatible signer for use with arbundles and AO operations
      * 
-     * Note: For AO operations, prefer using getAoSigner() which is an alias to this method
+     * Note: This is an alias to getAoSigner() for backward compatibility
      * 
      * @example
      * ```typescript
@@ -495,39 +436,54 @@ export class MetaMaskWalletStrategy implements WalletStrategy {
      * ```
      */
     public createBrowserEthereumDataItemSigner(): any {
-        if (!window.ethereum) {
-            throw new Error('MetaMask not available');
-        }
-
-        // Create ethers provider and return AO-compatible signer
-        const provider = new BrowserProvider(window.ethereum);
-        const signerFunction = this.createEthersDataItemSigner(provider);
-        
-        // Return both the signer function and a compatibility wrapper for backward compatibility
-        return Object.assign(signerFunction, {
-            getSigner: () => provider.getSigner()
-        });
+        // Use the same AO signer for consistency
+        return this.getAoSigner();
     }
 
     /**
      * Get AO-compatible signer for use with AO operations
      * This is the recommended way to get a signer for AO functions
-     * Uses ethers BrowserProvider with createBrowserEthereumDataItemSigner
-     * Compatible with @permaweb/aoconnect message/spawn functions
+     * Returns a function compatible with @permaweb/aoconnect message/spawn functions
+     * 
+     * Pattern: async (create, signatureType) => { signature, owner }
      */
     public getAoSigner(): any {
         if (!window.ethereum) {
             throw new Error('MetaMask not available');
         }
 
-        // Create ethers provider from window.ethereum
-        const provider = new BrowserProvider(window.ethereum);
-        const signerFunction = this.createEthersDataItemSigner(provider);
-        
-        // Return both the signer function and a compatibility wrapper for backward compatibility
-        return Object.assign(signerFunction, {
-            getSigner: () => provider.getSigner()
-        });
+        return async (create: any, _signatureType?: any) => {
+            console.log('[MetaMask AO Signer] Creating data item with Ethereum signature');
+            
+            // Create Web3Provider (ethers v5 style) - required for InjectedEthereumSigner
+            const provider = new Web3Provider(window.ethereum);
+            
+            // Initialize Ethereum signer - pass provider directly
+            const ethSigner = new InjectedEthereumSigner(provider);
+            await ethSigner.setPublicKey();
+
+            console.log('[MetaMask AO Signer] Ethereum signer initialized, public key set');
+
+            // Call create() with Ethereum signature parameters
+            // type: 3 is SignatureConfig.ETHEREUM
+            const dataToSign = await create({
+                publicKey: ethSigner.publicKey, // 65-byte secp256k1 public key
+                type: 3, // SignatureConfig.ETHEREUM
+                alg: "secp256k1"
+            });
+
+            console.log('[MetaMask AO Signer] Data to sign prepared, signing...');
+
+            // Sign the data with Ethereum signer
+            const signature = await ethSigner.sign(dataToSign);
+
+            console.log('[MetaMask AO Signer] Signature created successfully');
+
+            return {
+                signature: signature,
+                owner: ethSigner.publicKey
+            };
+        };
     }
 }
 

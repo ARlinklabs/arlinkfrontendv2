@@ -141,30 +141,43 @@ export default function DeploymentHistory() {
 
     useEffect(() => {
         if (!repoName || !foundDeployment) return;
+        
+        // Wait for signer to be ready
+        if (signerLoading || !signer) {
+            console.log('[DeploymentHistory] Waiting for signer to be ready...');
+            return;
+        }
+        
         const fetchHistory = async () => {
             setLoadingDeploymentHistory(true);
-            const { history, error } = await getDeploymentHistory(
-                foundDeployment?.Name,
-                managerProcess,
-                signer,
-            );
+            try {
+                const { history, error } = await getDeploymentHistory(
+                    foundDeployment?.Name,
+                    managerProcess,
+                    signer,
+                );
 
-            console.log(history);
-            if (error) {
-                setHistoryError(error?.message);
+                console.log(history);
+                if (error) {
+                    setHistoryError(error?.message);
+                }
+                setHistory(history.reverse());
+            } catch (error) {
+                console.error('[DeploymentHistory] Failed to fetch history:', error);
+                setHistoryError(error instanceof Error ? error.message : 'Failed to fetch history');
+            } finally {
+                setLoadingDeploymentHistory(false);
             }
-            setHistory(history.reverse());
-            setLoadingDeploymentHistory(false);
         };
 
         fetchHistory();
-    }, []);
+    }, [repoName, foundDeployment, signer, signerLoading, managerProcess]);
 
     const fetchArnsUndername = () => {
         try {
             handleFetchExistingArnsName({
                 setArnsNames,
-                activeAddress,
+                activeAddress: activeAddress || undefined,
                 setExistingArnsLoading: setFetchingUserArns,
             });
         } catch (error) {}
@@ -254,6 +267,8 @@ export default function DeploymentHistory() {
                                     index={index}
                                     fetchingUserArns={fetchingUserArns}
                                     arnsNames={arnsNames}
+                                    signer={signer}
+                                    signerLoading={signerLoading}
                                 />
                             ))
                         )}
@@ -270,12 +285,16 @@ const DeploymentHistoryCard = ({
     index,
     fetchingUserArns,
     arnsNames,
+    signer,
+    signerLoading,
 }: {
     deployment: DeploymentRecord;
     currentDeployment: TDeployment;
     index: number;
     fetchingUserArns: boolean;
     arnsNames: ArnsName[];
+    signer: any;
+    signerLoading: boolean;
 }) => {
     const [rollBackStarted, setRollBackStarted] = useState(false);
     const { refresh } = useDeploymentManager();
@@ -512,6 +531,8 @@ const DeploymentHistoryCard = ({
                                                 currentDeployment={
                                                     currentDeployment
                                                 }
+                                                signer={signer}
+                                                signerLoading={signerLoading}
                                             />
                                         </DialogDescription>
                                     </DialogHeader>
@@ -623,11 +644,15 @@ const ArnsTabSelector = ({
     arnsNames,
     deployment,
     currentDeployment,
+    signer,
+    signerLoading,
 }: {
     fetchingUserArns: boolean;
     arnsNames: ArnsName[];
     deployment: DeploymentRecord;
     currentDeployment: TDeployment;
+    signer: any;
+    signerLoading: boolean;
 }) => {
     const [selectedArns, setSelectedArns] = useState<ArnsName | undefined>(
         undefined,

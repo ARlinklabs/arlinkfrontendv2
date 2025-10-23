@@ -35,7 +35,11 @@ export class WAuthStrategy implements WalletStrategy {
         this.theme = "25,25,25";
         this.url = "https://subspace.ar.io";
         
-        this.walletRef = new WAuth({ dev: false }); // auto reconnects based on localStorage
+        // WAuth auto-reconnects based on localStorage - this is intentional
+        // The "your connected wallet is undefined" console messages during initialization
+        // are from WAuth SDK and are expected during the auto-reconnect process
+        // never make dev false , it tries to log in using diffrent github urls , so best not touvh that
+        this.walletRef = new WAuth({ dev: false });
         this.authData = this.walletRef.getAuthData();
         this.logo = this.logos[provider];
         this.windowArweaveWalletBackup = null;
@@ -59,6 +63,21 @@ export class WAuthStrategy implements WalletStrategy {
     }
 
     public async reconnect(): Promise<any> {
+        // WAuth auto-reconnects on initialization based on localStorage
+        // First check if already connected from auto-reconnect
+        try {
+            const existingAuthData = this.walletRef.getAuthData();
+            if (existingAuthData) {
+                console.log('WAuth already auto-reconnected, using existing session');
+                this.authData = existingAuthData;
+                this.authDataListeners.forEach(listener => listener(existingAuthData));
+                return existingAuthData;
+            }
+        } catch (e) {
+            console.log('No existing WAuth session, connecting manually');
+        }
+
+        // If not already connected, try to connect
         const data = await this.walletRef.connect({ provider: this.provider, scopes: this.scopes });
         if (data) {
             this.authData = data?.meta;
