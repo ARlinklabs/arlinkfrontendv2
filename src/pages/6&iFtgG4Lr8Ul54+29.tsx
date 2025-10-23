@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useSigner } from "@/lib/wallet-strategies";
 
 const Generate = () => {
-    const signer = useSigner();
+    const { signer } = useSigner();
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string>("");
     const [generatedCode, setGeneratedCode] = useState<string>("");

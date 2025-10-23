@@ -1,9 +1,9 @@
 import { Menu, UserIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import WAuthStrategy, { WAuthProviders } from "@wauth/strategy";
 import { getPrimaryname } from "@/lib/utils";
 import { useWalletState } from "@/hooks/use-wallet-state";
+import { useWAuth, useWalletType } from "@/lib/wallet-strategies";
 import ProfileModal from "@/components/shared/profile-modal";
 import LoginModal from "@/components/shared/login-modal";
 type NavLink = {
@@ -13,11 +13,12 @@ type NavLink = {
 
 export const Nav = () => {
     const { isConnected: connected, connect, disconnect, address } = useWalletState();
+    const { email, clearCache: clearWAuthCache } = useWAuth();
+    const { isWAuth } = useWalletType();
     const [openSideBar, setOpenSideBar] = useState<boolean>(false);
     const [loading, setLoading] = useState<boolean>(false);
     const [disconnecting, setDisconnecting] = useState<boolean>(false);
     const [primaryLogo, setPrimaryLogo] = useState<string | null>(null);
-    const [userEmail, setUserEmail] = useState<string | null>(null);
     const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
 
     const links: NavLink[] = [
@@ -47,8 +48,12 @@ export const Nav = () => {
 
     const disConnect = async () => {
         setDisconnecting(true);
+        // Clear wauth cache on explicit disconnect
+        clearWAuthCache();
         await disconnect();
         setDisconnecting(false);
+        // Refresh the page to ensure login button shows up
+        window.location.reload();
     };
 
     useEffect(() => {
@@ -71,18 +76,6 @@ export const Nav = () => {
                         // @ts-ignore - primaryNameData is verified to exist
                         setPrimaryLogo(primaryNameData.logo);
                     }
-
-                    // Fetch user email from GitHub authentication
-                    try {
-                        const wauth = new WAuthStrategy({ provider: WAuthProviders.Github });
-                        const emailData = await wauth.getEmail();
-                        if (!isCancelled && emailData && emailData.email) {
-                            setUserEmail(emailData.email);
-                        }
-                    } catch (emailError) {
-                        console.error("Error fetching email:", emailError);
-                        // Continue without email if fetch fails
-                    }
                 } catch (error) {
                     console.error("Error fetching user data:", error);
                     // Don't block UI on error - just continue without data
@@ -90,7 +83,6 @@ export const Nav = () => {
             } else {
                 // Clear all user data if not connected
                 setPrimaryLogo(null);
-                setUserEmail(null);
             }
         }
 
@@ -134,7 +126,8 @@ export const Nav = () => {
                         <ProfileModal
                             address={address}
                             avatarUrl={avatarUrl}
-                            userEmail={userEmail}
+                            userEmail={isWAuth && email?.email ? email.email : null}
+                            isWAuth={isWAuth}
                             onDisconnect={disConnect}
                             disconnecting={disconnecting}
                         />
@@ -178,7 +171,8 @@ export const Nav = () => {
                         <ProfileModal
                             address={address}
                             avatarUrl={avatarUrl}
-                            userEmail={userEmail}
+                            userEmail={isWAuth && email?.email ? email.email : null}
+                            isWAuth={isWAuth}
                             onDisconnect={disConnect}
                             disconnecting={disconnecting}
                         />

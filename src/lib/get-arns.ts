@@ -35,7 +35,10 @@ export async function getWalletOwnedNames(walletAddress: string): Promise<{ name
         let ownedProcessIds: string[] = [];
         if (registryData.Messages?.[0]?.Data) {
             const ownedData = JSON.parse(registryData.Messages[0].Data);
-            ownedProcessIds = ownedData.Owned || [];
+            ownedProcessIds = [
+                ...(ownedData.Owned || []),
+                ...(ownedData.Controlled || [])
+              ];
         }
 
         // If no owned process IDs, return empty array

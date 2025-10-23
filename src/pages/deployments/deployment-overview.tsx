@@ -153,7 +153,7 @@ export default function DeploymentOverview({
 
         const handleError = (error: unknown) => {
             console.error("Error fetching deployment URL:", error);
-            toast.error("Failed to fetch deployment URL");
+            // toast.error("Failed to fetch deployment URL");
             setError(
                 "Failed to fetch deployment URL. Using last known values.",
             );

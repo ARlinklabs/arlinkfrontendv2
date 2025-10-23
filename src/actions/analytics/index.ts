@@ -1,7 +1,6 @@
 import { spawnReportProcess } from "@/hooks/use-report-manager";
 import { AnalyticsResponse } from "@/types";
-import { connect } from "@permaweb/aoconnect";
-import { prepareAoSigner } from "@/lib/ao-vars";
+import { prepareAoSigner, executeWithRetry } from "@/lib/ao-vars";
 
 const REGISTRY_PROCESS = "-M03tLhxzgf552RFPGiSCTOhqhvtRsk4bRsXKJ06CzE";
 
@@ -85,79 +84,77 @@ export async function getProjectPID(
     signer?: any,
 ): Promise<GetProcessPIDResponse> {
     const TARGET_PROCESS = managerProcess;
-    const ao = connect({
-        CU_URL: "https://ur-cu.randao.net",
-        MODE: "legacy",
-    });
+
+    // Validate and prepare signer before entering the retry loop
+    if (!signer) {
+        throw new Error('Wallet signer is required for this operation. Please connect your wallet and try again.');
+    }
+    
+    const preparedSigner = prepareAoSigner(signer);
+    if (!preparedSigner) {
+        throw new Error('Failed to prepare signer for analytics operation. Please ensure your wallet is connected properly.');
+    }
 
     try {
-        // Prepare message options
-        const messageOptions: any = {
-            process: TARGET_PROCESS,
-            tags: [
-                { name: "Action", value: "GetProjectPID" },
-                { name: "Projectname", value: projectName },
-                {
-                    name: "walletaddr",
-                    value: walletAddress,
-                },
-            ],
-        };
+        return await executeWithRetry(async (ao) => {
+            // Prepare message options
+            const messageOptions: any = {
+                process: TARGET_PROCESS,
+                tags: [
+                    { name: "Action", value: "GetProjectPID" },
+                    { name: "Projectname", value: projectName },
+                    {
+                        name: "walletaddr",
+                        value: walletAddress,
+                    },
+                ],
+                signer: preparedSigner,
+            };
 
-        // Only add signer if provided
-        if (signer) {
-            const preparedSigner = prepareAoSigner(signer);
-            if (preparedSigner) {
-                messageOptions.signer = preparedSigner;
-            } else {
-                throw new Error('Failed to prepare signer for analytics operation. Please ensure your wallet is connected properly.');
+            const message = await ao.message(messageOptions);
+
+            const { Messages, Error } = (await ao.result({
+                message: message,
+                process: TARGET_PROCESS,
+            })) as MessageResult;
+            
+            if (Messages && Messages.length > 0) {
+                const status = Messages[0].Tags.find(
+                    (tag) => tag.name === "Status",
+                );
+
+                if (status?.value === "Success") {
+                    return {
+                        messageId: message,
+                        processId: Messages[0].Data,
+                        error: false,
+                    };
+                } else {
+                    return {
+                        messageId: message,
+                        processId: null,
+                        error: true,
+                        errorMessage: "no data was found",
+                    };
+                }
             }
-        } else {
-            throw new Error('Wallet signer is required for this operation. Please connect your wallet and try again.');
-        }
 
-        const message = await ao.message(messageOptions);
-
-        const { Messages, Error } = (await ao.result({
-            message: message,
-            process: TARGET_PROCESS,
-        })) as MessageResult;
-        if (Messages && Messages.length > 0) {
-            const status = Messages[0].Tags.find(
-                (tag) => tag.name === "Status",
-            );
-
-            if (status?.value === "Success") {
-                return {
-                    messageId: message,
-                    processId: Messages[0].Data,
-                    error: false,
-                };
-            } else {
+            if (Error) {
                 return {
                     messageId: message,
                     processId: null,
                     error: true,
-                    errorMessage: "no data was found",
+                    errorMessage: "an error occured",
                 };
             }
-        }
 
-        if (Error) {
             return {
                 messageId: message,
                 processId: null,
                 error: true,
-                errorMessage: "an error occured",
+                errorMessage: "No response received",
             };
-        }
-
-        return {
-            messageId: message,
-            processId: null,
-            error: true,
-            errorMessage: "No response received",
-        };
+        });
     } catch (error) {
         console.error("Failed to fetch project PID:", error);
         throw error;
@@ -217,70 +214,67 @@ export async function registerProject(
     signer?: any,
 ): Promise<RegisterProjectReturnType> {
     const TARGET_PROCESS = REGISTRY_PROCESS;
-    const ao = connect({
-        CU_URL: "https://ur-cu.randao.net",
-        MODE: "legacy",
-    });
+
+    // Validate and prepare signer before entering the retry loop
+    if (!signer) {
+        throw new Error('Wallet signer is required to register project. Please connect your wallet and try again.');
+    }
+    
+    const preparedSigner = prepareAoSigner(signer);
+    if (!preparedSigner) {
+        throw new Error('Failed to prepare signer for analytics registration. Please ensure your wallet is connected properly.');
+    }
 
     try {
-        // Prepare message options
-        const messageOptions: any = {
-            process: TARGET_PROCESS,
-            tags: [
-                { name: "Action", value: "RegisterProject" },
-                { name: "Projectname", value: projectName },
-                { name: "ProcessID", value: processId },
-                { name: "walletaddr", value: walletAddress },
-            ],
-        };
-
-        // Only add signer if provided
-        if (signer) {
-            const preparedSigner = prepareAoSigner(signer);
-            if (preparedSigner) {
-                messageOptions.signer = preparedSigner;
-            } else {
-                throw new Error('Failed to prepare signer for analytics registration. Please ensure your wallet is connected properly.');
-            }
-        } else {
-            throw new Error('Wallet signer is required to register project. Please connect your wallet and try again.');
-        }
-
-        // Send registration message
-        const message = await ao.message(messageOptions);
-
-        console.log("Registration message sent with ID:", message);
-
-        const { Messages, Error }: RegisterProjectType = await ao.result({
-            message: message,
-            process: TARGET_PROCESS,
-        });
-
-        const statusValue = Messages[0].Tags.find(
-            (tag) => tag.name === "Status",
-        )?.value;
-
-        if (Messages && Messages.length > 0 && statusValue === "Success") {
-            return {
-                messageId: processId,
-                success: true,
-                error: null,
+        return await executeWithRetry(async (ao) => {
+            // Prepare message options
+            const messageOptions: any = {
+                process: TARGET_PROCESS,
+                tags: [
+                    { name: "Action", value: "RegisterProject" },
+                    { name: "Projectname", value: projectName },
+                    { name: "ProcessID", value: processId },
+                    { name: "walletaddr", value: walletAddress },
+                ],
+                signer: preparedSigner,
             };
-        }
 
-        if (Error) {
+            // Send registration message
+            const message = await ao.message(messageOptions);
+
+            console.log("Registration message sent with ID:", message);
+
+            const { Messages, Error }: RegisterProjectType = await ao.result({
+                message: message,
+                process: TARGET_PROCESS,
+            });
+
+            const statusValue = Messages[0].Tags.find(
+                (tag) => tag.name === "Status",
+            )?.value;
+
+            if (Messages && Messages.length > 0 && statusValue === "Success") {
+                return {
+                    messageId: processId,
+                    success: true,
+                    error: null,
+                };
+            }
+
+            if (Error) {
+                return {
+                    messageId: message,
+                    success: false,
+                    error: Error,
+                };
+            }
+
             return {
                 messageId: message,
                 success: false,
-                error: Error,
+                error: "No response received",
             };
-        }
-
-        return {
-            messageId: message,
-            success: false,
-            error: "No response received",
-        };
+        });
     } catch (error) {
         console.error("Failed to register project:", error);
         throw error;
@@ -308,62 +302,59 @@ export async function getAnalytics(
     processId: string,
     signer?: any,
 ): Promise<AnalyticsResponse> {
-    const ao = connect({
-        CU_URL: "https://ur-cu.randao.net",
-        MODE: "legacy",
-    });
+    // Validate and prepare signer before entering the retry loop
+    if (!signer) {
+        throw new Error('Wallet signer is required to fetch analytics. Please connect your wallet and try again.');
+    }
+    
+    const preparedSigner = prepareAoSigner(signer);
+    if (!preparedSigner) {
+        throw new Error('Failed to prepare signer for analytics fetch. Please ensure your wallet is connected properly.');
+    }
 
     try {
-        const messageOptions: any = {
-            process: processId,
-            tags: [{ name: "Action", value: "GetAnalytics" }],
-        };
-        
-        if (signer) {
-            const preparedSigner = prepareAoSigner(signer);
-            if (preparedSigner) {
-                messageOptions.signer = preparedSigner;
-            } else {
-                throw new Error('Failed to prepare signer for analytics fetch. Please ensure your wallet is connected properly.');
+        return await executeWithRetry(async (ao) => {
+            const messageOptions: any = {
+                process: processId,
+                tags: [{ name: "Action", value: "GetAnalytics" }],
+                signer: preparedSigner,
+            };
+            
+            const message = await ao.message(messageOptions);
+
+            console.log("Analytics request sent with ID:", message);
+
+            const { Messages, Error } = await ao.result({
+                message: message,
+                process: processId,
+            });
+
+            if (Messages && Messages.length > 0) {
+                const analyticsData = JSON.parse(Messages[0].Data);
+
+                if (analyticsData.success) {
+                    return {
+                        messageId: message,
+                        data: analyticsData.data,
+                        error: null,
+                    };
+                }
             }
-        } else {
-            throw new Error('Wallet signer is required to fetch analytics. Please connect your wallet and try again.');
-        }
-        
-        const message = await ao.message(messageOptions);
 
-        console.log("Analytics request sent with ID:", message);
-
-        const { Messages, Error } = await ao.result({
-            message: message,
-            process: processId,
-        });
-
-        if (Messages && Messages.length > 0) {
-            const analyticsData = JSON.parse(Messages[0].Data);
-
-            if (analyticsData.success) {
+            if (Error) {
                 return {
                     messageId: message,
-                    data: analyticsData.data,
-                    error: null,
+                    data: null,
+                    error: Error,
                 };
             }
-        }
 
-        if (Error) {
             return {
                 messageId: message,
                 data: null,
-                error: Error,
+                error: "No data received",
             };
-        }
-
-        return {
-            messageId: message,
-            data: null,
-            error: "No data received",
-        };
+        });
     } catch (error) {
         console.error("Failed to fetch analytics:", error);
         throw error;

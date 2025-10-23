@@ -131,23 +131,82 @@ export function useProfileModal() {
 }
 
 /**
- * Hook for WAuth specific functionality
+ * Hook for WAuth specific functionality with localStorage caching
  */
 export function useWAuth() {
-    const [email, setEmail] = useState<{ email: string, verified: boolean } | null>(null);
-    const [username, setUsername] = useState<string | null>(null);
+    const WAUTH_EMAIL_KEY = 'wauth_cached_email';
+    const WAUTH_USERNAME_KEY = 'wauth_cached_username';
+    const WAUTH_ADDRESS_KEY = 'wauth_cached_address';
+    
+    // Initialize from localStorage cache
+    const [email, setEmail] = useState<{ email: string, verified: boolean } | null>(() => {
+        try {
+            const cached = localStorage.getItem(WAUTH_EMAIL_KEY);
+            return cached ? JSON.parse(cached) : null;
+        } catch {
+            return null;
+        }
+    });
+    const [username, setUsername] = useState<string | null>(() => {
+        try {
+            return localStorage.getItem(WAUTH_USERNAME_KEY);
+        } catch {
+            return null;
+        }
+    });
     const [connectedWallets, setConnectedWallets] = useState<any[]>([]);
 
     useEffect(() => {
-        const updateWAuthData = () => {
-            const emailData = walletManager.getEmail();
-            const usernameData = walletManager.getUsername();
-            
-            setEmail(emailData);
-            setUsername(usernameData);
+        const updateWAuthData = async () => {
+            try {
+                // Get current wallet address
+                const currentAddress = await walletManager.getActiveAddress().catch(() => null);
+                const cachedAddress = localStorage.getItem(WAUTH_ADDRESS_KEY);
+                
+                // If address changed and we have a new address, clear old wauth cache
+                if (cachedAddress && currentAddress && cachedAddress !== currentAddress) {
+                    console.log('🔄 Address changed, clearing old wauth cache');
+                    localStorage.removeItem(WAUTH_EMAIL_KEY);
+                    localStorage.removeItem(WAUTH_USERNAME_KEY);
+                    setEmail(null);
+                    setUsername(null);
+                }
+                
+                // Update cached address
+                if (currentAddress) {
+                    localStorage.setItem(WAUTH_ADDRESS_KEY, currentAddress);
+                }
+                
+                const emailData = walletManager.getEmail();
+                const usernameData = walletManager.getUsername();
+                
+                console.log('📧 useWAuth - Email data:', emailData);
+                console.log('👤 useWAuth - Username data:', usernameData);
+                
+                // Update state
+                setEmail(emailData);
+                setUsername(usernameData);
+                
+                // Cache to localStorage if we have data
+                if (emailData) {
+                    localStorage.setItem(WAUTH_EMAIL_KEY, JSON.stringify(emailData));
+                    console.log('💾 Cached email:', emailData);
+                }
+                if (usernameData) {
+                    localStorage.setItem(WAUTH_USERNAME_KEY, usernameData);
+                    console.log('💾 Cached username:', usernameData);
+                }
 
-            // Update connected wallets
-            walletManager.getConnectedWallets().then(setConnectedWallets);
+                // Update connected wallets
+                walletManager.getConnectedWallets().then(setConnectedWallets).catch(() => {
+                    setConnectedWallets([]);
+                });
+            } catch (error) {
+                // User not logged in yet or not using wauth
+                // Don't clear cache here - we might be reconnecting
+                // Only clear if address changes or explicit disconnect
+                console.log('⚠️ useWAuth - Error updating data (user may not be logged in yet)');
+            }
         };
 
         // Initial load
@@ -157,7 +216,14 @@ export function useWAuth() {
         walletManager.onAuthDataChange(updateWAuthData);
 
         // Listen for wallet state changes
-        const unsubscribe = walletManager.onStateChange(updateWAuthData);
+        const unsubscribe = walletManager.onStateChange((state) => {
+            // Only update wauth data when connected
+            // Don't clear cache when disconnected - keep it for faster reconnection
+            // Cache will only be cleared by disconnect() call in wallet manager or manual logout
+            if (state.connected) {
+                updateWAuthData();
+            }
+        });
         
         return unsubscribe;
     }, []);
@@ -188,6 +254,16 @@ export function useWAuth() {
         return walletManager.getAoSigner();
     }, []);
 
+    const clearCache = useCallback(() => {
+        console.log('🗑️ Clearing wauth cache');
+        localStorage.removeItem(WAUTH_EMAIL_KEY);
+        localStorage.removeItem(WAUTH_USERNAME_KEY);
+        localStorage.removeItem(WAUTH_ADDRESS_KEY);
+        setEmail(null);
+        setUsername(null);
+        setConnectedWallets([]);
+    }, [WAUTH_EMAIL_KEY, WAUTH_USERNAME_KEY, WAUTH_ADDRESS_KEY]);
+
     return {
         email,
         username,
@@ -196,7 +272,8 @@ export function useWAuth() {
         removeConnectedWallet,
         reconnect,
         getAuthData,
-        getAoSigner
+        getAoSigner,
+        clearCache
     };
 }
 

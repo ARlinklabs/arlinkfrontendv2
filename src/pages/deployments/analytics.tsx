@@ -2,10 +2,9 @@ import { checkProcessId } from "@/actions/analytics";
 import AnalyticsOverview from "@/components/analytics/analytics-overview";
 import EnableAnalytics from "@/components/analytics/enable-analytics";
 import { AnalyticsDashboardSkeleton } from "@/components/skeletons";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useGlobalState } from "@/store/useGlobalState";
 import { useActiveAddress, useSigner } from "@/lib/wallet-strategies";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { TDeployment } from "@/types";
@@ -15,11 +14,9 @@ const Analytics = () => {
     const navigate = useNavigate();
     const projectName = searchParams.get("repo");
     const { deployments } = useGlobalState();
-    const signer = useSigner();
+    const { signer, isLoading: signerLoading } = useSigner();
     const [deployment, setDeployment] = useState<TDeployment | null>(null);
     const walletAddress = useActiveAddress();
-    const [completedAnalyticsProcess, setCompletedAnalyticsProcess] =
-        useState<boolean>(false);
 
     // process Id states
     const [isCheckingProcessId, setIsCheckingProcessId] =
@@ -51,6 +48,12 @@ const Analytics = () => {
     // useEffects
     useEffect(() => {
         if (!deployment || !walletAddress) return;
+        
+        // Don't check process ID if signer is still loading or not available
+        if (signerLoading || !signer) {
+            console.log('Waiting for signer to be ready before checking process ID...', { signerLoading, hasSigner: !!signer });
+            return;
+        }
 
         const init = async () => {
             setIsCheckingProcessId(true);
@@ -72,7 +75,7 @@ const Analytics = () => {
         };
 
         init();
-    }, [deployment, walletAddress]);
+    }, [deployment, walletAddress, signer, signerLoading]);
 
     // Loading state while searching for deployment
     if (!deployment) {

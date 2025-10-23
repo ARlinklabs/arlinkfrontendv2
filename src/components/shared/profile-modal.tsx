@@ -6,6 +6,7 @@ interface ProfileModalProps {
     address: string;
     avatarUrl?: string;
     userEmail?: string | null;
+    isWAuth?: boolean;
     onDisconnect: () => Promise<void> | void;
     disconnecting?: boolean;
     triggerClassName?: string;
@@ -15,6 +16,7 @@ export default function ProfileModal({
     address,
     avatarUrl,
     userEmail,
+    isWAuth = false,
     onDisconnect,
     disconnecting = false,
     triggerClassName = "bg-white text-black pr-2 flex items-center font-semibold px-1 gap-2 py-1 rounded-md"
@@ -27,6 +29,9 @@ export default function ProfileModal({
     };
 
     const truncatedAddress = `${address?.slice(0, 5)}...${address?.slice(address.length - 5, address.length - 1)}`;
+    
+    // For wauth, show email on button. For others, show truncated address
+    const buttonDisplayText = isWAuth && userEmail ? userEmail : truncatedAddress;
 
     return (
         <Dialog>
@@ -43,7 +48,7 @@ export default function ProfileModal({
                             <User className="size-4" />
                         )}
                     </div>
-                    <span>{userEmail || truncatedAddress}</span>
+                    <span>{buttonDisplayText}</span>
                 </button>
             </DialogTrigger>
             <DialogContent className="max-w-[400px] bg-[#09090b] border-neutral-800 border text-white">

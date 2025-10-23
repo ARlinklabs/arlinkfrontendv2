@@ -326,7 +326,12 @@ export class WalletManager {
             return null;
         }
 
-        return this.currentStrategy.getEmail();
+        try {
+            return this.currentStrategy.getEmail();
+        } catch (error) {
+            // User not logged in yet
+            return null;
+        }
     }
 
     public getUsername(): string | null {
@@ -334,7 +339,12 @@ export class WalletManager {
             return null;
         }
 
-        return this.currentStrategy.getUsername();
+        try {
+            return this.currentStrategy.getUsername();
+        } catch (error) {
+            // User not logged in yet
+            return null;
+        }
     }
 
     public async addConnectedWallet(wallet: any): Promise<any> {
@@ -358,7 +368,12 @@ export class WalletManager {
             return [];
         }
 
-        return await this.currentStrategy.getConnectedWallets();
+        try {
+            return await this.currentStrategy.getConnectedWallets();
+        } catch (error) {
+            // User not logged in yet
+            return [];
+        }
     }
 
     public getAuthData(): any {

@@ -25,7 +25,7 @@ import { GitHubSignInTemplate } from "@/components/ui/github-sign-in";
 const UploadTemplate = () => {
     const [step, setStep] = useState<"import" | "upload" | "code">("import");
     const { githubToken } = useGlobalState();
-    const signer = useSigner();
+    const { signer } = useSigner();
     const [selectRepoUrl, setSelectRepoUrl] = useState("");
     const [code, setCode] = useState<string>("");
 

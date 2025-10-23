@@ -4,7 +4,7 @@ import { extractRepoName } from "@/pages/utilts";
 import { getPrimaryname } from "@/lib/utils";
 import { UserIcon } from "lucide-react";
 import { useWalletState } from "@/hooks/use-wallet-state";
-import WAuthStrategy, { WAuthProviders } from "@wauth/strategy";
+import { useWAuth, useWalletType } from "@/lib/wallet-strategies";
 import ProfileModal from "@/components/shared/profile-modal";
 import LoginModal from "@/components/shared/login-modal";
 
@@ -16,6 +16,10 @@ export default function Navbar() {
     // Use centralized wallet state hook for consistency
     const { isConnected, address, connect, disconnect, kitConnected, kitAddress, walletAddress } = useWalletState();
     
+    // Get wauth-specific data and wallet type
+    const { email, username, clearCache: clearWAuthCache } = useWAuth();
+    const { isWAuth } = useWalletType();
+    
     // Debug logging to track navbar state
     useEffect(() => {
         log('State:', { 
@@ -23,9 +27,20 @@ export default function Navbar() {
             address, 
             kitConnected, 
             kitAddress, 
-            walletAddress 
+            walletAddress,
+            isWAuth,
+            email,
+            username
         });
-    }, [isConnected, address, kitConnected, kitAddress, walletAddress]);
+        
+        // Extra logging for wauth debugging
+        if (isWAuth) {
+            console.log('🔍 WAuth Debug - Email:', email);
+            console.log('🔍 WAuth Debug - Username:', username);
+            console.log('🔍 WAuth Debug - Cached Email:', localStorage.getItem('wauth_cached_email'));
+            console.log('🔍 WAuth Debug - Cached Username:', localStorage.getItem('wauth_cached_username'));
+        }
+    }, [isConnected, address, kitConnected, kitAddress, walletAddress, isWAuth, email, username]);
 
     //@ts-ignore
     const [isNewDeployment, setIsNewDeployment] = useState(false);
@@ -33,7 +48,6 @@ export default function Navbar() {
     const [primaryLogo, setPrimaryLogo] = useState<string | null>(null);
     const [connectingToWallet, setConnectingToWallet] = useState(false);
     const [disconnectingToWallet, setDisconnectingToWallet] = useState(false);
-    const [userEmail, setUserEmail] = useState<string | null>(null);
     const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
 
     const [searchParams] = useSearchParams();
@@ -49,8 +63,12 @@ export default function Navbar() {
     };
     const disconnectWallet = async () => {
         setDisconnectingToWallet(true);
+        // Clear wauth cache on explicit disconnect
+        clearWAuthCache();
         await disconnect();
         setDisconnectingToWallet(false);
+        // Refresh the page to ensure login button shows up
+        window.location.reload();
     };
 
     // nav-links
@@ -135,18 +153,6 @@ export default function Navbar() {
                                 //@ts-ignore
                                 setPrimaryLogo(primaryNameData.logo);
                             }
-
-                            // Fetch user email from GitHub authentication
-                            try {
-                                const wauth = new WAuthStrategy({ provider: WAuthProviders.Github });
-                                const emailData = await wauth.getEmail();
-                                if (!isCancelled && emailData && emailData.email) {
-                                    setUserEmail(emailData.email);
-                                }
-                            } catch (emailError) {
-                                console.error("Error fetching email:", emailError);
-                                // Continue without email if fetch fails
-                            }
                         } catch (error) {
                             console.error("Error fetching primary name:", error);
                             // Don't block UI on error - just continue without primary name
@@ -159,7 +165,6 @@ export default function Navbar() {
                 // Clear primary name if not connected
                 setPrimaryName(null);
                 setPrimaryLogo(null);
-                setUserEmail(null);
             }
         }
 
@@ -173,7 +178,11 @@ export default function Navbar() {
         };
     }, [address, isConnected]);
 
-    const displayName = primaryName || address?.slice(0, 8) || "anonymous";
+    // For wauth users, show GitHub username (including from cache). For others, show primary name or sliced address
+    // Check username first (even if isWAuth is temporarily false during reconnection)
+    const displayName = username 
+        ? username 
+        : (primaryName || address?.slice(0, 8) || "anonymous");
 
     const avatarUrl = primaryLogo ? `https://arweave.net/${primaryLogo}` : "";
 
@@ -198,7 +207,8 @@ export default function Navbar() {
                             <ProfileModal
                                 address={address}
                                 avatarUrl={avatarUrl}
-                                userEmail={userEmail}
+                                userEmail={isWAuth && email?.email ? email.email : null}
+                                isWAuth={isWAuth}
                                 onDisconnect={disconnectWallet}
                                 disconnecting={disconnectingToWallet}
                                 triggerClassName="bg-[#131314] text-white border-2 border-[#262626] pr-2 flex items-center font-semibold px-1 gap-2 py-1 rounded-md"

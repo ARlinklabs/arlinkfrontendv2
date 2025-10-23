@@ -29,6 +29,12 @@ const AnalyticsOverview = ({ processId }: { processId: string }) => {
     ``;
 
     useEffect(() => {
+        // Don't fetch if signer is still loading or not available
+        if (signerLoading || !signer) {
+            console.log('Waiting for signer to be ready...', { signerLoading, hasSigner: !!signer });
+            return;
+        }
+
         setFetchingAnalytics(true);
         const data = async () => {
             try {
@@ -44,7 +50,7 @@ const AnalyticsOverview = ({ processId }: { processId: string }) => {
             }
         };
         data();
-    }, []);
+    }, [processId, signer, signerLoading]);
 
     const firstRow: ChartDetailInterface[] = [
         {

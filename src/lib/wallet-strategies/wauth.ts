@@ -214,7 +214,54 @@ export class WAuthStrategy implements WalletStrategy {
     }
 
     public getUsername(): string | null {
-        return this.walletRef.getUsername();
+        try {
+            // First try to get username from wauth SDK
+            const username = this.walletRef.getUsername();
+            console.log('🔑 WAuthStrategy - SDK username:', username);
+            if (username) return username;
+            
+            // If not available, try to extract from auth data
+            const authData: any = this.walletRef.getAuthData();
+            console.log('🔑 WAuthStrategy - Full auth data:', authData);
+            
+            // For GitHub provider, check various possible locations in auth data
+            if (this.provider === WAuthProviders.Github && authData) {
+                console.log('🔑 WAuthStrategy - Checking GitHub auth data for username...');
+                
+                // Check if username is in the auth data
+                if (authData.username) {
+                    console.log('✅ Found username in authData.username:', authData.username);
+                    return authData.username;
+                }
+                if (authData.login) {
+                    console.log('✅ Found username in authData.login:', authData.login);
+                    return authData.login;
+                }
+                if (authData.user?.login) {
+                    console.log('✅ Found username in authData.user.login:', authData.user.login);
+                    return authData.user.login;
+                }
+                if (authData.user?.username) {
+                    console.log('✅ Found username in authData.user.username:', authData.user.username);
+                    return authData.user.username;
+                }
+                if (authData.profile?.login) {
+                    console.log('✅ Found username in authData.profile.login:', authData.profile.login);
+                    return authData.profile.login;
+                }
+                if (authData.profile?.username) {
+                    console.log('✅ Found username in authData.profile.username:', authData.profile.username);
+                    return authData.profile.username;
+                }
+                
+                console.log('❌ No username found in any checked location');
+            }
+            
+            return null;
+        } catch (error) {
+            console.error('❌ Error getting username:', error);
+            return null;
+        }
     }
 }
 

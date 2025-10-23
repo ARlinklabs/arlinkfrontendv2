@@ -213,7 +213,7 @@ export function createBrowserEthereumDataItemSigner(
  * import { useSigner } from '@/lib/wallet-strategies';
  * 
  * function MyComponent() {
- *   const signer = useSigner(); // Automatically updates when wallet changes
+ *   const { signer } = useSigner(); // Automatically updates when wallet changes
  *   
  *   // Use signer in your operations
  * }
