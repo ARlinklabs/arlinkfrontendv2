@@ -6,6 +6,7 @@ import { useWalletState } from "@/hooks/use-wallet-state";
 import { useWAuth, useWalletType } from "@/lib/wallet-strategies";
 import ProfileModal from "@/components/shared/profile-modal";
 import LoginModal from "@/components/shared/login-modal";
+import { useGlobalState } from "@/store/useGlobalState";
 type NavLink = {
     name: string;
     url: string;
@@ -15,6 +16,7 @@ export const Nav = () => {
     const { isConnected: connected, connect, disconnect, address } = useWalletState();
     const { email, clearCache: clearWAuthCache } = useWAuth();
     const { isWAuth } = useWalletType();
+    const clearWalletData = useGlobalState(state => state.clearWalletData);
     const [openSideBar, setOpenSideBar] = useState<boolean>(false);
     const [loading, setLoading] = useState<boolean>(false);
     const [disconnecting, setDisconnecting] = useState<boolean>(false);
@@ -48,12 +50,17 @@ export const Nav = () => {
 
     const disConnect = async () => {
         setDisconnecting(true);
-        // Clear wauth cache on explicit disconnect
-        clearWAuthCache();
-        await disconnect();
-        setDisconnecting(false);
-        // Refresh the page to ensure login button shows up
-        window.location.reload();
+        try {
+            // Clear wauth cache on explicit disconnect
+            clearWAuthCache();
+            // Clear global wallet data before disconnecting
+            clearWalletData();
+            await disconnect();
+        } finally {
+            setDisconnecting(false);
+            // Refresh the page to ensure login button shows up
+            window.location.reload();
+        }
     };
 
     useEffect(() => {

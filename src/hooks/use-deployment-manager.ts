@@ -6,10 +6,22 @@ import { useSigner } from "@/lib/wallet-strategies";
 import { gql, GraphQLClient } from "graphql-request";
 import { GetDemploymentHistoryReturnType } from "@/types";
 import { executeWithRetry } from "@/lib/ao-vars";
+import { getCachedProcess, cacheProcess, clearCachedProcess, clearAllCachedProcesses, getAllCachedProcesses } from "@/lib/process-cache";
 
 // Debug logging - enable by setting localStorage.WALLET_DEBUG = 'true'
 const DEBUG = import.meta.env.DEV && localStorage.getItem('WALLET_DEBUG') === 'true';
 const log = (...args: any[]) => DEBUG && console.log('[DeploymentManager]', ...args);
+
+// Expose cache utilities globally for debugging in development mode
+if (import.meta.env.DEV) {
+    (window as any).ARlinkDebug = {
+        clearProcessCache: clearAllCachedProcesses,
+        viewProcessCache: getAllCachedProcesses,
+        clearSpecificCache: clearCachedProcess,
+        enableDebug: () => localStorage.setItem('WALLET_DEBUG', 'true'),
+        disableDebug: () => localStorage.removeItem('WALLET_DEBUG'),
+    };
+}
 
 const setupCommands = `
     json = require "json"
@@ -149,6 +161,7 @@ export default function useDeploymentManager() {
     const walletAddress = address || globalWalletAddress;
     const { signer, isLoading: signerLoading } = useSigner();
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [hasFetchedOnce, setHasFetchedOnce] = useState(false); // Track if we've completed initial fetch
     const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const retryCountRef = useRef(0);
     const maxRetries = 3;
@@ -168,10 +181,22 @@ export default function useDeploymentManager() {
         if (connected && address && !managerProcess && signer && !signerLoading) {
             // Only proceed if the wallet is connected and we don't have a manager process yet
             log(`Setting up manager process for wallet: ${address}`);
+            
+            // Check cache first before querying GraphQL
+            const cachedProcessId = getCachedProcess(address);
+            if (cachedProcessId) {
+                log(`✅ Found cached manager process for ${address.slice(0, 8)}...`);
+                log(`📦 Cached Manager Process ID: ${cachedProcessId}`);
+                setManagerProcess(cachedProcessId);
+                return;
+            }
+            
+            log(`🔍 No cache found, querying GraphQL for manager process...`);
             getManagerProcessFromAddress(address).then((id) => {
                 if (id) {
                     log(`✅ Found existing manager process for ${address.slice(0, 8)}...`);
                     log(`📦 Manager Process ID: ${id}`);
+                    // Note: We cache this after validation in getManagerProcessFromAddress
                     setManagerProcess(id);
                 } else {
                     log("❌ No manager process found, spawning new one");
@@ -182,10 +207,13 @@ export default function useDeploymentManager() {
                         try {
                             await runLua(setupCommands, newId, undefined, signer);
                             log(`✅ Setup commands completed for process: ${newId}`);
+                            // Cache the new process (unvalidated initially)
+                            cacheProcess(address, newId, false);
                             setManagerProcess(newId);
                         } catch (error) {
                             console.error("❌ Failed to setup commands for new process:", error);
-                            // Still set the process ID, as it might work on retry
+                            // Still set the process ID and cache it, as it might work on retry
+                            cacheProcess(address, newId, false);
                             setManagerProcess(newId);
                         }
                     }).catch((error) => {
@@ -200,8 +228,9 @@ export default function useDeploymentManager() {
 
     // Handle deployment fetching when manager process is ready
     useEffect(() => {
-        // Reset retry count when manager process changes
+        // Reset retry count and fetch status when manager process changes
         retryCountRef.current = 0;
+        setHasFetchedOnce(false); // Reset on manager process change
         
         // Clear any existing timeout
         if (refreshTimeoutRef.current) {
@@ -288,6 +317,16 @@ export default function useDeploymentManager() {
             safeUpdateDeployments(deployments, address);
             log(`💾 Deployments stored successfully for wallet: ${address.slice(0, 8)}...`);
             
+            // If we successfully fetched deployments, cache the process as validated
+            // This is important: we only cache after confirming the process has deployments
+            if (deployments.length > 0) {
+                cacheProcess(address, managerProcess, true);
+                log(`💾 Manager process cached as validated for wallet: ${address.slice(0, 8)}...`);
+            }
+            
+            // Mark that we've completed at least one successful fetch
+            setHasFetchedOnce(true);
+            
             retryCountRef.current = 0; // Reset retry count on success
             setIsRefreshing(false);
             isRefreshingRef.current = false;
@@ -335,6 +374,7 @@ export default function useDeploymentManager() {
         managerProcess,
         deployments,
         isRefreshing,
+        hasFetchedOnce, // Indicates whether initial fetch has completed
         refresh: () => refresh(false),
         walletAddress,
     };
@@ -424,12 +464,15 @@ export async function getManagerProcessFromAddress(address: string) {
 
     // If no transactions found, return null
     if (edges.length === 0) {
+        console.log(`[ProcessCache] No manager processes found via GraphQL for ${address.slice(0, 8)}...`);
         return null;
     }
 
-    // If transactions exist and fewer than 12, run the second query
+    // If transactions exist and fewer than 20, run the second query to find the correct one
+    // This is the technical debt fix mentioned by the user - it helps find the process with actual deployments
     if (edges.length > 0 && edges.length < 20) {
         const processIds = edges.map(edge => edge.node.id);
+        console.log(`[ProcessCache] Found ${processIds.length} potential manager processes, validating which has deployments...`);
 
         const secondQuery = gql`
             query GetProcessTransactions($cursor: String, $processId: String!) {
@@ -458,12 +501,17 @@ export async function getManagerProcessFromAddress(address: string) {
             });
 
             const secondQueryResults = await Promise.all(secondQueryPromises);
-            // console.log("Second query results:", secondQueryResults);
+            console.log(`[ProcessCache] Validation results:`, secondQueryResults.map(r => `${r.processId}: ${r.count} txns`));
 
-            // Find the first process ID with count > 1
+            // Find the first process ID with count > 1 (has actual activity/deployments)
             const validProcess = secondQueryResults.find(result => result.count > 1);
             if (validProcess) {
+                console.log(`[ProcessCache] ✅ Found validated process with deployments: ${validProcess.processId}`);
+                // Cache this process as validated since we confirmed it has deployments
+                cacheProcess(address, validProcess.processId, true);
                 return validProcess.processId;
+            } else {
+                console.log(`[ProcessCache] ⚠️ No processes with deployments found, using first process`);
             }
         } catch (error) {
             //@ts-ignore
@@ -472,7 +520,13 @@ export async function getManagerProcessFromAddress(address: string) {
     }
 
     // Return the first transaction ID or null
-    return edges.length > 0 ? edges[0].node.id : null;
+    const firstProcessId = edges.length > 0 ? edges[0].node.id : null;
+    if (firstProcessId) {
+        // Cache this process but mark as unvalidated since we didn't verify it has deployments
+        cacheProcess(address, firstProcessId, false);
+        console.log(`[ProcessCache] Caching first process (unvalidated): ${firstProcessId}`);
+    }
+    return firstProcessId;
 }
 
 export async function getDeploymentHistory(

@@ -26,12 +26,11 @@ const Dashboardcomp = () => {
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
     const [searchTerm, setSearchTerm] = useState("");
     const [sortBy, setSortBy] = useState("activity");
-    const { managerProcess, deployments, isRefreshing, walletAddress } = useDeploymentManager();
+    const { managerProcess, deployments, hasFetchedOnce, walletAddress } = useDeploymentManager();
     const walletType = useWalletType();
     const [cardsLimit, setCardsLimit] = useState(12);
     const navigate = useNavigate();
     const [managerProcessExists, setManagerProcessExists] = useState<boolean>(true);
-    const [showNoDeployments, setShowNoDeployments] = useState<boolean>(false);
 
     // Log wallet type information
     useEffect(() => {
@@ -90,31 +89,49 @@ const Dashboardcomp = () => {
             });
     }, [projects, searchTerm, sortBy]);
 
-    // Determine if we should show loading state (memoized to prevent re-renders)
-    // Only show loading if we don't have deployments yet, not during background refreshes
+    // Determine if we should show loading state
+    // Show loading when:
+    // 1. We're still waiting for manager process setup
+    // 2. We're refreshing and haven't fetched once yet
+    // 3. We have manager process but haven't completed initial fetch
     const shouldShowLoading = useCallback(() => {
-        return (
-            (deployments.length === 0 && isRefreshing) || 
-            (walletAddress && !managerProcess) ||
-            (walletAddress && managerProcess && deployments.length === 0 && !showNoDeployments)
-        );
-    }, [isRefreshing, walletAddress, managerProcess, deployments.length, showNoDeployments]);
+        // No wallet connected - don't show loading
+        if (!walletAddress) {
+            return false;
+        }
+        
+        // Waiting for manager process to be set up
+        if (!managerProcess) {
+            return true;
+        }
+        
+        // Manager process exists but we haven't completed initial fetch yet
+        if (!hasFetchedOnce) {
+            return true;
+        }
+        
+        // We've fetched before and have deployments - never show loading even during refresh
+        if (deployments.length > 0) {
+            return false;
+        }
+        
+        // We've fetched, have no deployments, and not currently refreshing - show "no deployments" message
+        return false;
+    }, [walletAddress, managerProcess, hasFetchedOnce, deployments.length]);
+
+    // Determine if we should show "no deployments" message
+    // Only show when:
+    // 1. Manager process is set
+    // 2. We've completed at least one successful fetch
+    // 3. Deployments array is empty
+    const shouldShowNoDeployments = useCallback(() => {
+        return walletAddress && managerProcess && hasFetchedOnce && deployments.length === 0;
+    }, [walletAddress, managerProcess, hasFetchedOnce, deployments.length]);
 
     // Update manager process existence state
     useEffect(() => {
         setManagerProcessExists(!!managerProcess);
     }, [managerProcess]);
-
-    // Handle showing "no deployments found"
-    useEffect(() => {
-        if (deployments.length > 0) {
-            setShowNoDeployments(false);
-        } else if (walletAddress && managerProcess && !isRefreshing) {
-            setShowNoDeployments(true);
-        } else {
-            setShowNoDeployments(false);
-        }
-    }, [deployments.length, walletAddress, managerProcess, isRefreshing]);
 
     return (
         <Layout>
@@ -174,7 +191,9 @@ const Dashboardcomp = () => {
 
                 {shouldShowLoading() ? (
                     <ProjectCardSkeleton viewMode={viewMode} />
-                ) : deployments.length > 0 ? (
+                ) : shouldShowNoDeployments() ? (
+                    <NoDeploymentFoundCard />
+                ) : (
                     <div
                         className={`grid ${
                             viewMode === "grid"
@@ -191,10 +210,6 @@ const Dashboardcomp = () => {
                                 />
                             ))}
                     </div>
-                ) : showNoDeployments ? (
-                    <NoDeploymentFoundCard />
-                ) : (
-                    <ProjectCardSkeleton viewMode={viewMode} />
                 )}
 
                 {cardsLimit < deployments.length && (
