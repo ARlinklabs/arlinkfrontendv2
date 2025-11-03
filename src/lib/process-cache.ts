@@ -89,16 +89,51 @@ export function getCachedProcess(walletAddress: string): string | null {
 }
 
 /**
+ * Get full cached process data (including validation status)
+ * Returns null if cache miss or expired
+ */
+export function getCachedProcessData(walletAddress: string): CachedProcess | null {
+    if (!walletAddress) {
+        return null;
+    }
+    
+    try {
+        const cacheKey = getCacheKey(walletAddress);
+        const cachedData = localStorage.getItem(cacheKey);
+        
+        if (!cachedData) {
+            return null;
+        }
+        
+        const cachedProcess: CachedProcess = JSON.parse(cachedData);
+        
+        // Validate cache
+        if (!isCacheValid(cachedProcess)) {
+            // Remove invalid cache
+            localStorage.removeItem(cacheKey);
+            return null;
+        }
+        
+        return cachedProcess;
+    } catch (error) {
+        console.error('[ProcessCache] Error reading cache data:', error);
+        return null;
+    }
+}
+
+/**
  * Cache a manager process for a wallet address
  * 
  * @param walletAddress - The wallet address that owns the process
  * @param processId - The manager process ID to cache
  * @param validated - Whether this process has been confirmed to have deployments
+ * @param forceUpdate - Force update even if already cached with same validation status
  */
 export function cacheProcess(
     walletAddress: string, 
     processId: string, 
-    validated: boolean = false
+    validated: boolean = false,
+    forceUpdate: boolean = false
 ): void {
     if (!walletAddress || !processId) {
         console.warn('[ProcessCache] Invalid parameters for caching');
@@ -106,6 +141,22 @@ export function cacheProcess(
     }
     
     try {
+        // Check if we already have this exact cache entry
+        const existingCache = getCachedProcessData(walletAddress);
+        
+        if (!forceUpdate && existingCache) {
+            // If same process ID and already validated, skip caching
+            if (existingCache.processId === processId && existingCache.validated && validated) {
+                console.log(`[ProcessCache] ⏭️ Skipping cache update - already cached and validated for ${walletAddress.slice(0, 8)}...`);
+                return;
+            }
+            
+            // If upgrading from unvalidated to validated, proceed
+            if (existingCache.processId === processId && !existingCache.validated && validated) {
+                console.log(`[ProcessCache] ⬆️ Upgrading cache to validated for ${walletAddress.slice(0, 8)}...`);
+            }
+        }
+        
         const cacheKey = getCacheKey(walletAddress);
         const cacheData: CachedProcess = {
             processId,

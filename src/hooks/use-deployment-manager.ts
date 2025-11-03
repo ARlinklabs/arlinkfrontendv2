@@ -6,7 +6,7 @@ import { useSigner } from "@/lib/wallet-strategies";
 import { gql, GraphQLClient } from "graphql-request";
 import { GetDemploymentHistoryReturnType } from "@/types";
 import { executeWithRetry } from "@/lib/ao-vars";
-import { getCachedProcess, cacheProcess, clearCachedProcess, clearAllCachedProcesses, getAllCachedProcesses } from "@/lib/process-cache";
+import { getCachedProcess, getCachedProcessData, cacheProcess, clearCachedProcess, clearAllCachedProcesses, getAllCachedProcesses } from "@/lib/process-cache";
 
 // Debug logging - enable by setting localStorage.WALLET_DEBUG = 'true'
 const DEBUG = import.meta.env.DEV && localStorage.getItem('WALLET_DEBUG') === 'true';
@@ -17,6 +17,7 @@ if (import.meta.env.DEV) {
     (window as any).ARlinkDebug = {
         clearProcessCache: clearAllCachedProcesses,
         viewProcessCache: getAllCachedProcesses,
+        viewSpecificCache: getCachedProcessData,
         clearSpecificCache: clearCachedProcess,
         enableDebug: () => localStorage.setItem('WALLET_DEBUG', 'true'),
         disableDebug: () => localStorage.removeItem('WALLET_DEBUG'),
