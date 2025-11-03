@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
     Check,
     ChevronsUpDown,
@@ -86,7 +86,11 @@ export default function DeploymentHistory() {
 
     const [history, setHistory] = useState<DeploymentRecord[]>([]);
 
-    const foundDeployment = deployments.find((d) => d.Name === repoName);
+    // Memoize foundDeployment to prevent unnecessary rerenders
+    const foundDeployment = useMemo(
+        () => deployments.find((d) => d.Name === repoName),
+        [deployments, repoName]
+    );
 
     // loading and error states
     const [loadingDeploymentHistory, setLoadingDeploymentHistory] =
@@ -94,6 +98,9 @@ export default function DeploymentHistory() {
     const [, setHistoryError] = useState<string | null>("");
     const activeAddress = useActiveAddress();
     const { signer, isLoading: signerLoading } = useSigner();
+    
+    // Track if we've already fetched history to prevent duplicate fetches
+    const hasFetchedRef = useRef(false);
     
     // Show loading state only when we don't have the deployment data yet
     // Don't show loading if we're just refreshing existing data
@@ -141,7 +148,10 @@ export default function DeploymentHistory() {
     const [fetchingUserArns, setFetchingUserArns] = useState<boolean>(false);
 
     useEffect(() => {
-        if (!repoName || !foundDeployment) return;
+        if (!repoName || !foundDeployment) {
+            hasFetchedRef.current = false;
+            return;
+        }
         
         // Wait for signer to be ready
         if (signerLoading || !signer) {
@@ -149,11 +159,17 @@ export default function DeploymentHistory() {
             return;
         }
         
+        // Prevent duplicate fetches
+        if (hasFetchedRef.current) {
+            return;
+        }
+        
         const fetchHistory = async () => {
+            hasFetchedRef.current = true;
             setLoadingDeploymentHistory(true);
             try {
                 const { history, error } = await getDeploymentHistory(
-                    foundDeployment?.Name,
+                    foundDeployment.Name,
                     managerProcess,
                     signer,
                 );
@@ -166,6 +182,7 @@ export default function DeploymentHistory() {
             } catch (error) {
                 console.error('[DeploymentHistory] Failed to fetch history:', error);
                 setHistoryError(error instanceof Error ? error.message : 'Failed to fetch history');
+                hasFetchedRef.current = false; // Allow retry on error
             } finally {
                 setLoadingDeploymentHistory(false);
             }

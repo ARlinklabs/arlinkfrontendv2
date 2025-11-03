@@ -183,18 +183,22 @@ export function useWAuth() {
                 console.log('📧 useWAuth - Email data:', emailData);
                 console.log('👤 useWAuth - Username data:', usernameData);
                 
-                // Update state
-                setEmail(emailData);
-                setUsername(usernameData);
-                
-                // Cache to localStorage if we have data
-                if (emailData) {
+                // Update state - but preserve cached values if new data is null
+                // This prevents overwriting cached data before WAuth is fully initialized
+                if (emailData !== null) {
+                    setEmail(emailData);
                     localStorage.setItem(WAUTH_EMAIL_KEY, JSON.stringify(emailData));
                     console.log('💾 Cached email:', emailData);
+                } else {
+                    console.log('⚠️ Email data is null, keeping cached value');
                 }
-                if (usernameData) {
+                
+                if (usernameData !== null) {
+                    setUsername(usernameData);
                     localStorage.setItem(WAUTH_USERNAME_KEY, usernameData);
                     console.log('💾 Cached username:', usernameData);
+                } else {
+                    console.log('⚠️ Username data is null, keeping cached value');
                 }
 
                 // Update connected wallets
@@ -262,7 +266,7 @@ export function useWAuth() {
         setEmail(null);
         setUsername(null);
         setConnectedWallets([]);
-    }, [WAUTH_EMAIL_KEY, WAUTH_USERNAME_KEY, WAUTH_ADDRESS_KEY]);
+    }, []); // Keys are constants, no need to include in dependencies
 
     return {
         email,
