@@ -180,24 +180,14 @@ export default function DeploymentOverview({
                 if (response.data.url !== deployment.DeploymentId) {
                     await updateDeploymentInDB(newDeploymentUrl);
 
-                    console.log("updated the deployment history");
+                    console.log("New deployment detected - history will be fetched from GraphQL");
                     console.log({
                         onChainDataId: deployment.DeploymentId,
+                        newDeploymentId: newDeploymentUrl,
                     });
 
-                    if (signer && !signerLoading) {
-                        await runLua(
-                            `db:exec[[
-                                    INSERT INTO NewDeploymentHistory (Name, DeploymentID, AssignedUndername, Date) VALUES
-                                    ('${
-                                        deployment.Name
-                                    }', '${newDeploymentUrl}', '${arnsUnderName}', '${getTime()}')
-                                ]]`,
-                            globalState.managerProcess,
-                            undefined,
-                            signer,
-                        );
-                    }
+                    // Note: History is now fetched from GraphQL (Set-Record transactions)
+                    // No need to insert into manager process database
                 } else {
                     console.log("no new deployment was found.");
                 }

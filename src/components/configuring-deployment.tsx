@@ -590,31 +590,16 @@ const ConfiguringDeploymentProject = ({
 
         if (activeTab === "existing" && arnsName) {
           const userArns = await setArnsNameWithProcessId(arnsName.processId, response.data.result, "@", signer)
-          dbOperations.push(
-            runLua(
-              `db:exec[[
-                INSERT INTO NewDeploymentHistory (Name, DeploymentID, AssignedUndername, Date) 
-                VALUES ('${projectName}', '${response.data.result}', ${userArns ? `'${userArns}'` : "NULL"}, '${getTime()}')
-              ]]`,
-              mgProcess,
-              undefined,
-              signer,
-            ),
-          )
+          // Note: History is now fetched from GraphQL (Set-Record transactions)
+          // No need to insert into manager process database
         }
 
         setIsFetchingLogs(() => false)
         setAlmostDone(true)
         await Promise.all(dbOperations)
-        await runLua(
-          `db:exec[[
-            INSERT INTO NewDeploymentHistory (Name, DeploymentID, AssignedUndername, Date) VALUES
-            ('${projectName}', '${response.data.result}', '${response.data.finalUnderName}', '${getTime()}')
-          ]]`,
-          mgProcess,
-          undefined,
-          signer,
-        )
+        // Note: History is now fetched from GraphQL (Set-Record transactions)
+        // No need to insert into manager process database
+        // History will be available in GraphQL after Set-Record transaction completes
 
         // Add small delay to allow database operations to fully propagate
         await new Promise(resolve => setTimeout(resolve, 2000))

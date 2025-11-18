@@ -29,7 +29,7 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import useDeploymentManager, {
-    getDeploymentHistory,
+    getDeploymentHistoryFromGraphQL,
 } from "@/hooks/use-deployment-manager";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useGlobalState } from "@/store/useGlobalState";
@@ -58,13 +58,43 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import {
-    extractOwnerName,
-    extractRepoName,
     handleFetchExistingArnsName,
 } from "../utilts";
 import { useActiveAddress, useSigner } from "@/lib/wallet-strategies";
 import { TransactionDialog } from "@/components/transactionBlock";
-import { revertNonArnsProject } from "@/actions/deploy";
+
+// Helper function to format date as relative time
+function formatRelativeTime(dateString: string): string {
+    try {
+        // Parse date string format: "YYYY-MM-DD HH:MM:SS"
+        const deploymentDate = new Date(dateString.replace(' ', 'T') + 'Z');
+        const now = new Date();
+        const diffMs = now.getTime() - deploymentDate.getTime();
+        const diffSeconds = Math.floor(diffMs / 1000);
+        const diffMinutes = Math.floor(diffSeconds / 60);
+        const diffHours = Math.floor(diffMinutes / 60);
+        const diffDays = Math.floor(diffHours / 24);
+        const diffWeeks = Math.floor(diffDays / 7);
+
+        if (diffSeconds < 60) {
+            return diffSeconds === 1 ? '1 second ago' : `${diffSeconds} seconds ago`;
+        } else if (diffMinutes < 60) {
+            return diffMinutes === 1 ? '1 minute ago' : `${diffMinutes} minutes ago`;
+        } else if (diffHours < 24) {
+            return diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`;
+        } else if (diffDays < 7) {
+            return diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
+        } else if (diffWeeks < 4) {
+            return diffWeeks === 1 ? '1 week ago' : `${diffWeeks} weeks ago`;
+        } else {
+            // For older dates, show the actual date
+            return dateString.split(' ')[0]; // Return just the date part (YYYY-MM-DD)
+        }
+    } catch (error) {
+        // Fallback to original string if parsing fails
+        return dateString;
+    }
+}
 
 export default function DeploymentHistory() {
     // hooks
@@ -153,12 +183,6 @@ export default function DeploymentHistory() {
             return;
         }
         
-        // Wait for signer to be ready
-        if (signerLoading || !signer) {
-            console.log('[DeploymentHistory] Waiting for signer to be ready...');
-            return;
-        }
-        
         // Prevent duplicate fetches
         if (hasFetchedRef.current) {
             return;
@@ -168,17 +192,36 @@ export default function DeploymentHistory() {
             hasFetchedRef.current = true;
             setLoadingDeploymentHistory(true);
             try {
-                const { history, error } = await getDeploymentHistory(
-                    foundDeployment.Name,
-                    managerProcess,
-                    signer,
-                );
-
-                console.log(history);
-                if (error) {
-                    setHistoryError(error?.message);
+                let historyResult;
+                
+                // Use GraphQL method if deployment has an undername (ArNS users)
+                // GraphQL doesn't require signer - it's just a read query
+                if (foundDeployment.UnderName && foundDeployment.ArnsProcess) {
+                    console.log('[DeploymentHistory] Using GraphQL method for ArNS deployment');
+                    console.log('[DeploymentHistory] Undername:', foundDeployment.UnderName);
+                    console.log('[DeploymentHistory] ArNS Process:', foundDeployment.ArnsProcess);
+                    
+                    // Query GraphQL for Set-Record transactions by undername (no signer needed)
+                    historyResult = await getDeploymentHistoryFromGraphQL(
+                        foundDeployment.UnderName,
+                        foundDeployment.Name,
+                    );
+                } else {
+                    console.log('[DeploymentHistory] Using legacy Lua method for non-ArNS deployment');
+                    historyResult = await getDeploymentHistoryFromGraphQL(
+                        foundDeployment.UnderName,
+                        foundDeployment.Name,
+                    
+                    );
                 }
-                setHistory(history.reverse());
+
+                console.log('History fetched:', historyResult.history);
+                if (historyResult.error) {
+                    console.error('[DeploymentHistory] Error:', historyResult.error.message);
+                    setHistoryError(historyResult.error.message);
+                }
+                // GraphQL already returns newest first (INGESTED_AT_DESC), no reverse needed
+                setHistory(historyResult.history);
             } catch (error) {
                 console.error('[DeploymentHistory] Failed to fetch history:', error);
                 setHistoryError(error instanceof Error ? error.message : 'Failed to fetch history');
@@ -353,30 +396,6 @@ const DeploymentHistoryCard = ({
         }
     };
 
-    const rollBackNonArnsUser = async (deploymentID: string) => {
-        setRollBackStarted(true);
-        setTransactionId("");
-        setRollBackTransactionIdFetched(false);
-        const ownerName = extractOwnerName(currentDeployment.RepoUrl);
-        const repoProjectName = extractRepoName(currentDeployment.RepoUrl);
-
-        const { data } = await revertNonArnsProject({
-            ownerName,
-            repoProjectName,
-            manifestId: deploymentID,
-        });
-
-        setRollBackStarted(false);
-        if (data.txid) {
-            setTransactionId(data.txid);
-            setRollBackTransactionIdFetched(true);
-            await refresh();
-            navigate(`/deployment?repo=${currentDeployment.Name}`);
-        } else {
-            toast.error("Failed to rollback");
-        }
-    };
-
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     const handleCloseDialog = () => {
@@ -461,7 +480,10 @@ const DeploymentHistoryCard = ({
                             </div>
                         </div>
                     </div>
-                    {currentDeployment.ArnsProcess ? (
+                    {/* Only show buttons when ArnsProcess exists and is different from UnderName */}
+                    {currentDeployment.ArnsProcess && 
+                     currentDeployment.UnderName && 
+                     currentDeployment.ArnsProcess !== currentDeployment.UnderName ? (
                         <div className="flex flex-wrap items-center gap-2">
                             {index !== 0 && (
                                 <Dialog>
@@ -557,62 +579,7 @@ const DeploymentHistoryCard = ({
                                 </DialogContent>
                             </Dialog>
                         </div>
-                    ) : (
-                        index !== 0 && (
-                            <Dialog>
-                                <DialogTrigger>
-                                    <Button
-                                        size={"sm"}
-                                        className="flex items-center -transparent text-sm gap-2 px-4 font-semibold rounded-xl"
-                                        disabled={rollBackTransactionIdFetched}
-                                    >
-                                        <RefreshCcw />
-                                        Roll back
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent className="bg-neutral-950 border-neutral-900 ">
-                                    <DialogHeader>
-                                        <DialogTitle>
-                                            {rollBackTransactionIdFetched
-                                                ? "Your roll back is in process"
-                                                : "Roll back your changes"}
-                                        </DialogTitle>
-                                        <DialogDescription>
-                                            {rollBackTransactionIdFetched
-                                                ? "Roll back is in progress you can close this"
-                                                : "Do you want to roll back to this deployment? "}
-                                        </DialogDescription>
-                                    </DialogHeader>
-                                    <DialogFooter>
-                                        <div className="w-full ">
-                                            {!rollBackTransactionIdFetched ? (
-                                                <Button
-                                                    className="font-semibold tracking-tight rounded-lg"
-                                                    size={"sm"}
-                                                    disabled={rollBackStarted}
-                                                    onClick={() => {
-                                                        rollBackNonArnsUser(
-                                                            deployment.DeploymentID,
-                                                        );
-                                                    }}
-                                                >
-                                                    {rollBackStarted && (
-                                                        <Loader2 className="animate-spin" />
-                                                    )}
-                                                    {rollBackStarted
-                                                        ? "Saving"
-                                                        : "Save"}{" "}
-                                                    changes
-                                                </Button>
-                                            ) : (
-                                                <DialogClose>Close</DialogClose>
-                                            )}
-                                        </div>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
-                        )
-                    )}
+                    ) : null}
                 </div>
                 {/* right - column */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-8 mt-4 sm:mt-0">
@@ -648,7 +615,7 @@ const DeploymentHistoryCard = ({
                             </div>
                         </div>
                         <p className="font-semibold text-sm">
-                            {deployment.Date}
+                            {formatRelativeTime(deployment.Date)}
                         </p>
                     </div>
                 </div>

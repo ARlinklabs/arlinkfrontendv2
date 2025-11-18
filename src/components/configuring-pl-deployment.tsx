@@ -288,34 +288,30 @@ const ConfigureProtocolLandProject = ({
                     ...dbQueries.map((query) =>
                         runLua(`db:exec[[${query}]]`, managerProcess, undefined, signer),
                     ),
-                    runLua(historyTable, managerProcess, undefined, signer),
-                    runLua(
-                        `db:exec[[INSERT INTO NewDeploymentHistory (Name, DeploymentID, AssignedUndername, Date) 
-                         VALUES ('${projectName}', '${txid.result}', 
-                         ${
-                             userArns ? `'${userArns}'` : "NULL"
-                         }, '${getTime()}')]]`,
-                        managerProcess,
-                        undefined,
-                        signer,
-                    ),
+                    // Note: History is now fetched from GraphQL (Set-Record transactions)
+                    // No need to create/insert into manager process database
+                    // runLua(historyTable, managerProcess, undefined, signer),
+                    // runLua(history insertion...)
                 
                 ];
 
                 setIsFetchingLogs(false);
                 setAlmostDone(true);
                 await Promise.all(dbOperations);
-                await runLua(
-                    `db:exec[[
-                                INSERT INTO NewDeploymentHistory (Name, DeploymentID, AssignedUndername, Date) VALUES
-                                ('${
-                                    projectName
-                                }', '${txid.result}', '${txid.finalUnderName}', '${getTime()}')
-                            ]]`,
-                    managerProcess,
-                    undefined,
-                    signer,
-                );
+                // Note: History is now fetched from GraphQL (Set-Record transactions)
+                // No need to insert into manager process database
+                // History will be available in GraphQL after Set-Record transaction completes
+                // await runLua(
+                //     `db:exec[[
+                //                 INSERT INTO NewDeploymentHistory (Name, DeploymentID, AssignedUndername, Date) VALUES
+                //                 ('${
+                //                     projectName
+                //                 }', '${txid.result}', '${txid.finalUnderName}', '${getTime()}')
+                //             ]]`,
+                //     managerProcess,
+                //     undefined,
+                //     signer,
+                // );
 
                 // Add small delay to allow database operations to fully propagate
                 await new Promise(resolve => setTimeout(resolve, 2000));

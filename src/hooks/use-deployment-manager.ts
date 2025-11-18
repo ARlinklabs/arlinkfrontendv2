@@ -4,7 +4,7 @@ import { useWalletState } from "./use-wallet-state";
 import { runLua, spawnProcess, prepareAoSigner } from "@/lib/ao-vars";
 import { useSigner } from "@/lib/wallet-strategies";
 import { gql, GraphQLClient } from "graphql-request";
-import { GetDemploymentHistoryReturnType } from "@/types";
+import { GetDemploymentHistoryReturnType, DeploymentRecord } from "@/types";
 import { executeWithRetry } from "@/lib/ao-vars";
 import { getCachedProcess, getCachedProcessData, cacheProcess, clearCachedProcess, clearAllCachedProcesses, getAllCachedProcesses } from "@/lib/process-cache";
 
@@ -602,5 +602,221 @@ export async function getDeploymentHistory(
     } catch (error) {
         console.error("Failed to get deployment history:", error);
         throw error;
+    }
+}
+
+export async function getDeploymentHistoryFromGraphQL(
+    undername: string,
+    projectName: string,
+): Promise<GetDemploymentHistoryReturnType> {
+    if (!undername) {
+        return {
+            messageId: null,
+            history: [],
+            error: new Error('Undername is required for GraphQL history fetch'),
+        };
+    }
+
+    let client = new GraphQLClient(PRIMARY_GQL_ENDPOINT);
+    
+    // Escape strings to prevent GraphQL injection
+    const escapedUndername = undername.replace(/"/g, '\\"');
+    
+    // Query by tags only - Set-Record transactions for this undername
+    // Note: We query without owners filter because transactions can come from any wallet
+    // that has permission to set records for this undername
+    const queryString = `
+        query {
+            transactions(
+                tags: [
+                    { name: "Data-Protocol", values: ["ao"] }
+                    { name: "Action", values: ["Set-Record"] }
+                    { name: "Sub-Domain", values: ["${escapedUndername}"] }
+                ]
+                sort: INGESTED_AT_DESC
+                first: 100
+            ) {
+                edges {
+                    node {
+                        id
+                        owner {
+                            address
+                        }
+                        ingested_at
+                        block {
+                            timestamp
+                            height
+                        }
+                        tags {
+                            name
+                            value
+                        }
+                    }
+                }
+                count
+            }
+        }
+    `;
+
+    console.log('[GraphQL History] Querying for undername:', undername);
+
+    // GraphQL response type - response may be wrapped in data or unwrapped
+    type GraphQLResponse = {
+        data?: {
+            transactions: {
+                edges: Array<{
+                    node: {
+                        id: string;
+                        owner?: {
+                            address: string;
+                        };
+                        ingested_at: number;
+                        block: {
+                            timestamp: number;
+                            height: number;
+                        };
+                        tags: Array<{
+                            name: string;
+                            value: string;
+                        }>;
+                    };
+                }>;
+                count: string | number;
+            };
+        };
+        transactions?: {
+            edges: Array<{
+                node: {
+                    id: string;
+                    owner?: {
+                        address: string;
+                    };
+                        ingested_at: number;
+                    block: {
+                        timestamp: number;
+                        height: number;
+                    };
+                    tags: Array<{
+                        name: string;
+                        value: string;
+                    }>;
+                };
+            }>;
+            count: string | number;
+        };
+    };
+
+    try {
+        console.log('[GraphQL History] Executing query...');
+        const rawResponse = await client.request(queryString);
+        
+        // Log the raw response to debug structure
+        console.log('[GraphQL History] Raw response:', JSON.stringify(rawResponse, null, 2).substring(0, 500));
+        
+        // Handle both wrapped (data.transactions) and unwrapped (transactions) response structures
+        // graphql-request may or may not unwrap the data field depending on the endpoint
+        const response = rawResponse as GraphQLResponse;
+        const transactions = response.data?.transactions || response.transactions;
+
+        if (!transactions) {
+            console.error('[GraphQL History] No transactions found in response:', response);
+            return {
+                messageId: null,
+                history: [],
+                error: new Error('Invalid response structure from GraphQL'),
+            };
+        }
+
+        const count = transactions.count ? (typeof transactions.count === 'string' ? parseInt(transactions.count) : transactions.count) : 0;
+        const edges = transactions.edges || [];
+
+        console.log('[GraphQL History] Response count:', count);
+        console.log('[GraphQL History] Edges found:', edges.length);
+        console.log('[GraphQL History] Response structure check:', { 
+            hasData: !!response.data, 
+            hasTransactions: !!response.transactions,
+            hasDataTransactions: !!response.data?.transactions 
+        });
+
+        if (!edges || edges.length === 0) {
+            console.warn('[GraphQL History] No transactions found for undername:', undername);
+            return {
+                messageId: null,
+                history: [],
+                error: null,
+            };
+        }
+
+        // Extract Transaction-Id from tags and map to DeploymentRecord format
+        // Results are already sorted by INGESTED_AT_DESC (newest first)
+        const history: DeploymentRecord[] = [];
+        
+        console.log('[GraphQL History] Starting to process', edges.length, 'edges...');
+        
+        edges.forEach((edge, index) => {
+            console.log(`[GraphQL History] Processing edge ${index + 1}/${edges.length}:`, {
+                nodeId: edge.node.id,
+                tagsCount: edge.node.tags.length,
+                timestamp: edge.node.block.timestamp,
+            });
+            
+            const transactionIdTag = edge.node.tags.find(
+                (tag) => tag.name === "Transaction-Id"
+            );
+            const assignedUndernameTag = edge.node.tags.find(
+                (tag) => tag.name === "Sub-Domain"
+            );
+
+            if (!transactionIdTag) {
+                console.warn(`[GraphQL History] Edge ${index + 1}: Skipping transaction without Transaction-Id tag:`, edge.node.id);
+                console.warn(`[GraphQL History] Available tags:`, edge.node.tags.map(t => t.name).join(', '));
+                return; // Skip entries without Transaction-Id
+            }
+
+            // Format date from timestamp using the user's format
+            const timestamp = edge.node.block.timestamp * 1000;
+            const dateObj = new Date(timestamp);
+            const dateStr = dateObj.toISOString().split("T")[0]; // Date: YYYY-MM-DD
+            const timeStr = dateObj.toISOString().split("T")[1].split("Z")[0]; // Time: HH:MM:SS
+            const formattedDate = `${dateStr} ${timeStr}`;
+
+            const historyRecord = {
+                ID: index + 1, // Sequential ID starting from 1 (newest = 1)
+                Name: projectName,
+                DeploymentID: transactionIdTag.value,
+                Date: formattedDate,
+                AssignedUndername: assignedUndernameTag?.value || undername,
+            };
+
+            console.log(`[GraphQL History] Edge ${index + 1}: Adding history record:`, {
+                ID: historyRecord.ID,
+                DeploymentID: historyRecord.DeploymentID,
+                Date: historyRecord.Date,
+            });
+
+            history.push(historyRecord);
+        });
+
+        console.log('[GraphQL History] Final result:', {
+            totalEdges: edges.length,
+            processedRecords: history.length,
+            skipped: edges.length - history.length,
+            historyRecords: history.map(h => ({ ID: h.ID, DeploymentID: h.DeploymentID, Date: h.Date })),
+        });
+
+        return {
+            messageId: null,
+            history,
+            error: null,
+        };
+    } catch (error) {
+        console.error("[GraphQL History] Failed to get deployment history from GraphQL:", error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error("[GraphQL History] Error details:", error);
+        return {
+            messageId: null,
+            history: [],
+            error: new Error(`GraphQL query failed: ${errorMessage}`),
+        };
     }
 }
