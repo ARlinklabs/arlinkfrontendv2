@@ -240,14 +240,14 @@ export default function DeploymentSetting() {
     // Loading state while searching for deployment
     if (!deployment) {
         return (
-            <div className="flex flex-col z-0 md:py-8 md:flex-row container bg-random min-h-[80vh]">
+            <div className="flex flex-col z-0 md:py-8 md:flex-row w-full px-4 md:px-[40px] bg-random min-h-[80vh]">
                 <div className="text-xl">Searching for deployment...</div>
             </div>
         );
     }
 
     return (
-        <div className="flex flex-col z-0 md:py-8 md:flex-row container bg-random min-h-[80vh]">
+        <div className="flex flex-col z-0 md:py-8 md:flex-row w-full px-4 md:px-[40px] bg-random min-h-[80vh]">
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
                 <DialogContent className="sm:max-w-[425px] bg-neutral-950 border border-neutral-800">
                     <DialogHeader>

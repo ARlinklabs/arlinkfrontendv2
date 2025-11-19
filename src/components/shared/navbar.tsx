@@ -187,76 +187,78 @@ export default function Navbar() {
     const avatarUrl = primaryLogo ? `https://arweave.net/${primaryLogo}` : "";
 
     return (
-        <nav className="bg-[#0D0D0D]/80 arlink-navbar z-50 sticky top-0 backdrop-blur-lg border-b-2 border-neutral-800  box-border">
-            <div className="md:px-[40px] px-[16px] pt-4 w-full flex items-center justify-between">
-                <div className="flex gap-2  items-center">
-                    <Link to="/dashboard">
-                        <img
-                            src="/joose.svg"
-                            alt="Joose logo"
-                            className="md:w-[36px] w-[20px] aspect-square rounded-full"
-                        />
-                    </Link>
-                    <h2 className="bg-gradient-to-r from-neutral-50 to-neutral-300 text-transparent bg-clip-text md:text-[24px] text-[18px] tracking-tight font-bold pb-2">
-                        {displayName}
-                    </h2>
-                </div>
-                <div className="flex items-center gap-1">
-                    <div className="third_column">
-                        {isConnected && address ? (
-                            <ProfileModal
-                                address={address}
-                                avatarUrl={avatarUrl}
-                                userEmail={isWAuth && email?.email ? email.email : null}
-                                isWAuth={isWAuth}
-                                onDisconnect={disconnectWallet}
-                                disconnecting={disconnectingToWallet}
-                                triggerClassName="bg-[#131314] text-white border-2 border-[#262626] pr-2 flex items-center font-semibold px-1 gap-2 py-1 rounded-md"
+        <nav className="bg-[#0D0D0D]/80 arlink-navbar z-50 sticky top-0 backdrop-blur-lg border-b-2 border-neutral-800 box-border w-full">
+            <div className="w-full">
+                <div className="md:px-[40px] px-[16px] pt-4 flex items-center justify-between">
+                    <div className="flex gap-2  items-center">
+                        <Link to="/dashboard">
+                            <img
+                                src="/joose.svg"
+                                alt="Joose logo"
+                                className="md:w-[36px] w-[20px] aspect-square rounded-full"
                             />
-                        ) : (
-                            <>
-                                <button
-                                    onClick={() => setShowLoginModal(true)}
-                                    className="bg-[#131314] border-[#262626] border-2 text-white pr-2 flex items-center font-semibold px-1 gap-2 py-1 rounded-md"
-                                >
-                                    <div className="bg-white p-2 w-fit text-black rounded-md">
-                                        <UserIcon className="size-4" />
-                                    </div>
-                                    Log in
-                                </button>
-                                <LoginModal
-                                    open={showLoginModal}
-                                    onOpenChange={setShowLoginModal}
-                                    onGithubLogin={handleGithubLogin}
-                                    loading={connectingToWallet}
+                        </Link>
+                        <h2 className="bg-gradient-to-r from-neutral-50 to-neutral-300 text-transparent bg-clip-text md:text-[24px] text-[18px] tracking-tight font-bold pb-2">
+                            {displayName}
+                        </h2>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <div className="third_column">
+                            {isConnected && address ? (
+                                <ProfileModal
+                                    address={address}
+                                    avatarUrl={avatarUrl}
+                                    userEmail={isWAuth && email?.email ? email.email : null}
+                                    isWAuth={isWAuth}
+                                    onDisconnect={disconnectWallet}
+                                    disconnecting={disconnectingToWallet}
+                                    triggerClassName="bg-[#131314] text-white border-2 border-[#262626] pr-2 flex items-center font-semibold px-1 gap-2 py-1 rounded-md"
                                 />
-                            </>
-                        )}
+                            ) : (
+                                <>
+                                    <button
+                                        onClick={() => setShowLoginModal(true)}
+                                        className="bg-[#131314] border-[#262626] border-2 text-white pr-2 flex items-center font-semibold px-1 gap-2 py-1 rounded-md"
+                                    >
+                                        <div className="bg-white p-2 w-fit text-black rounded-md">
+                                            <UserIcon className="size-4" />
+                                        </div>
+                                        Log in
+                                    </button>
+                                    <LoginModal
+                                        open={showLoginModal}
+                                        onOpenChange={setShowLoginModal}
+                                        onGithubLogin={handleGithubLogin}
+                                        loading={connectingToWallet}
+                                    />
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
-            <div>
+            <div className="w-full">
                 <div className="flex overflow-x-auto overflow-y-hidden md:ml-[50px] ml-[16px]">
-                    {repo
-                        ? deployPageNavlinks.map((link) => {
-                              return (
-                                  <NavLink
-                                      key={link.name}
-                                      name={link.name}
-                                      pathname={location.pathname}
-                                      url={link.url}
-                                      repoName={repo}
-                                  />
-                              );
-                          })
-                        : links.map((link) => {
-                              return (
-                                  <NavLink
-                                      key={link.name}
-                                      name={link.name}
-                                      pathname={location.pathname}
-                                      url={link.url}
-                                  />
+                        {repo
+                            ? deployPageNavlinks.map((link) => {
+                                  return (
+                                      <NavLink
+                                          key={link.name}
+                                          name={link.name}
+                                          pathname={location.pathname}
+                                          url={link.url}
+                                          repoName={repo}
+                                      />
+                                  );
+                              })
+                            : links.map((link) => {
+                                  return (
+                                      <NavLink
+                                          key={link.name}
+                                          name={link.name}
+                                          pathname={location.pathname}
+                                          url={link.url}
+                                      />
                               );
                           })}
                 </div>

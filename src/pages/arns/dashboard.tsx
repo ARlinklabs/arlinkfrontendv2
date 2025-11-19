@@ -72,7 +72,8 @@ const ArnsDashboard = () => {
 
  
     return (
-        <Layout className="container">
+        <Layout>
+            <div className="w-full px-4 md:px-[40px]">
             <header className="mt-[60px] flex items-center justify-between gap-4">
                 <div className="relative w-full md:max-w-[600px]">
                     <Search className="absolute left-3 top-1/2 h-[18px] md:h-[20px] w-[18px] md:w-[20px] transform -translate-y-1/2 text-neutral-600" />
@@ -109,6 +110,7 @@ const ArnsDashboard = () => {
                 ) : (
                     <ArnsTable data={filteredData} />
                 )}
+            </div>
             </div>
         </Layout>
     );

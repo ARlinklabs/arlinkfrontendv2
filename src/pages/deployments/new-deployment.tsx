@@ -29,7 +29,7 @@ const NewDeployment = () => {
 
     return (
         <Layout>
-            <div className="md:container px-4 text-white p-10">
+            <div className="w-full px-4 text-white py-10 md:px-[40px]">
                 <Steps
                     step={step}
                     setSelectedRepo={setSelectedRepoUrl}

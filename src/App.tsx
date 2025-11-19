@@ -111,7 +111,7 @@ function Layout() {
             <div className="bg-random">
                 <WalletManager />
                 <Navbar />
-                <main className="max-w-[1440px] mx-auto">
+                <main className="w-full">
                     <Suspense fallback={<Loading />}>
                         <Outlet />
                     </Suspense>

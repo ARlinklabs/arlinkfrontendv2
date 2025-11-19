@@ -454,7 +454,7 @@ export default function DeploymentOverview({
 
     return (
         <Layout>
-            <div className="md:p-10 p-4 container">
+            <div className="w-full px-4 py-10 md:px-[40px]">
                 <div className="flex md:flex-row flex-col space-y-3 justify-between items-start mb-6">
                     <div className="space-y-2">
                         <h1 className="text-2xl lg:text-3xl font-semibold">

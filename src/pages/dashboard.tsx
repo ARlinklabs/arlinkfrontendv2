@@ -135,7 +135,7 @@ const Dashboardcomp = () => {
 
     return (
         <Layout>
-            <div className="md:container px-4 mx-auto py-8 ">
+            <div className="w-full px-4 py-8 md:px-[40px]">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                     <div className="relative w-full md:max-w-[600px]">
                         <Search className="absolute left-3 top-1/2 h-[18px] md:h-[20px] w-[18px] md:w-[20px] transform -translate-y-1/2 text-neutral-600" />

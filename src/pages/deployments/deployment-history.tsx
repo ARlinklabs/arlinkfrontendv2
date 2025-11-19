@@ -137,7 +137,7 @@ export default function DeploymentHistory() {
     if (!foundDeployment && (isRefreshing || (walletAddress && deployments.length === 0))) {
         return (
             <div className="min-h-screen text-neutral-200">
-                <div className="container mx-auto px-4 py-10 md:px-10">
+                <div className="w-full px-4 py-10 md:px-[40px]">
                     <div className="space-y-6">
                         <div className="space-y-2">
                             <h1 className="text-3xl font-semibold flex items-center tracking-tight text-neutral-100">
@@ -167,7 +167,7 @@ export default function DeploymentHistory() {
         navigate("/dashboard");
         return (
             <div className="min-h-screen text-neutral-200">
-                <div className="container mx-auto px-4 py-10 md:px-10">
+                <div className="w-full px-4 py-10 md:px-[40px]">
                     <div className="text-xl">Searching for deployment...</div>
                 </div>
             </div>
@@ -250,7 +250,7 @@ export default function DeploymentHistory() {
 
     return (
         <div className="min-h-screen text-neutral-200">
-            <div className="container mx-auto px-4 py-10 md:px-10">
+            <div className="w-full px-4 py-10 md:px-[40px]">
                 <div className="space-y-6">
                     <div className="space-y-2">
                         <h1 className="text-3xl font-semibold flex items-center tracking-tight text-neutral-100">

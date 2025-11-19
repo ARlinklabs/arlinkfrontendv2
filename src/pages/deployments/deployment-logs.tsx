@@ -167,7 +167,7 @@ const DeploymentLogs = () => {
 
     return (
         <Layout>
-            <div className="md:container p-4">
+            <div className="w-full px-4 py-4 md:px-[40px]">
                 <div className="rounded-lg mt-6 border-[#383838]">
                     <h1 className="text-3xl font-semibold flex items-center tracking-tight text-neutral-100">
                         Deployment Logs

@@ -482,7 +482,7 @@ export default function BranchPreviews() {
   // Loading state
   if (isCheckingBranchStatus) {
     return (
-      <div className="py-10 container">
+      <div className="py-10 w-full px-4 md:px-[40px]">
         <BranchPreviewsFullSkeleton />
       </div>
     )
@@ -491,7 +491,7 @@ export default function BranchPreviews() {
   // Show incompatible message
   if (isIncompatible && deployment) {
     return (
-      <div className="py-10 container">
+      <div className="py-10 w-full px-4 md:px-[40px]">
         <div className="max-w-3xl mx-auto text-center space-y-6">
           <div className="space-y-4">
             <div className="w-20 h-20 mx-auto rounded-full bg-yellow-900/20 border border-yellow-800 flex items-center justify-center">
@@ -541,7 +541,7 @@ export default function BranchPreviews() {
   // Show building state
   if (branchDeploymentsEnabled && isBuilding && deployment) {
     return (
-      <div className="py-10 container">
+      <div className="py-10 w-full px-4 md:px-[40px]">
         <div className="relative">
           <div className="absolute top-0 bg-gradient-to-b from-black/90 via-black/80 to-black/70 h-full w-full z-10 flex items-center justify-center">
             <div className="text-center space-y-4 max-w-2xl mx-auto p-8">
@@ -566,7 +566,7 @@ export default function BranchPreviews() {
   // Show enable form
   if (!branchDeploymentsEnabled && deployment) {
     return (
-      <div className="py-10 container">
+      <div className="py-10 w-full px-4 md:px-[40px]">
         <EnableBranchDeployments deployment={deployment} onComplete={handleEnableBranchDeployments} />
       </div>
     )
@@ -575,7 +575,7 @@ export default function BranchPreviews() {
   // Loading state while searching for deployment
   if (!deployment) {
     return (
-      <div className="py-10 container">
+      <div className="py-10 w-full px-4 md:px-[40px]">
         <div className="text-xl">Searching for deployment...</div>
       </div>
     )
@@ -584,7 +584,7 @@ export default function BranchPreviews() {
   // Show error if no project found
   if (!projectName) {
     return (
-      <div className="py-10 container">
+      <div className="py-10 w-full px-4 md:px-[40px]">
         <div className="text-center text-neutral-400">No project exists with the name {projectName}</div>
       </div>
     )
@@ -592,8 +592,8 @@ export default function BranchPreviews() {
 
   // Main branch previews content
   return (
-    <section className="py-10 container">
-      <div className="container mx-auto space-y-8 bg-random min-h-[80vh]">
+    <section className="py-10 w-full px-4 md:px-[40px]">
+      <div className="space-y-8 bg-random min-h-[80vh]">
         {/* Header */}
         <div className="space-y-2">
           <h1 className="text-3xl font-bold text-neutral-100">Branch Previews</h1>

@@ -80,7 +80,7 @@ const Analytics = () => {
     // Loading state while searching for deployment
     if (!deployment) {
         return (
-            <div className="py-10 container space-y-4">
+            <div className="py-10 w-full px-4 md:px-[40px] space-y-4">
                 <div className="text-xl">Searching for deployment...</div>
             </div>
         );
@@ -93,14 +93,14 @@ const Analytics = () => {
 
     if (isCheckingProcessId) {
         return (
-            <div className="py-10 container space-y-4">
+            <div className="py-10 w-full px-4 md:px-[40px] space-y-4">
                 <AnalyticsDashboardSkeleton pulseAnimation />
             </div>
         );
     }
 
     return (
-        <section className="py-10 container">
+        <section className="py-10 w-full px-4 md:px-[40px]">
             <header className="space-y-4">
                 {!processId && (
                     <EnableAnalytics
