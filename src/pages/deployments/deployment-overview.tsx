@@ -21,7 +21,7 @@ import { extractGithubPath } from "../utilts";
 import { useDeploymentStore } from "@/store/use-deployment-store";
 import { Loader2 } from "lucide-react";
 import TwitterShareButton from "@/components/ui/twitter-share-button";
-import { useSigner } from "@/lib/wallet-strategies";
+import { useAoSigner } from "ao-wallet-kit";
 
 interface DeploymentComponentProps {
     deployment: TDeployment;
@@ -37,7 +37,7 @@ export default function DeploymentOverview({
     // @ts-ignore
     const { managerProcess, deployments, refresh } = useDeploymentManager();
     const { name } = useParams();
-    const { signer, isLoading: signerLoading } = useSigner();
+    const { signer, isLoading: signerLoading } = useAoSigner();
 
     // states
     const [, setBuildOutput] = useState("");

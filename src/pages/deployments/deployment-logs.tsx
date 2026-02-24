@@ -15,7 +15,7 @@ import { runLua } from "@/lib/ao-vars";
 import { TESTING_FETCH } from "@/lib/utils";
 import { toast } from "sonner";
 import type { TDeployment } from "@/types";
-import { useSigner } from "@/lib/wallet-strategies";
+import { useAoSigner } from "ao-wallet-kit";
 
 const DeploymentLogs = () => {
     // hooks and global state
@@ -23,7 +23,7 @@ const DeploymentLogs = () => {
     const globalState = useGlobalState();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const { signer, isLoading: signerLoading } = useSigner();
+    const { signer, isLoading: signerLoading } = useAoSigner();
 
     // repo and deployment variable
     const repo = searchParams.get("repo");

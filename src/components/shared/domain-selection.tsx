@@ -15,7 +15,7 @@ import type { DomainSelectionType } from "@/types";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverTrigger } from "@radix-ui/react-popover";
 import { Check, ChevronDown, ChevronsUpDown, Loader2, Download, Wallet, CheckCircle2 } from "lucide-react";
-import { useWalletType } from "@/lib/wallet-strategies/hooks";
+import { useWallet } from "ao-wallet-kit";
 import { useState } from "react";
 import {
     Dialog,
@@ -27,7 +27,7 @@ import {
 import { getWalletOwnedNames } from "@/lib/get-arns";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useActiveAddress } from "@/lib/wallet-strategies";
+import { useAddress } from "ao-wallet-kit";
 import type { ArnsName } from "@/types";
 import { ANT, ArconnectSigner } from "@ar.io/sdk";
 
@@ -49,8 +49,8 @@ export default function DomainSelection({
     handleArnsSelection,
 }: // ----
 DomainSelectionType) {
-    const { isWAuth } = useWalletType();
-    const wauthAddress = useActiveAddress(); // Get WAuth wallet address
+    const { isWAuth } = useWallet();
+    const wauthAddress = useAddress();
     const [isImportNamesModalOpen, setIsImportNamesModalOpen] = useState(false);
     
     // Import modal states

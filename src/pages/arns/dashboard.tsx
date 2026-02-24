@@ -8,7 +8,7 @@ import ArnsTable from "@/components/arns/arns-table";
 import { useSearchParams } from "react-router-dom";
 import SelectedArns from "@/components/arns/selected-arns";
 import { getWalletOwnedNamesindash } from "@/actions/arns/arnslater";
-import { useActiveAddress } from "@/lib/wallet-strategies";
+import { useAddress } from "ao-wallet-kit";
 import { ArnsTableSkeleton } from "@/components/skeletons";
 import { Link } from "react-router-dom";
 
@@ -25,7 +25,7 @@ const ArnsDashboard = () => {
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
-    const activeAddress = useActiveAddress();
+    const activeAddress = useAddress();
 
     useEffect(() => {
         if (!activeAddress) {

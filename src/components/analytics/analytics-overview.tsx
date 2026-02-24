@@ -1,6 +1,6 @@
 import { fetchAnalytics } from "@/actions/analytics";
 import { lazy, Suspense } from "react";
-import { useSigner } from "@/lib/wallet-strategies";
+import { useAoSigner } from "ao-wallet-kit";
 const WorldMapCard = lazy(() => import("../world-map-card.tsx"));
 import {
     AnalyticsData,
@@ -20,7 +20,7 @@ import { HorizontalChartCard } from "./horizontal-chart-card";
 import { AnalyticsDashboardSkeleton } from "../skeletons.tsx";
 
 const AnalyticsOverview = ({ processId }: { processId: string }) => {
-    const { signer, isLoading: signerLoading } = useSigner();
+    const { signer, isLoading: signerLoading } = useAoSigner();
     const [analyticsData, setAnaalyticsData] = useState<AnalyticsData | null>(
         null,
     );

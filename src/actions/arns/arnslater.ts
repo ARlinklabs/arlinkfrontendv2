@@ -15,7 +15,13 @@ import { connect, dryrun } from "@permaweb/aoconnect";
 import Arweave from "arweave";
 import { lowerCaseDomain } from "../../lib/utils";
 import { createAntStateForOwner, getLatestANTVersion, sleep } from "./arnsutils";
-import { walletManager } from "@/lib/wallet-strategies/wallet-manager";
+
+// Helper to get the raw Arweave wallet signer for ar.io/sdk operations
+function getRawSigner(signer?: any) {
+    if (signer) return signer;
+    if (typeof window !== 'undefined' && window.arweaveWallet) return window.arweaveWallet;
+    throw new Error("No wallet connected");
+}
 
 // Environment detection
 const isTestnet = import.meta.env.VITE_BASE_URL === "http://localhost:3000";
@@ -96,21 +102,18 @@ const arioRead = ARIO.init({
 });
 
 // Helper function to get ARIO instance based on environment
-const getArioInstance = () => {
-    const signer = walletManager.getSigner();
-    if (!signer) {
-        throw new Error("No wallet connected");
-    }
-    
+const getArioInstance = (signer?: any) => {
+    const walletSigner = getRawSigner(signer);
+
     if (isTestnet) {
-        return ARIO.testnet({ 
+        return ARIO.testnet({
             // @ts-ignore
-            signer: new ArconnectSigner(signer, Arweave.init({}))
+            signer: new ArconnectSigner(walletSigner, Arweave.init({}))
         });
     } else {
-        return ARIO.mainnet({ 
+        return ARIO.mainnet({
             // @ts-ignore
-            signer: new ArconnectSigner(signer, Arweave.init({}))
+            signer: new ArconnectSigner(walletSigner, Arweave.init({}))
         });
     }
 };
@@ -174,10 +177,10 @@ export async function buyArNS(name: string, type: "lease" | "permabuy", addres: 
         // step 1 create state for owner
         const ownerState = createAntStateForOwner(addres);
 
-        // step 2 spawn process for owner with latest module 
+        // step 2 spawn process for owner with latest module
         const antVersion = await getLatestANTVersion();
         const antModuleId = antVersion?.moduleId ?? "";
-        const walletSigner = signer || walletManager.getSigner();
+        const walletSigner = getRawSigner(signer);
         //@ts-ignore
         const aoc = connect(AO_CONFIG);
 
@@ -241,7 +244,7 @@ export async function buyArNS(name: string, type: "lease" | "permabuy", addres: 
 
         console.log("registry updated now buying record");
         //@ts-ignore
-        const ario = getArioInstance();
+        const ario = getArioInstance(walletSigner);
 
         const result = await ario.buyRecord(
             {
@@ -395,11 +398,11 @@ export async function getArNSRecordInfo(name: string) {
     }
 }
 
-export async function getArNSstate(processId: string) {
-    const signer = walletManager.getSigner();
+export async function getArNSstate(processId: string, signer?: any) {
+    const walletSigner = getRawSigner(signer);
     const ant = ANT.init({
         // @ts-ignore
-        signer: new ArconnectSigner(signer, Arweave.init({})),
+        signer: new ArconnectSigner(walletSigner, Arweave.init({})),
         processId: processId
     });
     const state = await ant.getState();
@@ -420,12 +423,12 @@ export async function getpriceinfo(name: string, qty: number, adress: string) {
     };
 }
 
-export async function setLogo(processId: string, logoTxId: string) {
+export async function setLogo(processId: string, logoTxId: string, signer?: any) {
     try {
-        const signer = walletManager.getSigner();
+        const walletSigner = getRawSigner(signer);
         const ant = ANT.init({
             // @ts-ignore
-            signer: new ArconnectSigner(signer, Arweave.init({})),
+            signer: new ArconnectSigner(walletSigner, Arweave.init({})),
             processId: processId
         });
 
@@ -447,12 +450,12 @@ export async function setLogo(processId: string, logoTxId: string) {
     }
 }
 
-export async function setDescription(processId: string, description: string) {
+export async function setDescription(processId: string, description: string, signer?: any) {
     try {
-        const signer = walletManager.getSigner();
+        const walletSigner = getRawSigner(signer);
         const ant = ANT.init({
             // @ts-ignore
-            signer: new ArconnectSigner(signer, Arweave.init({})),
+            signer: new ArconnectSigner(walletSigner, Arweave.init({})),
             processId: processId
         });
 
@@ -474,12 +477,12 @@ export async function setDescription(processId: string, description: string) {
     }
 }
 
-export async function setTicker(processId: string, ticker: string) {
+export async function setTicker(processId: string, ticker: string, signer?: any) {
     try {
-        const signer = walletManager.getSigner();
+        const walletSigner = getRawSigner(signer);
         const ant = ANT.init({
             // @ts-ignore
-            signer: new ArconnectSigner(signer, Arweave.init({})),
+            signer: new ArconnectSigner(walletSigner, Arweave.init({})),
             processId: processId
         });
 
@@ -510,13 +513,14 @@ interface SetTtlResult {
 export async function setTtl(
     processId: string,
     transactionId: string,
-    ttlSeconds: number
+    ttlSeconds: number,
+    signer?: any
 ): Promise<SetTtlResult> {
     try {
-        const signer = walletManager.getSigner();
+        const walletSigner = getRawSigner(signer);
         const ant = ANT.init({
             // @ts-ignore
-            signer: new ArconnectSigner(signer, Arweave.init({})),
+            signer: new ArconnectSigner(walletSigner, Arweave.init({})),
             processId: processId
         });
 
@@ -547,10 +551,12 @@ interface PrimaryNameResult {
     error?: string;
 }
 
-export async function makePrimaryNameRequest(name: string , processid:string ): Promise<PrimaryNameResult> {
+export async function makePrimaryNameRequest(name: string, processid: string, signer?: any, address?: string): Promise<PrimaryNameResult> {
     try {
+        const walletSigner = getRawSigner(signer);
+
         // Initialize ARIO based on environment
-        const ario = getArioInstance();
+        const ario = getArioInstance(walletSigner);
 
         // Request primary name
         // @ts-ignore
@@ -558,18 +564,14 @@ export async function makePrimaryNameRequest(name: string , processid:string ): 
             name
         });
 
-        // Get signer and wallet address
-        const signer = walletManager.getSigner();
-        const address = await walletManager.getActiveAddress();
-        
         if (!address) {
-            throw new Error("Failed to get wallet address");
+            throw new Error("Wallet address is required for primary name request");
         }
 
         // Initialize ANT for approval
         const ant = ANT.init({
             // @ts-ignore
-            signer: new ArconnectSigner(signer, Arweave.init({})),
+            signer: new ArconnectSigner(walletSigner, Arweave.init({})),
             processId: processid
         });
 
@@ -593,10 +595,10 @@ export async function makePrimaryNameRequest(name: string , processid:string ): 
     }
 }
 
-export async function IncreaseUndername(namee: string, qtyy: number) {
+export async function IncreaseUndername(namee: string, qtyy: number, signer?: any) {
     try {
         // @ts-ignore
-        const ario = getArioInstance();
+        const ario = getArioInstance(signer);
 
         const normalizedName = lowerCaseDomain(namee);
         const { id: txId } = await ario.increaseUndernameLimit(
@@ -650,11 +652,11 @@ export async function flexibleIncreaseUndername(
 }
 
 
-export async function extendLease(name: string, years: number) {
+export async function extendLease(name: string, years: number, signer?: any) {
 
     try {
  // @ts-ignore
- const ario = getArioInstance();
+ const ario = getArioInstance(signer);
 
  const { id: txId } = await ario.extendLease(
     {
@@ -679,13 +681,13 @@ export async function extendLease(name: string, years: number) {
       }
 }
 
-export async function addcontroller(walletAddress: string, processId: string) {
+export async function addcontroller(walletAddress: string, processId: string, signer?: any) {
 
     try {
-    const signer = walletManager.getSigner();
+    const walletSigner = getRawSigner(signer);
     const ant = ANT.init({
         // @ts-ignore
-        signer: new ArconnectSigner(signer, Arweave.init({})),
+        signer: new ArconnectSigner(walletSigner, Arweave.init({})),
         processId: processId
     });
     const { id } = await ant.addController(

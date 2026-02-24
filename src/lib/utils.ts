@@ -2,12 +2,6 @@ import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { connect } from "@permaweb/aoconnect";
 import { ANT, AOProcess, ARIO, ARIO_MAINNET_PROCESS_ID } from "@ar.io/sdk/web";
-import { walletManager } from "./wallet-strategies/wallet-manager";
-
-// Helper function to get signer - uses the wallet manager
-export function getSigner() {
-    return walletManager.getSigner();
-}
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
@@ -101,8 +95,8 @@ export async function setUndername(
 
 export async function getPrimaryname(walletaddy: string, signer?: any) {
     try {
-        // Get signer from wallet manager if not provided
-        const activeSigner = signer || walletManager.getSigner();
+        // Use provided signer, or fall back to window.arweaveWallet if available
+        const activeSigner = signer || (typeof window !== 'undefined' ? window.arweaveWallet : null);
         if (!activeSigner) {
             console.warn('Wallet not ready for getPrimaryname');
             return null;

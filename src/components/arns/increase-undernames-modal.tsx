@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { getpriceinfo, IncreaseUndername } from "@/actions/arns/arnslater";
-import { useActiveAddress } from "@/lib/wallet-strategies";
+import { useAddress } from "ao-wallet-kit";
 import { toast } from "@/components/ui/use-toast";
 import { Minus, Plus } from "lucide-react";
 
@@ -20,7 +20,7 @@ export function IncreaseUndernamesModal({
     arnsName,
     onSuccess
 }: IncreaseUndernamesModalProps) {
-    const activeAddress = useActiveAddress();
+    const activeAddress = useAddress();
     const [quantity, setQuantity] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
     const [priceInfo, setPriceInfo] = useState<{

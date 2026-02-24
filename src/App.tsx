@@ -8,7 +8,7 @@ import {
 } from "react-router-dom";
 import { useSearchParams } from "react-router-dom";
 import { lazy, Suspense, useEffect, useRef } from "react";
-import { useConnection, useActiveAddress, fixConnection, walletManager } from "@/lib/wallet-strategies";
+import { useWallet, useAddress } from "ao-wallet-kit";
 import { useGlobalState } from "@/store/useGlobalState";
 import Navbar from "./components/shared/navbar";
 import { Toaster } from "./components/ui/sonner";
@@ -51,65 +51,36 @@ const ArnsDashboard = lazy(() => import("./pages/arns/dashboard"));
 
 const Loading = () => <div className="text-center p-4"></div>;
 
-// Wallet Manager Component - handles wallet state changes at app level
-function WalletManager() {
-    const { connected, disconnect } = useConnection();
-    const address = useActiveAddress();
-    const disconnectRef = useRef(disconnect);
-    const autoReconnectAttempted = useRef(false);
-    
-    // Keep disconnect ref updated
-    useEffect(() => {
-        disconnectRef.current = disconnect;
-    }, [disconnect]);
-
-    // Auto-reconnect on app initialization
-    useEffect(() => {
-        // Only attempt auto-reconnect once on mount
-        if (!autoReconnectAttempted.current && !connected) {
-            autoReconnectAttempted.current = true;
-            
-            // Auto-reconnect happens silently unless debug mode is enabled
-            walletManager.autoReconnect().catch((error) => {
-                console.warn('Auto-reconnect error:', error);
-            });
-        }
-    }, []); // Run only once on mount
-    
-    // Apply connection fix to handle edge cases where we're connected but have no address
-    // Use ref for disconnect to avoid infinite loops
-    useEffect(() => {
-        // Only clean up bad states (connected without address)
-        fixConnection(address || undefined, connected, disconnectRef.current);
-    }, [address, connected]);
+// Syncs wallet state from ao-wallet-kit into the Zustand global store
+function WalletStateSync() {
+    const { connected } = useWallet();
+    const address = useAddress();
 
     const setWalletAddress = useGlobalState(state => state.setWalletAddress);
     const clearWalletData = useGlobalState(state => state.clearWalletData);
-    
+
     useEffect(() => {
         const currentWalletAddress = useGlobalState.getState().walletAddress;
-        
+
         if (connected && address) {
-            // Only update if address actually changed to prevent unnecessary updates
             if (currentWalletAddress !== address) {
                 setWalletAddress(address);
             }
         } else if (!connected) {
-            // Clear wallet data when disconnected, but only if we have data to clear
             if (currentWalletAddress) {
                 clearWalletData();
             }
         }
     }, [connected, address, setWalletAddress, clearWalletData]);
-    
-    return null; // This component doesn't render anything
+
+    return null;
 }
 
 function Layout() {
     return (
         <ErrorBoundary>
             <div className="bg-random">
-                <WalletManager />
+                <WalletStateSync />
                 <Navbar />
                 <main className="w-full">
                     <Suspense fallback={<Loading />}>
@@ -148,24 +119,24 @@ const router = createBrowserRouter([
                 element: <Layout />,
                 children: [
                     { path: "dashboard", element: <Dashboard /> },
-                    { 
-                        path: "deployment", 
+                    {
+                        path: "deployment",
                         element: (
                             <ErrorBoundary>
                                 <Deployment />
                             </ErrorBoundary>
                         )
                     },
-                    { 
-                        path: "deployment/logs", 
+                    {
+                        path: "deployment/logs",
                         element: (
                             <ErrorBoundary>
                                 <DeploymentLogs />
                             </ErrorBoundary>
                         )
                     },
-                    { 
-                        path: "deployment/card", 
+                    {
+                        path: "deployment/card",
                         element: (
                             <ErrorBoundary>
                                 <DeploymentCard />
@@ -199,8 +170,8 @@ const router = createBrowserRouter([
                         path: "templates/deploy/:owner/:repoName",
                         element: <TemplateDeploy />,
                     },
-                    { 
-                        path: "deployment/analytics", 
+                    {
+                        path: "deployment/analytics",
                         element: (
                             <ErrorBoundary>
                                 <Analytics />
@@ -258,17 +229,9 @@ function GitHubCallbackHandler() {
             const code = searchParams.get("code");
             if (code && !githubToken) {
                 try {
-                    console.log("Processing GitHub callback with code:", code);
                     const token = await handleGitHubCallback(code);
                     setGithubToken(token);
-                    
-                    // Clean up the URL
-                    window.history.replaceState(
-                        {},
-                        "",
-                        window.location.pathname,
-                    );
-                    console.log("GitHub authentication successful");
+                    window.history.replaceState({}, "", window.location.pathname);
                 } catch (error) {
                     console.error("Failed to authenticate with GitHub:", error);
                 }

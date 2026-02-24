@@ -2,7 +2,7 @@ import type React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useWalletState } from "@/hooks/use-wallet-state";
+import { useWallet } from "ao-wallet-kit";
 
 type LayoutProps = {
     children: React.ReactNode;
@@ -10,7 +10,7 @@ type LayoutProps = {
 };
 
 export default function Layout({ children, className }: LayoutProps) {
-    const { isConnected } = useWalletState();
+    const { connected: isConnected } = useWallet();
     const [loading, setLoading] = useState<boolean>(true);
 
     useEffect(() => {

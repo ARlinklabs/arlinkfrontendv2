@@ -2,7 +2,7 @@ import Layout from "@/layouts/layout";
 import { Calendar } from "@phosphor-icons/react";
 import { Clock, Copy, Edit, ArrowLeftFromLine } from "lucide-react";
 import { getWalletOwnedNamesindash, getArNSRecordInfo, getArNSstate } from "@/actions/arns/arnslater";
-import { useActiveAddress } from "@/lib/wallet-strategies";
+import { useAddress } from "ao-wallet-kit";
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -17,7 +17,7 @@ import { ExtendLeaseModal } from "./extend-lease-modal";
 
 
 const SelectedArns = ({ name: nameProp, arns: arnsProp }: { name: string; arns?: any }) => {
-    const activeAddress = useActiveAddress();
+    const activeAddress = useAddress();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const nameFromUrl = searchParams.get("name");

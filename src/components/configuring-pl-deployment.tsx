@@ -2,7 +2,7 @@ import useDeploymentManager, {
     historyTable,
 } from "@/hooks/use-deployment-manager";
 import { ArnsName, BuildSettings, Steps } from "@/types";
-import { useActiveAddress, useSigner } from "@/lib/wallet-strategies";
+import { useAddress, useAoSigner } from "ao-wallet-kit";
 import { useState } from "react";
 import { ChevronLeft } from "lucide-react";
 import NewDeploymentCard from "@/components/shared/new-deployment-card";
@@ -28,8 +28,8 @@ const ConfigureProtocolLandProject = ({
 }) => {
     const { managerProcess, refresh, deployments } = useDeploymentManager();
     const navigate = useNavigate();
-    const { signer, isLoading: signerLoading } = useSigner();
-    const activeAddress = useActiveAddress();
+    const { signer, isLoading: signerLoading } = useAoSigner();
+    const activeAddress = useAddress();
 
     // project states
     const [projectName, setProjectName] = useState<string>(selectedRepo.name);

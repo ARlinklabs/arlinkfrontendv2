@@ -1,6 +1,6 @@
 import { enableAnalytics } from "@/actions/analytics";
 import { useState } from "react";
-import { useSigner } from "@/lib/wallet-strategies";
+import { useAoSigner } from "ao-wallet-kit";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,7 +30,7 @@ const EnableAnalytics = ({
     handleProcessId,
     processId,
 }: EnableAnalyticsProps) => {
-    const { signer, isLoading: signerLoading } = useSigner();
+    const { signer, isLoading: signerLoading } = useAoSigner();
     const [enablingAnalytics, setEnablingAnalytics] = useState<boolean>(false);
     const [copied, setCopied] = useState<boolean>(false);
     const [isHovered, setIsHovered] = useState<boolean>(false);

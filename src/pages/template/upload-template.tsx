@@ -13,7 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { submitTemplate } from "@/actions/github/template";
 import { toast } from "sonner";
-import { useSigner } from "@/lib/wallet-strategies";
+import { useAoSigner } from "ao-wallet-kit";
 import {
     InputOTP,
     InputOTPGroup,
@@ -25,7 +25,7 @@ import { GitHubSignInTemplate } from "@/components/ui/github-sign-in";
 const UploadTemplate = () => {
     const [step, setStep] = useState<"import" | "upload" | "code">("import");
     const { githubToken } = useGlobalState();
-    const { signer } = useSigner();
+    const { signer } = useAoSigner();
     const [selectRepoUrl, setSelectRepoUrl] = useState("");
     const [code, setCode] = useState<string>("");
 

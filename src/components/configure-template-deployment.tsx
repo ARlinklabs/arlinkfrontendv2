@@ -21,8 +21,7 @@ import axios, { isAxiosError } from "axios";
 import { AlertTriangle, ChevronDown, ChevronLeft, Loader2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import RootDirectoryDrawer from "./rootdir-drawer";
-import { useWalletState } from "@/hooks/use-wallet-state";
-import { useSigner } from "@/lib/wallet-strategies";
+import { useWallet, useAoSigner } from "ao-wallet-kit";
 import { toast } from "sonner";
 import DomainSelection from "./shared/domain-selection";
 import useDeploymentManager from "@/hooks/use-deployment-manager";
@@ -49,8 +48,8 @@ const ConfigureTemplateDeployment = ({ repoUrl }: { repoUrl: string }) => {
     const { githubToken, managerProcess: mgProcess } = useGlobalState();
     const { refresh, deployments } = useDeploymentManager();
     const navigate = useNavigate();
-    const { address: activeAddress } = useWalletState();
-    const { signer, isLoading: signerLoading } = useSigner();
+    const { connected, address: activeAddress } = useWallet();
+    const { signer, isLoading: signerLoading } = useAoSigner();
     
 
     

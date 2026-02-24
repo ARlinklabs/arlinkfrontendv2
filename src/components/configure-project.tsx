@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
-import { useSigner } from "@/lib/wallet-strategies";
+import { useAoSigner } from "ao-wallet-kit";
 import { useGlobalState } from "@/store/useGlobalState";
 import { runLua } from "@/lib/ao-vars";
 import { toast } from "sonner";
@@ -36,7 +36,7 @@ interface DeploymentComponentProps {
 const ConfigureProject = ({ deployment }: DeploymentComponentProps) => {
     const globalState = useGlobalState();
     const { refresh } = useDeploymentManager();
-    const { signer, isLoading: signerLoading } = useSigner();
+    const { signer, isLoading: signerLoading } = useAoSigner();
 
     const [isEditing, setIsEditing] = useState(false);
     const [editedConfig, setEditedConfig] = useState({

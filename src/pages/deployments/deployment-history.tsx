@@ -60,7 +60,7 @@ import { Separator } from "@/components/ui/separator";
 import {
     handleFetchExistingArnsName,
 } from "../utilts";
-import { useActiveAddress, useSigner } from "@/lib/wallet-strategies";
+import { useAddress, useAoSigner } from "ao-wallet-kit";
 import { TransactionDialog } from "@/components/transactionBlock";
 
 // Helper function to format date as relative time
@@ -103,7 +103,6 @@ export default function DeploymentHistory() {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const repoName = searchParams.get("repo");
-    const { managerProcess } = useGlobalState();
 
     // Early redirect check for missing repo parameter
     useEffect(() => {
@@ -125,9 +124,8 @@ export default function DeploymentHistory() {
     // loading and error states
     const [loadingDeploymentHistory, setLoadingDeploymentHistory] =
         useState<boolean>(false);
-    const [, setHistoryError] = useState<string | null>("");
-    const activeAddress = useActiveAddress();
-    const { signer, isLoading: signerLoading } = useSigner();
+    const activeAddress = useAddress();
+    const { signer, isLoading: signerLoading } = useAoSigner();
     
     // Track if we've already fetched history to prevent duplicate fetches
     const hasFetchedRef = useRef(false);
@@ -215,16 +213,38 @@ export default function DeploymentHistory() {
                     );
                 }
 
-                console.log('History fetched:', historyResult.history);
+                console.log('[DeploymentHistory] History fetched:', {
+                    history: historyResult.history,
+                    historyLength: historyResult.history?.length,
+                    error: historyResult.error?.message,
+                    historyIsArray: Array.isArray(historyResult.history),
+                });
+                
                 if (historyResult.error) {
                     console.error('[DeploymentHistory] Error:', historyResult.error.message);
-                    setHistoryError(historyResult.error.message);
+                    toast.error("Failed to load deployment history", {
+                        description: historyResult.error.message,
+                    });
                 }
+                
+                // Ensure history is always an array, even if undefined/null
+                const historyArray = Array.isArray(historyResult.history) 
+                    ? historyResult.history 
+                    : [];
+                
+                console.log('[DeploymentHistory] Setting history state:', {
+                    arrayLength: historyArray.length,
+                    firstRecord: historyArray[0],
+                });
+                
                 // GraphQL already returns newest first (INGESTED_AT_DESC), no reverse needed
-                setHistory(historyResult.history);
+                setHistory(historyArray);
             } catch (error) {
                 console.error('[DeploymentHistory] Failed to fetch history:', error);
-                setHistoryError(error instanceof Error ? error.message : 'Failed to fetch history');
+                const errorMessage = error instanceof Error ? error.message : 'Failed to fetch history';
+                toast.error("Failed to load deployment history", {
+                    description: errorMessage,
+                });
                 hasFetchedRef.current = false; // Allow retry on error
             } finally {
                 setLoadingDeploymentHistory(false);
@@ -232,7 +252,9 @@ export default function DeploymentHistory() {
         };
 
         fetchHistory();
-    }, [repoName, foundDeployment, signer, signerLoading, managerProcess]);
+        // Note: signer, signerLoading, managerProcess are not needed for GraphQL queries
+        // They're included for backward compatibility with legacy Lua method
+    }, [repoName, foundDeployment]);
 
     const fetchArnsUndername = () => {
         try {
@@ -319,10 +341,17 @@ export default function DeploymentHistory() {
                                 <MinimalDeploymentSkeleton />
                                 <MinimalDeploymentSkeleton />
                             </>
+                        ) : history.length === 0 ? (
+                            <div className="p-6 rounded-md border border-neutral-900 bg-arlink-bg-secondary-color/80 text-center">
+                                <p className="text-neutral-400">No deployment history found</p>
+                                <p className="text-sm mt-2 text-neutral-500">
+                                    This deployment hasn't been deployed yet, or history data is unavailable.
+                                </p>
+                            </div>
                         ) : (
                             history.map((deployment, index) => (
                                 <DeploymentHistoryCard
-                                    key={index}
+                                    key={`${deployment.DeploymentID}-${index}`}
                                     deployment={deployment}
                                     currentDeployment={foundDeployment}
                                     index={index}

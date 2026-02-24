@@ -13,7 +13,7 @@ import { AlertTriangle, ChevronDown, ChevronLeft, Loader2 } from "lucide-react"
 import type React from "react"
 import { useEffect, useState } from "react"
 import RootDirectoryDrawer from "./rootdir-drawer"
-import { useActiveAddress, useSigner } from "@/lib/wallet-strategies"
+import { useAddress, useAoSigner } from "ao-wallet-kit"
 import { toast } from "sonner"
 import DomainSelection from "./shared/domain-selection"
 import useDeploymentManager from "@/hooks/use-deployment-manager"
@@ -47,8 +47,8 @@ const ConfiguringDeploymentProject = ({
   const { githubToken, managerProcess: mgProcess } = useGlobalState()
   const { refresh, deployments } = useDeploymentManager()
   const navigate = useNavigate()
-  const activeAddress = useActiveAddress()
-  const { signer, isLoading: signerLoading } = useSigner()
+  const activeAddress = useAddress()
+  const { signer, isLoading: signerLoading } = useAoSigner()
 
   const [frameWork, setFrameWork] = useState<{
     name: string

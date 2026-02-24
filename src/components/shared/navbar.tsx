@@ -4,43 +4,14 @@ import { extractRepoName } from "@/pages/utilts";
 import { getPrimaryname } from "@/lib/utils";
 import { UserIcon } from "lucide-react";
 import { useWalletState } from "@/hooks/use-wallet-state";
-import { useWAuth, useWalletType } from "@/lib/wallet-strategies";
+import { useWAuthData, useWallet } from "ao-wallet-kit";
 import ProfileModal from "@/components/shared/profile-modal";
 import LoginModal from "@/components/shared/login-modal";
 
-// Debug logging - enable by setting localStorage.WALLET_DEBUG = 'true'
-const DEBUG = import.meta.env.DEV && localStorage.getItem('WALLET_DEBUG') === 'true';
-const log = (...args: any[]) => DEBUG && console.log('[Navbar]', ...args);
-
 export default function Navbar() {
-    // Use centralized wallet state hook for consistency
-    const { isConnected, address, connect, disconnect, kitConnected, kitAddress, walletAddress } = useWalletState();
-    
-    // Get wauth-specific data and wallet type
-    const { email, username, clearCache: clearWAuthCache } = useWAuth();
-    const { isWAuth } = useWalletType();
-    
-    // Debug logging to track navbar state
-    useEffect(() => {
-        log('State:', { 
-            isConnected, 
-            address, 
-            kitConnected, 
-            kitAddress, 
-            walletAddress,
-            isWAuth,
-            email,
-            username
-        });
-        
-        // Extra logging for wauth debugging
-        if (isWAuth) {
-            console.log('🔍 WAuth Debug - Email:', email);
-            console.log('🔍 WAuth Debug - Username:', username);
-            console.log('🔍 WAuth Debug - Cached Email:', localStorage.getItem('wauth_cached_email'));
-            console.log('🔍 WAuth Debug - Cached Username:', localStorage.getItem('wauth_cached_username'));
-        }
-    }, [isConnected, address, kitConnected, kitAddress, walletAddress, isWAuth, email, username]);
+    const { isConnected, address, connect, disconnect } = useWalletState();
+    const { email, username } = useWAuthData();
+    const { isWAuth } = useWallet();
 
     //@ts-ignore
     const [isNewDeployment, setIsNewDeployment] = useState(false);
@@ -63,11 +34,8 @@ export default function Navbar() {
     };
     const disconnectWallet = async () => {
         setDisconnectingToWallet(true);
-        // Clear wauth cache on explicit disconnect
-        clearWAuthCache();
         await disconnect();
         setDisconnectingToWallet(false);
-        // Refresh the page to ensure login button shows up
         window.location.reload();
     };
 

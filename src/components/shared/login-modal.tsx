@@ -1,7 +1,7 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Github, Wallet } from "lucide-react";
+import { Github } from "lucide-react";
 import { useState } from "react";
-import { walletManager, isMetaMaskAvailable } from "@/lib/wallet-strategies";
+import { useWallet } from "ao-wallet-kit";
 import { toast } from "sonner";
 
 interface LoginModalProps {
@@ -18,16 +18,12 @@ export default function LoginModal({
     loading = false
 }: LoginModalProps) {
     const [isLoggingIn, setIsLoggingIn] = useState(false);
+    const { connect } = useWallet();
 
     const handleGithubLogin = async () => {
         setIsLoggingIn(true);
         try {
-            // Switch to GitHub WAuth strategy before connecting
-            const success = walletManager.setStrategy("wauth-github");
-            if (!success) {
-                throw new Error("GitHub wallet strategy not found");
-            }
-            
+            await connect("wauth-github");
             await onGithubLogin();
             onOpenChange(false);
         } catch (error) {
@@ -41,15 +37,7 @@ export default function LoginModal({
     const handleArweaveLogin = async () => {
         setIsLoggingIn(true);
         try {
-            // Switch to Arweave strategy
-            const success = walletManager.setStrategy("arweave-native");
-            if (!success) {
-                throw new Error("Arweave wallet strategy not found");
-            }
-
-            // Connect using the Arweave strategy
-            await walletManager.connect();
-            
+            await connect("arweave-native");
             toast.success("Successfully connected to Arweave wallet!");
             onOpenChange(false);
         } catch (error: any) {
@@ -61,11 +49,7 @@ export default function LoginModal({
     };
 
     const handleMetamaskLogin = async () => {
-        console.log('🔘 MetaMask login button clicked');
-        
-        // Check if MetaMask is installed
-        if (!isMetaMaskAvailable()) {
-            console.log('❌ MetaMask not available');
+        if (typeof window === 'undefined' || !window.ethereum) {
             toast.error("MetaMask is not installed", {
                 description: "Please install MetaMask extension to continue",
                 action: {
@@ -76,34 +60,13 @@ export default function LoginModal({
             return;
         }
 
-        console.log('✅ MetaMask is available, starting connection...');
         setIsLoggingIn(true);
-        
         try {
-            // Switch to MetaMask strategy
-            console.log('🔄 Setting MetaMask strategy...');
-            const success = walletManager.setStrategy("metamask");
-            if (!success) {
-                throw new Error("MetaMask wallet strategy not found");
-            }
-            console.log('✅ MetaMask strategy set');
-
-            // Give a small delay to ensure the UI is ready
-            await new Promise(resolve => setTimeout(resolve, 100));
-
-            // Connect using the MetaMask strategy
-            console.log('🔌 Connecting to MetaMask...');
-            await walletManager.connect();
-            
-            console.log('🎉 MetaMask connected successfully');
+            await connect("metamask");
             toast.success("Successfully connected to MetaMask!");
-            
-            // Close modal after successful connection
             onOpenChange(false);
         } catch (error: any) {
-            console.error("❌ MetaMask login failed:", error);
-            
-            // Handle specific MetaMask errors
+            console.error("MetaMask login failed:", error);
             if (error.code === 4001) {
                 toast.error("Connection rejected", {
                     description: "You rejected the connection request in MetaMask"
@@ -126,7 +89,7 @@ export default function LoginModal({
                 <div className="text-lg font-semibold mb-2">
                     Log in to Arlink
                 </div>
-                
+
                 <p className="text-sm text-gray-400 mb-6">
                     Choose your preferred login method to get started
                 </p>
@@ -154,10 +117,10 @@ export default function LoginModal({
                                 </span>
                             </div>
                         </div>
-                        <svg 
-                            className="size-5 text-gray-400 group-hover:text-white transition-colors" 
-                            fill="none" 
-                            viewBox="0 0 24 24" 
+                        <svg
+                            className="size-5 text-gray-400 group-hover:text-white transition-colors"
+                            fill="none"
+                            viewBox="0 0 24 24"
                             stroke="currentColor"
                         >
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -180,7 +143,6 @@ export default function LoginModal({
                             className="flex flex-col items-center justify-center bg-[#18171c] hover:bg-[#1f1e24] transition-all rounded-lg p-4 border border-[#302e36] group disabled:opacity-50 disabled:cursor-not-allowed h-[100px]"
                         >
                             <div className="size-10 rounded-md flex items-center justify-center bg-[#302e36] group-hover:bg-[#3a3840] transition-colors mb-2">
-                                {/* Wander Logo */}
                                 <img src="/logos/wander.png" alt="Wander" className="size-full" />
                             </div>
                             <span className="font-medium text-sm">Wander</span>
@@ -194,7 +156,6 @@ export default function LoginModal({
                             className="flex flex-col items-center justify-center bg-[#18171c] hover:bg-[#1f1e24] transition-all rounded-lg p-4 border border-[#302e36] group disabled:opacity-50 disabled:cursor-not-allowed h-[100px]"
                         >
                             <div className="size-10 rounded-md flex items-center justify-center bg-[#302e36] group-hover:bg-[#3a3840] transition-colors mb-2">
-                                {/* MetaMask Logo */}
                                 <img src="/logos/metamask.svg" alt="MetaMask" className="size-full" />
                             </div>
                             <span className="font-medium text-sm">MetaMask</span>
@@ -210,4 +171,3 @@ export default function LoginModal({
         </Dialog>
     );
 }
-

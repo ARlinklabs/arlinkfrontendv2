@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { getArNSRecordInfo, extendLease, checkBalance } from "@/actions/arns/arnslater";
 import { getIncreaseLeaseCost } from "@/actions/arns/arnsutils";
-import { useActiveAddress } from "@/lib/wallet-strategies";
+import { useAddress } from "ao-wallet-kit";
 import { toast } from "@/components/ui/use-toast";
 import { Minus, Plus, Calendar, AlertTriangle, ExternalLink } from "lucide-react";
 import { InsufficientBalanceModal } from "./insufficient-balance-modal";
@@ -38,7 +38,7 @@ export function ExtendLeaseModal({
     arnsName,
     onSuccess
 }: ExtendLeaseModalProps) {
-    const activeAddress = useActiveAddress();
+    const activeAddress = useAddress();
     const [years, setYears] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
     const [leaseInfo, setLeaseInfo] = useState<LeaseInfo | null>(null);

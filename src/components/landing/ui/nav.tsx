@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getPrimaryname } from "@/lib/utils";
 import { useWalletState } from "@/hooks/use-wallet-state";
-import { useWAuth, useWalletType } from "@/lib/wallet-strategies";
+import { useWAuthData, useWallet } from "ao-wallet-kit";
 import ProfileModal from "@/components/shared/profile-modal";
 import LoginModal from "@/components/shared/login-modal";
 import { useGlobalState } from "@/store/useGlobalState";
@@ -14,8 +14,8 @@ type NavLink = {
 
 export const Nav = () => {
     const { isConnected: connected, connect, disconnect, address } = useWalletState();
-    const { email, clearCache: clearWAuthCache } = useWAuth();
-    const { isWAuth } = useWalletType();
+    const { email } = useWAuthData();
+    const { isWAuth } = useWallet();
     const clearWalletData = useGlobalState(state => state.clearWalletData);
     const [openSideBar, setOpenSideBar] = useState<boolean>(false);
     const [loading, setLoading] = useState<boolean>(false);
@@ -51,14 +51,10 @@ export const Nav = () => {
     const disConnect = async () => {
         setDisconnecting(true);
         try {
-            // Clear wauth cache on explicit disconnect
-            clearWAuthCache();
-            // Clear global wallet data before disconnecting
             clearWalletData();
             await disconnect();
         } finally {
             setDisconnecting(false);
-            // Refresh the page to ensure login button shows up
             window.location.reload();
         }
     };
@@ -71,14 +67,14 @@ export const Nav = () => {
                 try {
                     // Add a small delay to ensure wallet is fully ready
                     await new Promise(resolve => setTimeout(resolve, 100));
-                    
+
                     if (isCancelled) return;
-                    
+
                     // Fetch primary name data
                     const primaryNameData = await getPrimaryname(address);
-                    
+
                     if (isCancelled) return;
-                    
+
                     if (primaryNameData) {
                         // @ts-ignore - primaryNameData is verified to exist
                         setPrimaryLogo(primaryNameData.logo);
@@ -206,9 +202,8 @@ export const Nav = () => {
             </nav>
 
             <div
-                className={`fixed top-0 left-0 h-full z-40 pt-[100px] w-full bg-neutral-900/50 backdrop-blur-md p-4 transform transition-transform duration-300 ease-in-out lg:hidden ${
-                    openSideBar ? "translate-x-0" : "-translate-x-full"
-                }`}
+                className={`fixed top-0 left-0 h-full z-40 pt-[100px] w-full bg-neutral-900/50 backdrop-blur-md p-4 transform transition-transform duration-300 ease-in-out lg:hidden ${openSideBar ? "translate-x-0" : "-translate-x-full"
+                    }`}
             >
                 <div className="flex flex-col tracking-tighter font-semibold text-3xl">
                     {links.map((link, index) => (
@@ -216,9 +211,8 @@ export const Nav = () => {
                             key={link.url}
                             to={link.url}
                             onClick={() => setOpenSideBar(false)}
-                            className={`py-4 text-white border-neutral-500 border-b ${
-                                index === links.length - 1 && "border-none"
-                            }`}
+                            className={`py-4 text-white border-neutral-500 border-b ${index === links.length - 1 && "border-none"
+                                }`}
                         >
                             {link.name}
                         </Link>

@@ -5,55 +5,28 @@ export const AOModule = "u1Ju_X8jiuq4rX9Nh-ZGRQuYQZgV2MKLMT3CZsykk54"; // sqlite
 export const AOScheduler = "_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA";
 
 /**
- * Prepares a signer for use with AO operations
- * - If signer is a function (WAuth/MetaMask AO signer), use it directly
- * - If signer is an object (window.arweaveWallet), wrap with createDataItemSigner
- * - Returns undefined for invalid/null signers (will skip signer in AO operations)
+ * Prepares a signer for use with AO operations.
+ * - Function signers (from ao-wallet-kit / WAuth / MetaMask) pass through directly
+ * - Object signers (window.arweaveWallet) get wrapped with createDataItemSigner
  */
 export function prepareAoSigner(signer: any): any {
-    console.log('[prepareAoSigner] Input:', {
-        signer,
-        type: typeof signer,
-        isNull: signer === null,
-        isUndefined: signer === undefined,
-        isFunction: typeof signer === 'function',
-        isObject: typeof signer === 'object'
-    });
-    
-    // Return undefined for null, undefined, or invalid signers
-    if (!signer) {
-        console.log('[prepareAoSigner] Signer is null/undefined, returning undefined');
-        return undefined;
-    }
-    
-    // If it's already a function (AO signer from WAuth or MetaMask), use it directly
-    if (typeof signer === 'function') {
-        console.log('[prepareAoSigner] Signer is a function (WAuth/MetaMask), using directly');
-        return signer;
-    }
-    
-    // If it's an object (window.arweaveWallet), wrap it with createDataItemSigner
-    // Verify it's a valid object with necessary methods before wrapping
-    if (typeof signer === 'object' && signer !== null) {
+    if (!signer) return undefined;
+    if (typeof signer === 'function') return signer;
+
+    if (typeof signer === 'object') {
         try {
-            console.log('[prepareAoSigner] Signer is an object (Arweave wallet), wrapping with createDataItemSigner');
-            const wrapped = createDataItemSigner(signer);
-            console.log('[prepareAoSigner] Successfully wrapped signer');
-            return wrapped;
+            return createDataItemSigner(signer);
         } catch (error) {
-            console.error('[prepareAoSigner] Failed to create data item signer:', error);
+            console.error('[prepareAoSigner] Failed to wrap signer:', error);
             return undefined;
         }
     }
-    
-    // For any other unexpected types, return undefined
-    console.warn('[prepareAoSigner] Invalid signer type:', typeof signer);
+
     return undefined;
 }
 
 // Array of CU URLs for cycling through in case of slow responses
 const CU_URLS = [
-    "https://cu.ardrive.io",
     "https://ur-cu.randao.net",
 ];
 
@@ -74,7 +47,7 @@ function getNextCuUrl(): string {
  */
 export function createAoConnection(options: { MODE?: "legacy" | "mainnet" } = {}) {
     const mode = options.MODE || "legacy";
-    
+
     if (mode === "legacy") {
         return connect({
             CU_URL: getNextCuUrl(),
@@ -98,39 +71,39 @@ export async function executeWithRetry<T>(
     maxRetries: number = CU_URLS.length
 ): Promise<T> {
     let lastError: Error | null = null;
-    
+
     for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
             const ao = createAoConnection();
-            
+
             // Create a timeout promise
             const timeoutPromise = new Promise<never>((_, reject) => {
                 setTimeout(() => {
                     reject(new Error(`Request timeout after ${REQUEST_TIMEOUT}ms for CU URL: ${CU_URLS[(currentCuUrlIndex - 1 + CU_URLS.length) % CU_URLS.length]}`));
                 }, REQUEST_TIMEOUT);
             });
-            
+
             // Race between the operation and timeout
             const result = await Promise.race([
                 operation(ao),
                 timeoutPromise
             ]);
-            
+
             return result;
         } catch (error) {
             lastError = error as Error;
             console.warn(`Attempt ${attempt + 1} failed with CU URL ${CU_URLS[(currentCuUrlIndex - 1 + CU_URLS.length) % CU_URLS.length]}:`, error);
-            
+
             // If this was the last attempt, throw the error
             if (attempt === maxRetries - 1) {
                 break;
             }
-            
+
             // Wait a bit before retrying
             await new Promise(resolve => setTimeout(resolve, 1000));
         }
     }
-    
+
     throw new Error(`All CU URL attempts failed. Last error: ${lastError?.message}`);
 }
 
@@ -150,124 +123,49 @@ export async function spawnProcess(
     newProcessModule?: string,
     signer?: any,
 ) {
-    console.log('[spawnProcess] Called with:', {
-        name,
-        hasTags: !!tags,
-        newProcessModule,
-        signer,
-        signerType: typeof signer,
-        signerIsNull: signer === null,
-        signerIsUndefined: signer === undefined
-    });
-    
     return executeWithRetry(async (ao) => {
-        if (tags) {
-            tags = [...CommonTags, ...tags];
-        } else {
-            tags = CommonTags;
-        }
-        tags = name ? [...tags, { name: "Name", value: name }] : tags;
+        tags = tags ? [...CommonTags, ...tags] : CommonTags;
+        if (name) tags = [...tags, { name: "Name", value: name }];
 
-        // Create spawn options object, only include signer if it's defined
         const spawnOptions: any = {
-            module: newProcessModule ? newProcessModule : AOModule,
+            module: newProcessModule || AOModule,
             scheduler: AOScheduler,
             tags,
         };
 
-        // Only add signer if it's defined and not null
-        if (signer) {
-            const preparedSigner = prepareAoSigner(signer);
-            console.log('[spawnProcess] Prepared signer:', {
-                original: signer,
-                prepared: preparedSigner,
-                preparedType: typeof preparedSigner,
-                willAddToOptions: !!preparedSigner
-            });
-            
-            if (preparedSigner) {
-                spawnOptions.signer = preparedSigner;
-            } else {
-                // If signer was provided but couldn't be prepared, throw error
-                throw new Error('Failed to prepare signer for AO operation. Please ensure your wallet is connected properly.');
-            }
-        } else {
-            // Signer is required for spawn operations
-            console.error('[spawnProcess] No signer provided for spawn operation');
-            throw new Error('Wallet signer is required to spawn a process. Please connect your wallet and try again.');
+        if (!signer) {
+            throw new Error('Wallet signer is required to spawn a process.');
         }
 
-        console.log('[spawnProcess] Spawn options:', {
-            hasModule: !!spawnOptions.module,
-            hasScheduler: !!spawnOptions.scheduler,
-            hasSigner: !!spawnOptions.signer,
-            signerType: typeof spawnOptions.signer
-        });
+        const preparedSigner = prepareAoSigner(signer);
+        if (!preparedSigner) {
+            throw new Error('Failed to prepare signer. Please ensure your wallet is connected.');
+        }
+        spawnOptions.signer = preparedSigner;
 
-        const result = await ao.spawn(spawnOptions);
-        return result;
+        return await ao.spawn(spawnOptions);
     });
 }
 
 export async function runLua(code: string, process: string, tags?: Tag[], signer?: any) {
-    console.log('[runLua] Called with:', {
-        process,
-        hasTags: !!tags,
-        hasCode: !!code,
-        signer,
-        signerType: typeof signer,
-        signerIsNull: signer === null,
-        signerIsUndefined: signer === undefined
-    });
-    
     return executeWithRetry(async (ao) => {
-        if (tags) {
-            tags = [...CommonTags, ...tags];
-        } else {
-            tags = CommonTags;
-        }
-
+        tags = tags ? [...CommonTags, ...tags] : CommonTags;
         tags = [...tags, { name: "Action", value: "Eval" }];
 
-        // Create message options object, only include signer if it's defined
-        const messageOptions: any = {
-            process,
-            data: code,
-            tags,
-        };
+        const messageOptions: any = { process, data: code, tags };
 
-        // Only add signer if it's defined and prepareAoSigner returns a valid signer
-        if (signer) {
-            const preparedSigner = prepareAoSigner(signer);
-            console.log('[runLua] Prepared signer:', {
-                original: signer,
-                prepared: preparedSigner,
-                preparedType: typeof preparedSigner,
-                willAddToOptions: !!preparedSigner
-            });
-            
-            if (preparedSigner) {
-                messageOptions.signer = preparedSigner;
-            } else {
-                // If signer was provided but couldn't be prepared, throw error
-                throw new Error('Failed to prepare signer for AO operation. Please ensure your wallet is connected properly.');
-            }
-        } else {
-            // Signer is required for write operations (message)
-            console.error('[runLua] No signer provided for write operation');
-            throw new Error('Wallet signer is required for this operation. Please connect your wallet and try again.');
+        if (!signer) {
+            throw new Error('Wallet signer is required for this operation.');
         }
 
-        console.log('[runLua] Message options:', {
-            hasProcess: !!messageOptions.process,
-            hasSigner: !!messageOptions.signer,
-            signerType: typeof messageOptions.signer
-        });
+        const preparedSigner = prepareAoSigner(signer);
+        if (!preparedSigner) {
+            throw new Error('Failed to prepare signer. Please ensure your wallet is connected.');
+        }
+        messageOptions.signer = preparedSigner;
 
         const message = await ao.message(messageOptions);
-
         const result = await ao.result({ process, message });
-        console.log("result of run lua ", result);
         (result as any).id = message;
         return result;
     });

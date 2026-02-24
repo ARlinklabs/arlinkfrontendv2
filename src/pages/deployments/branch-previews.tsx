@@ -23,7 +23,7 @@ import EnableBranchDeployments from "@/components/enable-branch-deployments"
 import { BranchPreviewsFullSkeleton } from "@/components/skeletons"
 import { toast } from "sonner"
 import type { TDeployment, ArnsName } from "@/types"
-import { useActiveAddress } from "@/lib/wallet-strategies"
+import { useAddress } from "ao-wallet-kit"
 import { setArnsUnderName } from "@/lib/ao-vars"
 import { handleFetchExistingArnsName } from "../utilts"
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList, CommandGroup } from "@/components/ui/command"
@@ -101,7 +101,7 @@ export default function BranchPreviews() {
   const [isUpdatingBranchConfig, setIsUpdatingBranchConfig] = useState(false)
 
   // ARNS related states
-  const activeAddress = useActiveAddress()
+  const activeAddress = useAddress()
   const [arnsNames, setArnsNames] = useState<ArnsName[]>([])
   const [selectedArns, setSelectedArns] = useState<ArnsName | undefined>(undefined)
   const [isArnsDropdownOpen, setIsArnsDropdownOpen] = useState(false)

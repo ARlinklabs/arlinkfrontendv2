@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useGlobalState } from "@/store/useGlobalState";
 import { useWalletState } from "./use-wallet-state";
 import { runLua, spawnProcess, prepareAoSigner } from "@/lib/ao-vars";
-import { useSigner } from "@/lib/wallet-strategies";
+import { useAoSigner } from "ao-wallet-kit";
 import { gql, GraphQLClient } from "graphql-request";
 import { GetDemploymentHistoryReturnType, DeploymentRecord } from "@/types";
 import { executeWithRetry } from "@/lib/ao-vars";
@@ -160,7 +160,7 @@ export default function useDeploymentManager() {
     
     // Use the centralized wallet state for consistency
     const walletAddress = address || globalWalletAddress;
-    const { signer, isLoading: signerLoading } = useSigner();
+    const { signer, isLoading: signerLoading } = useAoSigner();
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [hasFetchedOnce, setHasFetchedOnce] = useState(false); // Track if we've completed initial fetch
     const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -757,7 +757,9 @@ export async function getDeploymentHistoryFromGraphQL(
             console.log(`[GraphQL History] Processing edge ${index + 1}/${edges.length}:`, {
                 nodeId: edge.node.id,
                 tagsCount: edge.node.tags.length,
-                timestamp: edge.node.block.timestamp,
+                hasBlock: !!edge.node.block,
+                timestamp: edge.node.block?.timestamp,
+                ingestedAt: edge.node.ingested_at,
             });
             
             const transactionIdTag = edge.node.tags.find(
@@ -774,7 +776,19 @@ export async function getDeploymentHistoryFromGraphQL(
             }
 
             // Format date from timestamp using the user's format
-            const timestamp = edge.node.block.timestamp * 1000;
+            // Use block.timestamp if available, otherwise fall back to ingested_at (in seconds)
+            // ingested_at is in seconds, block.timestamp is also in seconds
+            let timestamp: number;
+            if (edge.node.block?.timestamp) {
+                timestamp = edge.node.block.timestamp * 1000; // Convert seconds to milliseconds
+            } else if (edge.node.ingested_at) {
+                timestamp = edge.node.ingested_at * 1000; // Convert seconds to milliseconds
+            } else {
+                // Fallback to current time if neither is available (shouldn't happen)
+                console.warn(`[GraphQL History] Edge ${index + 1}: No timestamp available, using current time`);
+                timestamp = Date.now();
+            }
+            
             const dateObj = new Date(timestamp);
             const dateStr = dateObj.toISOString().split("T")[0]; // Date: YYYY-MM-DD
             const timeStr = dateObj.toISOString().split("T")[1].split("Z")[0]; // Time: HH:MM:SS

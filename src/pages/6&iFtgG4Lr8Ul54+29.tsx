@@ -1,10 +1,10 @@
 import { generateSubmissionCode } from "@/actions/github/template";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { useSigner } from "@/lib/wallet-strategies";
+import { useAoSigner } from "ao-wallet-kit";
 
 const Generate = () => {
-    const { signer } = useSigner();
+    const { signer } = useAoSigner();
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string>("");
     const [generatedCode, setGeneratedCode] = useState<string>("");
