@@ -29,7 +29,7 @@ const isTestnet = import.meta.env.VITE_BASE_URL === "http://localhost:3000";
 // Global configuration based on environment
 const AO_CONFIG = {
     MODE: "legacy",
-    MU_URL: "https://mu.ao-testnet.xyz",
+    MU_URL: "https://ur-mu.randao.net",
     CU_URL: "https://cu.ardrive.io",
     GRAPHQL_URL: "https://arweave.net/graphql",
     GATEWAY_URL: "https://arweave.net"
@@ -47,48 +47,48 @@ const ARIO_PROCESS_ID = isTestnet ? ARIO_TESTNET_PROCESS_ID : ARIO_MAINNET_PROCE
 type Tag = { name: string; value: string };
 
 export async function checkBalance(walletAddress: string): Promise<{
-  rawBalance: string;
-  decimalBalance: string;
+    rawBalance: string;
+    decimalBalance: string;
 }> {
-  const TOKEN_ID = NAMES_PROCESS_ID;
-  const DECIMALS = 6;
+    const TOKEN_ID = NAMES_PROCESS_ID;
+    const DECIMALS = 6;
 
-  try {
-    const balanceResponse = await dryrun({
-      process: TOKEN_ID,
-      tags: [
-        { name: 'Action', value: 'Balance' },
-        { name: 'Recipient', value: walletAddress },
-        { name: 'Data-Protocol', value: 'ao' },
-        { name: 'Type', value: 'Message' },
-        { name: 'Variant', value: 'ao.TN.1' }
-      ],
-      Owner: walletAddress
-    });
+    try {
+        const balanceResponse = await dryrun({
+            process: TOKEN_ID,
+            tags: [
+                { name: 'Action', value: 'Balance' },
+                { name: 'Recipient', value: walletAddress },
+                { name: 'Data-Protocol', value: 'ao' },
+                { name: 'Type', value: 'Message' },
+                { name: 'Variant', value: 'ao.TN.1' }
+            ],
+            Owner: walletAddress
+        });
 
-    const messages = balanceResponse.Messages;
-    if (!messages || messages.length === 0) {
-      throw new Error('No balance messages received from dryrun');
+        const messages = balanceResponse.Messages;
+        if (!messages || messages.length === 0) {
+            throw new Error('No balance messages received from dryrun');
+        }
+
+        const balanceTag = messages[0]?.Tags?.find((tag: Tag) => tag.name === 'Balance');
+        const rawBalance = balanceTag?.value || '0';
+
+        if (!/^\d+$/.test(rawBalance)) {
+            throw new Error('Invalid balance format received from API');
+        }
+
+        const decimalBalance = (Number(rawBalance) / 10 ** DECIMALS).toFixed(DECIMALS);
+
+        return {
+            rawBalance,
+            decimalBalance
+        };
+
+    } catch (err: any) {
+        console.error('Failed to check balance:', err.message || err);
+        throw new Error(`Error checking balance: ${err.message || err}`);
     }
-
-    const balanceTag = messages[0]?.Tags?.find((tag: Tag) => tag.name === 'Balance');
-    const rawBalance = balanceTag?.value || '0';
-
-    if (!/^\d+$/.test(rawBalance)) {
-      throw new Error('Invalid balance format received from API');
-    }
-
-    const decimalBalance = (Number(rawBalance) / 10 ** DECIMALS).toFixed(DECIMALS);
-
-    return {
-      rawBalance,
-      decimalBalance
-    };
-
-  } catch (err: any) {
-    console.error('Failed to check balance:', err.message || err);
-    throw new Error(`Error checking balance: ${err.message || err}`);
-  }
 }
 
 
@@ -273,15 +273,15 @@ export async function buyArNS(name: string, type: "lease" | "permabuy", addres: 
 }
 
 export async function getWalletOwnedNamesindash(walletAddress: string): Promise<
-  {
-    name: string;
-    processId: string;
-    startTimestamp?: number;
-    endTimestamp?: number;
-    type?: string;
-    purchasePrice?: number;
-    undernameLimit?: number;
-  }[]
+    {
+        name: string;
+        processId: string;
+        startTimestamp?: number;
+        endTimestamp?: number;
+        type?: string;
+        purchasePrice?: number;
+        undernameLimit?: number;
+    }[]
 > {
     const registryUrl = `https://cu.ardrive.io/dry-run?process-id=${REGISTRYPID}`;
     const namesUrl = `https://cu.ardrive.io/dry-run?process-id=${NAMES_PROCESS_ID}`;
@@ -412,12 +412,12 @@ export async function getArNSstate(processId: string, signer?: any) {
 export async function getpriceinfo(name: string, qty: number, adress: string) {
     const pricemrio = await fetch(`https://payment.ardrive.io/v1/arns/price/Increase-Undername-Limit/${name}?increaseQty=${qty}&currency=usd&userAddress=${adress}`);
     const pricemriojson = await pricemrio.json();
-    
+
     // Convert mARIO to ARIO using the correct format
     const marioValue = parseInt(pricemriojson.mARIO);
     const priceario = Number(new mARIOToken(marioValue).toARIO());
     console.log(priceario);
-    
+
     return {
         priceario
     };
@@ -440,7 +440,7 @@ export async function setLogo(processId: string, logoTxId: string, signer?: any)
         return {
             success: true,
             transactionId: id
-        }; 
+        };
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
         return {
@@ -639,7 +639,7 @@ export async function flexibleIncreaseUndername(
     // Handle different parameter formats
     let name: string;
     let qty: number;
-    
+
     if (typeof nameOrConfig === 'string') {
         name = nameOrConfig;
         qty = maybeQty as number;
@@ -655,45 +655,45 @@ export async function flexibleIncreaseUndername(
 export async function extendLease(name: string, years: number, signer?: any) {
 
     try {
- // @ts-ignore
- const ario = getArioInstance(signer);
+        // @ts-ignore
+        const ario = getArioInstance(signer);
 
- const { id: txId } = await ario.extendLease(
-    {
-      name,
-      years,
-     
-    },
-    {
-      tags: [
-        { name: 'App-Name', value: 'Arlink' },
-      ],
-    }
-  );
-  console.log('Lease extended. Tx ID:', txId);
-  return txId;
-  
+        const { id: txId } = await ario.extendLease(
+            {
+                name,
+                years,
+
+            },
+            {
+                tags: [
+                    { name: 'App-Name', value: 'Arlink' },
+                ],
+            }
+        );
+        console.log('Lease extended. Tx ID:', txId);
+        return txId;
+
 
     }
     catch (err) {
         console.error('Failed to extend lease:', err);
         throw err;
-      }
+    }
 }
 
 export async function addcontroller(walletAddress: string, processId: string, signer?: any) {
 
     try {
-    const walletSigner = getRawSigner(signer);
-    const ant = ANT.init({
-        // @ts-ignore
-        signer: new ArconnectSigner(walletSigner, Arweave.init({})),
-        processId: processId
-    });
-    const { id } = await ant.addController(
-        { controller: walletAddress }
-    );
-    return { success: true, transactionId: id };
+        const walletSigner = getRawSigner(signer);
+        const ant = ANT.init({
+            // @ts-ignore
+            signer: new ArconnectSigner(walletSigner, Arweave.init({})),
+            processId: processId
+        });
+        const { id } = await ant.addController(
+            { controller: walletAddress }
+        );
+        return { success: true, transactionId: id };
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
         return {
@@ -704,4 +704,3 @@ export async function addcontroller(walletAddress: string, processId: string, si
 
 }
 
-    

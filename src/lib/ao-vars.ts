@@ -58,7 +58,7 @@ export function createAoConnection(options: { MODE?: "legacy" | "mainnet" } = {}
             CU_URL: getNextCuUrl(),
             MODE: "legacy" as const,
             GATEWAY_URL: "https://arweave.net",
-            MU_URL: "https://mu.ao-testnet.xyz",
+            MU_URL: "https://ur-mu.randao.net",
         });
     }
 }

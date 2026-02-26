@@ -136,6 +136,7 @@ export default function DeploymentOverview({
             try {
                 const response = await connect({
                     CU_URL: "https://cu.ardrive.io",
+                    MU_URL: "https://ur-mu.randao.net",
                     MODE: "legacy",
                 }).dryrun({
                     process: deployment?.ArnsProcess,
@@ -269,9 +270,8 @@ export default function DeploymentOverview({
                             ]]
                             db:exec([[
                             INSERT OR REPLACE INTO DeploymentLogs (DeploymentName, Logs)
-                            VALUES ('${
-                                deployment.Name
-                            }', '${safeLogsData.replace(/'/g, "''")}')
+                            VALUES ('${deployment.Name
+                        }', '${safeLogsData.replace(/'/g, "''")}')
                             ]])
                         `,
                         globalState.managerProcess,
@@ -361,9 +361,8 @@ export default function DeploymentOverview({
                         `
                           db:exec([[
                             INSERT OR REPLACE INTO DeploymentLogs (DeploymentName, Logs)
-                            VALUES ('${
-                                deployment.Name
-                            }', '${safeLogsData.replace(/'/g, "''")}')
+                            VALUES ('${deployment.Name
+                        }', '${safeLogsData.replace(/'/g, "''")}')
                           ]])
                         `,
                         globalState.managerProcess,
@@ -480,9 +479,8 @@ export default function DeploymentOverview({
                             undername={deployment.UnderName}
                         />
                         <Button
-                            className={`${
-                                updatingArns ? "px-2 md:px-4" : "px-4 md:px-8"
-                            } py-1 text-sm md:text-base bg-arlink-bg-secondary-color hover:bg-neutral-900 border-neutral-800 text-white border`}
+                            className={`${updatingArns ? "px-2 md:px-4" : "px-4 md:px-8"
+                                } py-1 text-sm md:text-base bg-arlink-bg-secondary-color hover:bg-neutral-900 border-neutral-800 text-white border`}
                             onClick={updateArns}
                             disabled={updatingArns || !deploymentUrl}
                         >
