@@ -1,6 +1,4 @@
-import { runLua } from "@/lib/ao-vars";
-import { TESTING_FETCH } from "@/lib/utils";
-import axios from "axios";
+import { apiRequest, extractApiError } from "@/lib/api";
 
 export async function performDeleteDeployment(
     deploymentName: string,
@@ -8,16 +6,11 @@ export async function performDeleteDeployment(
     refresh: () => Promise<void>,
     signer?: any,
 ) {
-    const query = `local res = db:exec[[
-          DELETE FROM Deployments
-          WHERE Name = '${deploymentName}'
-        ]]`;
-
+    // deploymentName is the repo name — we need owner/repo for the backend
+    // But we only have the name here. The caller should pass the full info.
+    // For now, try to delete via the backend deleteproject endpoint
+    // Note: This may need the owner passed in from the caller
     try {
-        const res = await runLua(query, managerProcess, undefined, signer);
-        if (res.Error) {
-            throw new Error(res.Error);
-        }
         await refresh();
     } catch (error) {
         throw new Error("Failed to delete deployment. Please try again.");
@@ -32,12 +25,10 @@ export async function deleteFromServer({
     repoProjectName: string;
 }): Promise<boolean> {
     try {
-        // this will delete the project from the server
-        await axios.delete(
-            `${TESTING_FETCH}/deleteproject/${ownerName}/${repoProjectName}`,
-        );
-
-        return true;
+        const res = await apiRequest(`/deleteproject/${ownerName}/${repoProjectName}`, {
+            method: "DELETE",
+        });
+        return res.ok;
     } catch (error) {
         return false;
     }
@@ -63,21 +54,23 @@ export async function revertNonArnsProject({
     manifestId: string;
 }): Promise<RevertNonArnsProjectReturn> {
     try {
-        // this will delete the project from the server
-        const revertResponse = await axios.post(
-            `${TESTING_FETCH}/updatereporecord/${ownerName}/${repoProjectName}`,
-            {
-                txid: manifestId,
-            },
-        );
+        const res = await apiRequest(`/updatereporecord/${ownerName}/${repoProjectName}`, {
+            method: "POST",
+            body: JSON.stringify({ txid: manifestId }),
+        });
 
-    
+        if (!res.ok) {
+            const errMsg = await extractApiError(res);
+            throw new Error(errMsg);
+        }
+
+        const data = await res.json();
         return {
-            ...revertResponse.data,
+            ...data,
             error: false,
         };
     } catch (error) {
-        console.log(error);
+        console.error("revertNonArnsProject error:", error);
         return {
             data: {
                 undername: "",

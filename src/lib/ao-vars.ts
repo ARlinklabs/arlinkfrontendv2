@@ -1,253 +1,83 @@
-import { connect, createDataItemSigner } from "@permaweb/aoconnect";
+// AO on-chain infrastructure has been replaced by backend API calls.
+// This file is kept for backward compatibility with imports that haven't been migrated yet.
+// Functions are stubbed to throw clear errors if accidentally called.
 
 export const AppVersion = "1.0.0";
-export const AOModule = "u1Ju_X8jiuq4rX9Nh-ZGRQuYQZgV2MKLMT3CZsykk54"; // sqlite
+export const AOModule = "u1Ju_X8jiuq4rX9Nh-ZGRQuYQZgV2MKLMT3CZsykk54";
 export const AOScheduler = "_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA";
-
-/**
- * Prepares a signer for use with AO operations.
- * - Function signers (from ao-wallet-kit / WAuth / MetaMask) pass through directly
- * - Object signers (window.arweaveWallet) get wrapped with createDataItemSigner
- */
-export function prepareAoSigner(signer: any): any {
-    if (!signer) return undefined;
-    if (typeof signer === 'function') return signer;
-
-    if (typeof signer === 'object') {
-        try {
-            return createDataItemSigner(signer);
-        } catch (error) {
-            console.error('[prepareAoSigner] Failed to wrap signer:', error);
-            return undefined;
-        }
-    }
-
-    return undefined;
-}
-
-// Array of CU URLs for cycling through in case of slow responses
-const CU_URLS = [
-    "https://ur-cu.randao.net",
-];
-
-let currentCuUrlIndex = 0;
-const REQUEST_TIMEOUT = 30000; // 30 seconds
-
-/**
- * Gets the next CU URL in rotation
- */
-function getNextCuUrl(): string {
-    const url = CU_URLS[currentCuUrlIndex];
-    currentCuUrlIndex = (currentCuUrlIndex + 1) % CU_URLS.length;
-    return url;
-}
-
-/**
- * Creates an AO connection with automatic CU URL cycling on timeout
- */
-export function createAoConnection(options: { MODE?: "legacy" | "mainnet" } = {}) {
-    const mode = options.MODE || "legacy";
-
-    if (mode === "legacy") {
-        return connect({
-            CU_URL: getNextCuUrl(),
-            MODE: "legacy" as const,
-        });
-    } else {
-        return connect({
-            CU_URL: getNextCuUrl(),
-            MODE: "legacy" as const,
-            GATEWAY_URL: "https://arweave.net",
-            MU_URL: "https://ur-mu.randao.net",
-        });
-    }
-}
-
-/**
- * Executes an AO operation with automatic retry using different CU URLs on timeout
- */
-export async function executeWithRetry<T>(
-    operation: (ao: any) => Promise<T>,
-    maxRetries: number = CU_URLS.length
-): Promise<T> {
-    let lastError: Error | null = null;
-
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-        try {
-            const ao = createAoConnection();
-
-            // Create a timeout promise
-            const timeoutPromise = new Promise<never>((_, reject) => {
-                setTimeout(() => {
-                    reject(new Error(`Request timeout after ${REQUEST_TIMEOUT}ms for CU URL: ${CU_URLS[(currentCuUrlIndex - 1 + CU_URLS.length) % CU_URLS.length]}`));
-                }, REQUEST_TIMEOUT);
-            });
-
-            // Race between the operation and timeout
-            const result = await Promise.race([
-                operation(ao),
-                timeoutPromise
-            ]);
-
-            return result;
-        } catch (error) {
-            lastError = error as Error;
-            console.warn(`Attempt ${attempt + 1} failed with CU URL ${CU_URLS[(currentCuUrlIndex - 1 + CU_URLS.length) % CU_URLS.length]}:`, error);
-
-            // If this was the last attempt, throw the error
-            if (attempt === maxRetries - 1) {
-                break;
-            }
-
-            // Wait a bit before retrying
-            await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-    }
-
-    throw new Error(`All CU URL attempts failed. Last error: ${lastError?.message}`);
-}
-
-// Legacy export for backward compatibility
-export const CU_URL = CU_URLS[0];
-
-const CommonTags = [
-    { name: "App-Name", value: "ARlink" },
-    { name: "App-Version", value: AppVersion },
-];
+export const CU_URL = "https://cu.ardrive.io";
 
 export type Tag = { name: string; value: string };
+
+export function prepareAoSigner(signer: any): any {
+    if (!signer) return undefined;
+    if (typeof signer === "function") return signer;
+    return undefined;
+}
 
 export async function spawnProcess(
     name?: string,
     tags?: Tag[],
     newProcessModule?: string,
     signer?: any,
-) {
-    return executeWithRetry(async (ao) => {
-        tags = tags ? [...CommonTags, ...tags] : CommonTags;
-        if (name) tags = [...tags, { name: "Name", value: name }];
-
-        const spawnOptions: any = {
-            module: newProcessModule || AOModule,
-            scheduler: AOScheduler,
-            tags,
-        };
-
-        if (!signer) {
-            throw new Error('Wallet signer is required to spawn a process.');
-        }
-
-        const preparedSigner = prepareAoSigner(signer);
-        if (!preparedSigner) {
-            throw new Error('Failed to prepare signer. Please ensure your wallet is connected.');
-        }
-        spawnOptions.signer = preparedSigner;
-
-        return await ao.spawn(spawnOptions);
-    });
+): Promise<string> {
+    throw new Error("spawnProcess is no longer available — use backend API instead");
 }
 
-export async function runLua(code: string, process: string, tags?: Tag[], signer?: any) {
-    return executeWithRetry(async (ao) => {
-        tags = tags ? [...CommonTags, ...tags] : CommonTags;
-        tags = [...tags, { name: "Action", value: "Eval" }];
-
-        const messageOptions: any = { process, data: code, tags };
-
-        if (!signer) {
-            throw new Error('Wallet signer is required for this operation.');
-        }
-
-        const preparedSigner = prepareAoSigner(signer);
-        if (!preparedSigner) {
-            throw new Error('Failed to prepare signer. Please ensure your wallet is connected.');
-        }
-        messageOptions.signer = preparedSigner;
-
-        const message = await ao.message(messageOptions);
-        const result = await ao.result({ process, message });
-        (result as any).id = message;
-        return result;
-    });
+export async function runLua(
+    code: string,
+    process: string,
+    tags?: Tag[],
+    signer?: any,
+): Promise<any> {
+    throw new Error("runLua is no longer available — use backend API instead");
 }
 
-export async function getResults(process: string, cursor = "") {
-    return executeWithRetry(async (ao) => {
-        const r = await ao.results({
-            process,
-            from: cursor,
-            sort: "ASC",
-            limit: 999999,
-        });
+export async function readHandler(args: {
+    processId: string;
+    action: string;
+    tags?: Tag[];
+    data?: any;
+}): Promise<any> {
+    throw new Error("readHandler is no longer available — use backend API instead");
+}
 
-        if (r.edges.length > 0) {
-            const newCursor = r.edges[r.edges.length - 1].cursor;
-            const results = r.edges.map((e: any) => e.node);
-            return { cursor: newCursor, results };
-        } else {
-            return { cursor, results: [] };
-        }
-    });
+export async function getResults(process: string, cursor?: string) {
+    throw new Error("getResults is no longer available — use backend API instead");
 }
 
 export async function monitor(process: string, signer?: any) {
-    return executeWithRetry(async (ao) => {
-        // Create monitor options object, only include signer if it's defined
-        const monitorOptions: any = {
-            process,
-        };
-
-        // Only add signer if it's defined and prepareAoSigner returns a valid signer
-        if (signer) {
-            const preparedSigner = prepareAoSigner(signer);
-            if (preparedSigner) {
-                monitorOptions.signer = preparedSigner;
-            }
-        }
-
-        const r = await ao.monitor(monitorOptions);
-
-        return r;
-    });
+    throw new Error("monitor is no longer available — use backend API instead");
 }
 
 export async function unmonitor(process: string, signer?: any) {
-    return executeWithRetry(async (ao) => {
-        // Create unmonitor options object, only include signer if it's defined
-        const unmonitorOptions: any = {
-            process,
-        };
+    throw new Error("unmonitor is no longer available — use backend API instead");
+}
 
-        // Only add signer if it's defined and prepareAoSigner returns a valid signer
-        if (signer) {
-            const preparedSigner = prepareAoSigner(signer);
-            if (preparedSigner) {
-                unmonitorOptions.signer = preparedSigner;
-            }
-        }
+export function createAoConnection() {
+    throw new Error("createAoConnection is no longer available — use backend API instead");
+}
 
-        const r = await ao.unmonitor(unmonitorOptions);
-
-        return r;
-    });
+export async function executeWithRetry<T>(
+    operation: (ao: any) => Promise<T>,
+    maxRetries?: number,
+): Promise<T> {
+    throw new Error("executeWithRetry is no longer available — use backend API instead");
 }
 
 export function parseOutupt(out: any) {
-    if (!out.Output) return out;
+    if (!out?.Output) return out;
     const data = out.Output.data;
     const { json, output } = data;
-    if (json != "undefined") {
-        return json;
-    }
+    if (json != "undefined") return json;
     try {
         return JSON.parse(output);
     } catch (e) {
         return output;
     }
 }
+
 export const BAZAR = {
-    // module: 'Pq2Zftrqut0hdisH_MC2pDOT6S4eQFoxGsFUzR6r350',
-    // scheduler: '_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA',
     assetSrc: "Fmtgzy1Chs-5ZuUwHpQjQrQ7H7v1fjsP0Bi8jVaDIKA",
     defaultToken: "xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10",
     ucm: "U3TjJAZWJjlWBB4KAXSHKzuky81jtyh0zqH8rUL4Wd0",
@@ -257,127 +87,21 @@ export const BAZAR = {
     profileRegistry: "SNy4m-DrqxWl01YqGM4sxI8qCni-58re8uuJLvZPypY",
     profileSrc: "_R2XYWDPUXVvQrQKFaQRvDTDcDwnQNbqlTd_qvCRSpQ",
 };
-export async function readHandler(args: {
-    processId: string;
-    action: string;
-    tags?: Tag[];
-    data?: any;
-}): Promise<any> {
-    return executeWithRetry(async (ao) => {
-        const tags = [{ name: "Action", value: args.action }];
-        if (args.tags) tags.push(...args.tags);
-        let data = JSON.stringify(args.data || {});
-
-        const response = await ao.dryrun({
-            process: args.processId,
-            tags: tags,
-            data: data,
-        });
-
-        if (response.Messages && response.Messages.length) {
-            if (response.Messages[0].Data) {
-                return JSON.parse(response.Messages[0].Data);
-            } else {
-                if (response.Messages[0].Tags) {
-                    return response.Messages[0].Tags.reduce(
-                        (acc: any, item: any) => {
-                            acc[item.name] = item.value;
-                            return acc;
-                        },
-                        {},
-                    );
-                }
-            }
-        }
-        return null;
-    });
-}
 
 export async function setArnsName(
     antProcess: string,
     manifestId: string,
-    undername = "@",
+    undername?: string,
     signer?: any,
 ) {
-    return executeWithRetry(async (ao) => {
-        const msgtags = [
-            { name: "Action", value: "Set-Record" },
-            { name: "Sub-Domain", value: undername },
-            { name: "Transaction-Id", value: manifestId },
-            { name: "TTL-Seconds", value: "900" },
-        ];
-        try {
-            // Create message options object, only include signer if it's defined
-            const messageOptions: any = {
-                process: antProcess,
-                tags: msgtags,
-                data: "",
-            };
-
-            // Only add signer if it's defined and prepareAoSigner returns a valid signer
-            if (signer) {
-                const preparedSigner = prepareAoSigner(signer);
-                if (preparedSigner) {
-                    messageOptions.signer = preparedSigner;
-                } else {
-                    throw new Error('Failed to prepare signer for setArnsName operation. Please ensure your wallet is connected properly.');
-                }
-            } else {
-                // Signer is required for setting ArNS
-                console.error('[setArnsName] No signer provided');
-                throw new Error('Wallet signer is required to set ArNS name. Please connect your wallet and try again.');
-            }
-
-            const result = await ao.message(messageOptions);
-            console.log("set arns message officially sent out ", result);
-            return result;
-        } catch (e) {
-            console.error(e);
-            throw e; // Re-throw instead of returning null so the error propagates
-        }
-    });
+    throw new Error("setArnsName is no longer available — ArNS is now handled by the backend");
 }
+
 export async function setArnsUnderName(
     antProcess: string,
     manifestId: string,
     undername: string,
     signer?: any,
 ) {
-    return executeWithRetry(async (ao) => {
-        const msgtags = [
-            { name: "Action", value: "Set-Record" },
-            { name: "Sub-Domain", value: undername },
-            { name: "Transaction-Id", value: manifestId },
-            { name: "TTL-Seconds", value: "60" },
-        ];
-        try {
-            // Create message options object, only include signer if it's defined
-            const messageOptions: any = {
-                process: antProcess,
-                tags: msgtags,
-                data: "",
-            };
-
-            // Only add signer if it's defined and prepareAoSigner returns a valid signer
-            if (signer) {
-                const preparedSigner = prepareAoSigner(signer);
-                if (preparedSigner) {
-                    messageOptions.signer = preparedSigner;
-                } else {
-                    throw new Error('Failed to prepare signer for setArnsUnderName operation. Please ensure your wallet is connected properly.');
-                }
-            } else {
-                // Signer is required for setting ArNS undername
-                console.error('[setArnsUnderName] No signer provided');
-                throw new Error('Wallet signer is required to set ArNS undername. Please connect your wallet and try again.');
-            }
-
-            const result = await ao.message(messageOptions);
-            console.log("set arns message officially sent out ", result);
-            return result;
-        } catch (e) {
-            console.error(e);
-            throw e; // Re-throw instead of returning null so the error propagates
-        }
-    });
+    throw new Error("setArnsUnderName is no longer available — ArNS is now handled by the backend");
 }

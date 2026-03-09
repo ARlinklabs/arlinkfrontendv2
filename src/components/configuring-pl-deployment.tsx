@@ -1,8 +1,6 @@
-import useDeploymentManager, {
-    historyTable,
-} from "@/hooks/use-deployment-manager";
+import useDeploymentManager from "@/hooks/use-deployment-manager";
 import { ArnsName, BuildSettings, Steps } from "@/types";
-import { useAddress, useAoSigner } from "ao-wallet-kit";
+import { useAddress } from "ao-wallet-kit";
 import { useState } from "react";
 import { ChevronLeft } from "lucide-react";
 import NewDeploymentCard from "@/components/shared/new-deployment-card";
@@ -13,11 +11,8 @@ import { BuildDeploymentSetting } from "@/components/shared/build-settings";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import axios, { isAxiosError } from "axios";
-import { BUILDER_BACKEND, getTime } from "@/lib/utils";
-import { runLua } from "@/lib/ao-vars";
+import { apiRequest, extractApiError } from "@/lib/api";
 import DeploymentLogs from "./shared/deploying-logs";
-import { setArnsName as setArnsNameWithProcessId } from "@/lib/ao-vars";
 
 const ConfigureProtocolLandProject = ({
     setStep,
@@ -28,7 +23,6 @@ const ConfigureProtocolLandProject = ({
 }) => {
     const { managerProcess, refresh, deployments } = useDeploymentManager();
     const navigate = useNavigate();
-    const { signer, isLoading: signerLoading } = useAoSigner();
     const activeAddress = useAddress();
 
     // project states
@@ -104,11 +98,6 @@ const ConfigureProtocolLandProject = ({
             // Check deployment limit first
             
 
-        // Get signer and validate it's available
-        if (!signer) {
-            return toast.error("Wallet signer not available. Please ensure your wallet is connected properly.");
-        }
-
         // Validation checks
         const validationErrors = [
             { condition: !projectName, message: "Project Name is required" },
@@ -174,13 +163,12 @@ const ConfigureProtocolLandProject = ({
         }
 
         // Log polling setup
-        const owner = activeAddress;
-        const repo = selectedRepo.name;
         const POLLING_INTERVAL = 2000;
         const MAX_POLLING_TIME = 600000;
         const startTime = Date.now();
         let intervalId: NodeJS.Timeout | null = null;
         let isPollingActive = true;
+        let currentDeploymentId: string | null = null;
 
         const stopPolling = () => {
             if (intervalId) {
@@ -209,12 +197,14 @@ const ConfigureProtocolLandProject = ({
                     return;
                 }
 
+                if (!currentDeploymentId) return;
                 try {
-                    const logs = await axios.get(
-                        `${BUILDER_BACKEND}/logs/${owner}/${repo}`,
-                    );
-                    if (logs.status === 200) {
-                        setLogs(logs.data.split("\n"));
+                    const logsRes = await apiRequest(`/deployments/${currentDeploymentId}/log`);
+                    if (logsRes.ok) {
+                        const data = await logsRes.json();
+                        if (data.log) {
+                            setLogs(data.log.split("\n"));
+                        }
                     }
                 } catch (error) {
                     // Continue polling even on errors
@@ -225,12 +215,9 @@ const ConfigureProtocolLandProject = ({
         try {
             startLogPolling();
 
-            const { data: txid, status } = await axios.post<{
-                result: string;
-                finalUnderName: string;
-            }>(
-                `${BUILDER_BACKEND}/deploy`,
-                {
+            const deployRes = await apiRequest("/deploy", {
+                method: "POST",
+                body: JSON.stringify({
                     repository: selectedRepo.url,
                     installCommand: buildSettings.installCommand.value,
                     buildCommand: buildSettings.buildCommand.value,
@@ -241,105 +228,72 @@ const ConfigureProtocolLandProject = ({
                     repoName: selectedRepo.name,
                     walletAddress: activeAddress,
                     customArnsName: customArnsName || "",
-                },
-                {
-                    timeout: 60 * 60 * 1000,
-                    headers: { "Content-Type": "application/json" },
-                },
-            );
+                }),
+            });
 
-            if (status === 200) {
-                isPollingActive = false;
-                toast.success("Deployment successful");
-                const dbQueries = [
-                    `ALTER TABLE Deployments ADD COLUMN UnderName TEXT`,
-                    `INSERT INTO Deployments (
-                        Name, 
-                        Repository, 
-                        Branch, 
-                        InstallCommand, 
-                        BuildCommand, 
-                        OutputDir, 
-                        ArnsName
-                    ) VALUES (
-                        '${projectName}', 
-                        '${selectedRepo.url}', 
-                        '${branch}', 
-                        '${buildSettings.installCommand.value}', 
-                        '${buildSettings.buildCommand.value}', 
-                        '${buildSettings.outPutDir.value}', 
-                        ${finalArnsProcess ? `'${finalArnsProcess}'` : "NULL"}
-                    )`,
-                    `UPDATE Deployments SET DeploymentId='${txid.result}' WHERE Name='${projectName}'`,
-                    `UPDATE Deployments SET UnderName='${txid.finalUnderName}' WHERE Name='${projectName}'`,
-                ];
+            if (!deployRes.ok) {
+                const errMsg = await extractApiError(deployRes);
+                throw new Error(errMsg);
+            }
 
-                let userArns: null | string = null;
-                if (activeTab === "existing" && arnsName) {
-                    userArns = await setArnsNameWithProcessId(
-                        arnsName.processId,
-                        txid.result,
-                        "@",
-                        signer,
-                    );
+            const deployResponse = await deployRes.json();
+
+            if (deployResponse.deploymentId) {
+                const deploymentId = deployResponse.deploymentId;
+                currentDeploymentId = deploymentId;
+
+                // Poll deployment status until terminal
+                const TERMINAL_STATES = ["deployed", "failed"];
+                let deploymentStatus = "queued";
+
+                while (!TERMINAL_STATES.includes(deploymentStatus)) {
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    try {
+                        const statusRes = await apiRequest(`/deployments/${deploymentId}`);
+                        if (statusRes.ok) {
+                            const statusData = await statusRes.json();
+                            deploymentStatus = statusData?.deployment?.status || statusData?.status || "queued";
+                        }
+                    } catch {
+                        // Keep polling on transient errors
+                    }
                 }
 
-                const dbOperations = [
-                    ...dbQueries.map((query) =>
-                        runLua(`db:exec[[${query}]]`, managerProcess, undefined, signer),
-                    ),
-                    // Note: History is now fetched from GraphQL (Set-Record transactions)
-                    // No need to create/insert into manager process database
-                    // runLua(historyTable, managerProcess, undefined, signer),
-                    // runLua(history insertion...)
-                
-                ];
+                isPollingActive = false;
 
-                setIsFetchingLogs(false);
-                setAlmostDone(true);
-                await Promise.all(dbOperations);
-                // Note: History is now fetched from GraphQL (Set-Record transactions)
-                // No need to insert into manager process database
-                // History will be available in GraphQL after Set-Record transaction completes
-                // await runLua(
-                //     `db:exec[[
-                //                 INSERT INTO NewDeploymentHistory (Name, DeploymentID, AssignedUndername, Date) VALUES
-                //                 ('${
-                //                     projectName
-                //                 }', '${txid.result}', '${txid.finalUnderName}', '${getTime()}')
-                //             ]]`,
-                //     managerProcess,
-                //     undefined,
-                //     signer,
-                // );
+                if (deploymentStatus === "deployed") {
+                    toast.success("Deployment successful");
 
-                // Add small delay to allow database operations to fully propagate
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                await refresh();
-                navigate(`/deployment/card?repo=${projectName}`);
+                    if (activeTab === "existing" && arnsName) {
+                        await apiRequest(`/updatereporecord/${activeAddress}/${selectedRepo.name}`, {
+                            method: "POST",
+                            body: JSON.stringify({
+                                arnsProcess: arnsName.processId,
+                                deploymentId,
+                            }),
+                        });
+                    }
+
+                    setIsFetchingLogs(false);
+                    setAlmostDone(true);
+
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    await refresh();
+                    navigate(`/deployment/card?repo=${projectName}`);
+                } else {
+                    throw new Error("Deployment failed — check build logs for details");
+                }
             } else {
                 throw new Error("Deployment failed: Unexpected response");
             }
         } catch (error) {
             isPollingActive = false;
             stopPolling();
-            if (isAxiosError(error)) {
-                if (error.response?.status === 406) {
-                    setLogError(
-                        "Too many requests detected. Please try again later.",
-                    );
-                } else if (error.response?.status === 500) {
-                    setLogError("Build failed, please check logs");
-                } else if (error.response?.status === 429) {
-                    setLogError("Daily deployment limit over");
-                } else if (error.response?.status === 204) {
-                    setLogError("Daily deployment limit over");
-                } else if (error.response?.status === 404) {
-                    setLogError("Server down please try again later");
-                } else {
-                    setLogError("Unknown error occured please try again later");
-                }
-            }
+            console.error("Deployment error:", error);
+            const errorMessage = error instanceof Error
+                ? error.message
+                : "An unexpected error occurred";
+            setLogError(errorMessage);
             setDeploymentSucceded(false);
             setDeploymentComplete(false);
             setDeploymentFailed(true);

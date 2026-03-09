@@ -31,7 +31,6 @@ const DeploymentSetting = lazy(
 const DeploymentCard = lazy(
     () => import("./pages/deployments/deployment-card"),
 );
-const Analytics = lazy(() => import("./pages/deployments/analytics"));
 const DeploymentHistory = lazy(
     () => import("./pages/deployments/deployment-history"),
 );
@@ -44,8 +43,6 @@ const SelectedTemplate = lazy(
 );
 const TemplateDeploy = lazy(() => import("./pages/template/template-deploy"));
 const CloneTemplate = lazy(() => import("./pages/template/clone-template"));
-const UploadTemplate = lazy(() => import("./pages/template/upload-template"));
-const Generate = lazy(() => import("./pages/6&iFtgG4Lr8Ul54+29"));
 const Arns = lazy(() => import("./pages/arns/"));
 const ArnsDashboard = lazy(() => import("./pages/arns/dashboard"));
 
@@ -152,7 +149,6 @@ const router = createBrowserRouter([
                         ),
                     },
                     { path: "templates", element: <TemplateDashboard /> },
-                    { path: "6&iFtgG4Lr8Ul54+29", element: <Generate /> },
                     {
                         path: "templates/:framework/:name/:id",
                         element: <SelectedTemplate />,
@@ -165,18 +161,9 @@ const router = createBrowserRouter([
                         path: "/deploy/:owner/:repoName",
                         element: <TemplateDeploy />,
                     },
-                    { path: "templates/upload", element: <UploadTemplate /> },
                     {
                         path: "templates/deploy/:owner/:repoName",
                         element: <TemplateDeploy />,
-                    },
-                    {
-                        path: "deployment/analytics",
-                        element: (
-                            <ErrorBoundary>
-                                <Analytics />
-                            </ErrorBoundary>
-                        )
                     },
                     {
                         path: "deployment/settings",

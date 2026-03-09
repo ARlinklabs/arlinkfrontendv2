@@ -52,8 +52,8 @@ import {
     CommandItem,
     CommandList,
 } from "@/components/ui/command";
-import { cn, setUndername } from "@/lib/utils";
-import { runLua, setArnsName } from "@/lib/ao-vars";
+import { cn } from "@/lib/utils";
+import { getDeploymentHistory as getDeploymentHistoryAPI, extractApiError, apiRequest } from "@/lib/api";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
@@ -99,7 +99,7 @@ function formatRelativeTime(dateString: string): string {
 export default function DeploymentHistory() {
     // hooks
 
-    const { deployments, isRefreshing, walletAddress } = useDeploymentManager();
+    const { deployments, isRefreshing, hasFetchedOnce, walletAddress } = useDeploymentManager();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const repoName = searchParams.get("repo");
@@ -130,9 +130,8 @@ export default function DeploymentHistory() {
     // Track if we've already fetched history to prevent duplicate fetches
     const hasFetchedRef = useRef(false);
     
-    // Show loading state only when we don't have the deployment data yet
-    // Don't show loading if we're just refreshing existing data
-    if (!foundDeployment && (isRefreshing || (walletAddress && deployments.length === 0))) {
+    // Show loading state while initial fetch hasn't completed yet
+    if (!foundDeployment && !hasFetchedOnce) {
         return (
             <div className="min-h-screen text-neutral-200">
                 <div className="w-full px-4 py-10 md:px-[40px]">
@@ -160,13 +159,33 @@ export default function DeploymentHistory() {
         );
     }
     
-    if (!foundDeployment) {
+    if (!foundDeployment && hasFetchedOnce) {
         toast.error("Deployment not found");
         navigate("/dashboard");
+        return null;
+    }
+
+    if (!foundDeployment) {
         return (
             <div className="min-h-screen text-neutral-200">
                 <div className="w-full px-4 py-10 md:px-[40px]">
-                    <div className="text-xl">Searching for deployment...</div>
+                    <div className="space-y-6">
+                        <div className="space-y-2">
+                            <h1 className="text-3xl font-semibold flex items-center tracking-tight text-neutral-100">
+                                Deployment history
+                            </h1>
+                            <div className="flex items-center space-x-2 text-sm text-neutral-400">
+                                <GitBranchIcon className="h-4 w-4" />
+                                <span>Loading deployment history...</span>
+                            </div>
+                        </div>
+                        <Separator />
+                        <div className="space-y-2 rounded-md">
+                            <MinimalDeploymentSkeleton />
+                            <MinimalDeploymentSkeleton />
+                            <MinimalDeploymentSkeleton />
+                        </div>
+                    </div>
                 </div>
             </div>
         );
@@ -190,54 +209,24 @@ export default function DeploymentHistory() {
             hasFetchedRef.current = true;
             setLoadingDeploymentHistory(true);
             try {
-                let historyResult;
-                
-                // Use GraphQL method if deployment has an undername (ArNS users)
-                // GraphQL doesn't require signer - it's just a read query
-                if (foundDeployment.UnderName && foundDeployment.ArnsProcess) {
-                    console.log('[DeploymentHistory] Using GraphQL method for ArNS deployment');
-                    console.log('[DeploymentHistory] Undername:', foundDeployment.UnderName);
-                    console.log('[DeploymentHistory] ArNS Process:', foundDeployment.ArnsProcess);
-                    
-                    // Query GraphQL for Set-Record transactions by undername (no signer needed)
-                    historyResult = await getDeploymentHistoryFromGraphQL(
-                        foundDeployment.UnderName,
-                        foundDeployment.Name,
-                    );
-                } else {
-                    console.log('[DeploymentHistory] Using legacy Lua method for non-ArNS deployment');
-                    historyResult = await getDeploymentHistoryFromGraphQL(
-                        foundDeployment.UnderName,
-                        foundDeployment.Name,
-                    
-                    );
-                }
+                // Extract owner/repo from RepoUrl
+                const parts = foundDeployment.RepoUrl.replace(/\.git$/, "").split("/").filter(Boolean);
+                const owner = parts[parts.length - 2];
+                const repo = parts[parts.length - 1];
 
-                console.log('[DeploymentHistory] History fetched:', {
-                    history: historyResult.history,
-                    historyLength: historyResult.history?.length,
-                    error: historyResult.error?.message,
-                    historyIsArray: Array.isArray(historyResult.history),
-                });
-                
-                if (historyResult.error) {
-                    console.error('[DeploymentHistory] Error:', historyResult.error.message);
-                    toast.error("Failed to load deployment history", {
-                        description: historyResult.error.message,
-                    });
-                }
-                
-                // Ensure history is always an array, even if undefined/null
-                const historyArray = Array.isArray(historyResult.history) 
-                    ? historyResult.history 
-                    : [];
-                
-                console.log('[DeploymentHistory] Setting history state:', {
-                    arrayLength: historyArray.length,
-                    firstRecord: historyArray[0],
-                });
-                
-                // GraphQL already returns newest first (INGESTED_AT_DESC), no reverse needed
+                const result = await getDeploymentHistoryAPI(owner, repo);
+
+                // Map backend history to DeploymentRecord format
+                const historyArray: DeploymentRecord[] = (result.deployments || [])
+                    .filter((d: any) => d.status === "deployed" && d.txId)
+                    .map((d: any, index: number) => ({
+                        ID: index + 1,
+                        Name: foundDeployment.Name,
+                        DeploymentID: d.txId,
+                        Date: d.completedAt || d.createdAt,
+                        AssignedUndername: d.arnsUnderName || foundDeployment.UnderName || "",
+                    }));
+
                 setHistory(historyArray);
             } catch (error) {
                 console.error('[DeploymentHistory] Failed to fetch history:', error);
@@ -245,7 +234,7 @@ export default function DeploymentHistory() {
                 toast.error("Failed to load deployment history", {
                     description: errorMessage,
                 });
-                hasFetchedRef.current = false; // Allow retry on error
+                hasFetchedRef.current = false;
             } finally {
                 setLoadingDeploymentHistory(false);
             }
@@ -396,32 +385,34 @@ const DeploymentHistoryCard = ({
     const [transactionId, setTransactionId] = useState<string | null>(null);
 
     const handleRollBack = async (deploymentID: string) => {
-        if (!currentDeployment.ArnsProcess) {
-            setRollBackTransactionIdFetched(false);
-            setRollBackStarted(true);
-            
-            if (!signer || signerLoading) {
-                toast.error("Please connect your wallet to rollback");
-                setRollBackStarted(false);
-                return;
-            }
-            
-            const txid = await setArnsName(
-                currentDeployment.ArnsProcess,
-                deploymentID,
-                "@",
-                signer,
-            );
+        setRollBackTransactionIdFetched(false);
+        setRollBackStarted(true);
 
-            setRollBackStarted(false);
-            if (txid) {
-                setTransactionId(txid);
+        try {
+            // Rollback via backend — update the repo record to point at the old TX
+            const parts = currentDeployment.RepoUrl.replace(/\.git$/, "").split("/").filter(Boolean);
+            const owner = parts[parts.length - 2];
+            const repo = parts[parts.length - 1];
+
+            const res = await apiRequest(`/updatereporecord/${owner}/${repo}`, {
+                method: "POST",
+                body: JSON.stringify({ txid: deploymentID }),
+            });
+
+            if (res.ok) {
+                setTransactionId(deploymentID);
                 setRollBackTransactionIdFetched(true);
                 await refresh();
                 navigate(`/deployment?repo=${currentDeployment.Name}`);
             } else {
-                toast.error("Failed to rollback");
+                const errMsg = await extractApiError(res);
+                toast.error(errMsg);
             }
+        } catch (error) {
+            console.error("Rollback failed:", error);
+            toast.error(error instanceof Error ? error.message : "Failed to rollback");
+        } finally {
+            setRollBackStarted(false);
         }
     };
 
@@ -693,26 +684,38 @@ const ArnsTabSelector = ({
     const handleSwitchToAnotherArns = async () => {
         setNewUndername("");
         if (!selectedArns) return toast.error("please select an arns");
-        
+
         if (!signer || signerLoading) {
             toast.error("Please connect your wallet to switch ArNS");
             return;
         }
-        
-        const txid = await setArnsName(
-            selectedArns.processId,
-            deployment.DeploymentID,
-            "@",
-            signer,
-        );
-        if (txid) {
-            setTransactionId(selectedArns.processId);
-            toast.success("Successfully changed arns", {
-                description:
-                    "This process may take time please check the progress throught transaction id",
+
+        try {
+            const parts = currentDeployment.RepoUrl.replace(/\.git$/, "").split("/").filter(Boolean);
+            const owner = parts[parts.length - 2];
+            const repo = parts[parts.length - 1];
+
+            const res = await apiRequest(`/updatereporecord/${owner}/${repo}`, {
+                method: "POST",
+                body: JSON.stringify({
+                    arnsProcess: selectedArns.processId,
+                    deploymentId: deployment.DeploymentID,
+                }),
             });
-        } else {
-            toast.error("Failed to switch arns");
+
+            if (res.ok) {
+                setTransactionId(selectedArns.processId);
+                toast.success("Successfully changed arns", {
+                    description:
+                        "This process may take time please check the progress throught transaction id",
+                });
+            } else {
+                const errMsg = await extractApiError(res);
+                toast.error(errMsg);
+            }
+        } catch (error) {
+            console.error("Error switching ArNS:", error);
+            toast.error(error instanceof Error ? error.message : "Failed to switch arns");
         }
     };
 
@@ -739,29 +742,38 @@ const ArnsTabSelector = ({
             return toast.error("please enter an undername value");
 
         setAssigningANewUndername(true);
-        
+
         if (!signer || signerLoading) {
             toast.error("Please connect your wallet to assign undername");
             setAssigningANewUndername(false);
             return;
         }
-        
-        const txid = await setUndername(
-            selectedArns.processId,
-            currentDeployment.DeploymentId,
-            newUndername,
-            signer,
-        );
-        if (txid) {
-            setTransactionId(currentDeployment.DeploymentId);
-            await runLua(
-                `db:exec[[UPDATE Deployments SET UnderName='${newUndername}' WHERE Name='${currentDeployment.Name}']]`,
-                globalState.managerProcess,
-                undefined,
-                signer,
-            );
-            setAssigningANewUndername(false);
-        } else {
+
+        try {
+            const parts = currentDeployment.RepoUrl.replace(/\.git$/, "").split("/").filter(Boolean);
+            const owner = parts[parts.length - 2];
+            const repo = parts[parts.length - 1];
+
+            const res = await apiRequest(`/updatereporecord/${owner}/${repo}`, {
+                method: "POST",
+                body: JSON.stringify({
+                    arnsProcess: selectedArns.processId,
+                    deploymentId: currentDeployment.DeploymentId,
+                    undername: newUndername,
+                }),
+            });
+
+            if (res.ok) {
+                setTransactionId(currentDeployment.DeploymentId);
+                setAssigningANewUndername(false);
+            } else {
+                const errMsg = await extractApiError(res);
+                toast.error(errMsg);
+                setAssigningANewUndername(false);
+                setNewUndername("");
+            }
+        } catch (error) {
+            console.error("Error assigning undername:", error);
             setAssigningANewUndername(false);
             setNewUndername("");
         }

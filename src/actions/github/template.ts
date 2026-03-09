@@ -1,13 +1,9 @@
 import {
-    TemplateDetails,
+    TemplateDashboard,
     TemplatesResponse,
-    TemplateSubmission,
 } from "@/types";
 import { Octokit } from "@octokit/rest";
-import { connect } from "@permaweb/aoconnect";
-import { prepareAoSigner } from "@/lib/ao-vars";
-
-const TARGET_PROCESS = "6M87yicVAKQzGkMrjLZKaomLbBj2BdRCWM-WUFpWHr4";
+import staticTemplates from "@/data/templates.json";
 
 export async function forkRepository(
     githubToken: string,
@@ -30,319 +26,42 @@ export async function forkRepository(
     }
 }
 
-export async function submitTemplate(template: TemplateSubmission, signer?: any) {
-    const ao = connect({
-        CU_URL: "https://ur-cu.randao.net",
-        MODE: "legacy",
-    });
 
-    try {
-        // Prepare message options
-        const messageOptions: any = {
-            process: TARGET_PROCESS,
-            tags: [
-                { name: "Action", value: "SubmitTemplate" },
-                { name: "Name", value: template.name },
-                { name: "Description", value: template.description },
-                { name: "RepoUrl", value: template.repoUrl },
-                { name: "Framework", value: template.framework },
-                { name: "UseCase", value: template.useCase },
-                { name: "ThumbnailUrl", value: template.thumbnailUrl },
-                { name: "CreatorName", value: template.creatorName },
-                { name: "SubmissionCode", value: template.submissionCode },
-                { name: "DemoUrl", value: template.demoUrl },
-            ],
-        };
-
-        // Only add signer if provided
-        if (signer) {
-            const preparedSigner = prepareAoSigner(signer);
-            if (preparedSigner) {
-                messageOptions.signer = preparedSigner;
-            } else {
-                throw new Error('Failed to prepare signer for template submission. Please ensure your wallet is connected properly.');
-            }
-        } else {
-            throw new Error('Wallet signer is required to submit template. Please connect your wallet and try again.');
-        }
-
-        const message = await ao.message(messageOptions);
-
-        // console.log("Template submission message sent with ID:", message);
-
-        const { Messages, Error } = await ao.result({
-            message: message,
-            process: TARGET_PROCESS,
-        });
-
-        if (Messages && Messages.length > 0) {
-            console.log("Response Messages:", Messages);
-        }
-
-        if (Error) {
-            console.error("Error received:", Error);
-        }
-
-        return {
-            messageId: message,
-            response: Messages,
-            error: Error,
-        };
-    } catch (error) {
-        console.error("Template submission failed:", error);
-        throw error;
-    }
-}
-export async function getAllTemplates() {
-    const ao = connect({
-        CU_URL: "https://ur-cu.randao.net",
-        MODE: "legacy",
-    });
-
-    try {
-        const response = await ao.dryrun({
-            process: TARGET_PROCESS,
-            tags: [{ name: "Action", value: "GetTemplates" }],
-        });
-
-        // console.log("🔍 Dry run response:", response);
-
-        if (response.Messages && response.Messages.length > 0) {
-            const message = response.Messages[0];
-
-            const statusTag = message.Tags.find(
-                (tag: any) => tag.name === "Status",
-            );
-            if (statusTag?.value !== "Success") {
-                console.error("❌ Response status not successful");
-                return {
-                    templates: [],
-                    total: 0,
-                    error: "Response status not successful",
-                };
-            }
-
-            try {
-                // Parse the Data field which contains the templates
-                const parsedData: TemplatesResponse = JSON.parse(message.Data);
-                // console.log("📋 Parsed templates:", parsedData);
-
-                return {
-                    templates: parsedData.templates.map((template) => ({
-                        ...template,
-                        // Ensure consistent casing in properties
-                        framework: template.Framework,
-                        description: template.Description,
-                        creatorWallet: template.CreatorWallet,
-                        repoUrl: template.RepoUrl,
-                        name: template.Name,
-                        id: template.ID,
-                        createdAt: template.CreatedAt,
-                        creatorName: template.CreatorName,
-                        stars: template.Stars,
-                        useCase: template.UseCase,
-                        thumbnailUrl: template.ThumbnailUrl,
-                    })),
-                    total: parsedData.total,
-                    error: null,
-                };
-            } catch (parseError) {
-                console.error("❌ Error parsing template data:", parseError);
-                return {
-                    templates: [],
-                    total: 0,
-                    error: "Failed to parse template data",
-                };
-            }
-        }
-
-        if (response.Error) {
-            console.error("❌ Error retrieving templates:", response.Error);
-            return {
-                templates: [],
-                total: 0,
-                error: response.Error,
-            };
-        }
-
-        return {
-            templates: [],
-            total: 0,
-            error: "No templates found",
-        };
-    } catch (error) {
-        console.error("❌ Failed to get templates:", error);
-        throw error;
-    }
+export async function getAllTemplates(): Promise<TemplatesResponse & { error?: string }> {
+    const templates = staticTemplates as TemplateDashboard[];
+    return {
+        templates,
+        total: templates.length,
+    };
 }
 
-interface SubmissionCodeResponse {
-    messageId: string;
-    code?: string;
-    error?: string;
-}
 
-export async function generateSubmissionCode(signer?: any): Promise<SubmissionCodeResponse> {
-    const ao = connect({
-        CU_URL: "https://cu.ardrive.io",
-        MODE: "legacy",
-    });
-
-    try {
-        const messageOptions: any = {
-            process: TARGET_PROCESS,
-            tags: [{ name: "Action", value: "GenerateSubmissionCode" }],
-        };
-        
-        if (signer) {
-            const preparedSigner = prepareAoSigner(signer);
-            if (preparedSigner) {
-                messageOptions.signer = preparedSigner;
-            } else {
-                throw new Error('Failed to prepare signer for code generation. Please ensure your wallet is connected properly.');
-            }
-        } else {
-            throw new Error('Wallet signer is required to generate submission code. Please connect your wallet and try again.');
-        }
-        
-        const message = await ao.message(messageOptions);
-
-        // console.log("🎫 Code generation message sent with ID:", message);
-
-        const { Messages, Error } = await ao.result({
-            message: message,
-            process: TARGET_PROCESS,
-        });
-
-        if (Messages && Messages.length > 0) {
-            const code = Messages[0].Tags.find(
-                (tag: { name: string }) => tag.name === "Code",
-            )?.value;
-            return {
-                messageId: message,
-                code: code,
-            };
-        }
-
-        if (Error) {
-            console.error("❌ Error generating code:", Error);
-            return {
-                messageId: message,
-                error: Error,
-            };
-        }
-
-        return {
-            messageId: message,
-            error: "No response received",
-        };
-    } catch (error) {
-        console.error("❌ Failed to generate code:", error);
-        throw error;
-    }
-}
-
-interface TemplateDetailsRequest {
+export async function getTemplateDetails(details: {
     framework: string;
     templateName: string;
     templateId: string;
-}
-
-// Get specific template details using dryrun
-export async function getTemplateDetails(details: TemplateDetailsRequest) {
-    const ao = connect({
-        CU_URL: "https://ur-cu.randao.net",
-        MODE: "legacy",
-    });
-
-    try {
-        const response = await ao.dryrun({
-            process: TARGET_PROCESS,
-            tags: [
-                { name: "Action", value: "GetTemplateByDetails" },
-                { name: "Framework", value: details.framework },
-                { name: "TemplateName", value: details.templateName },
-                { name: "TemplateId", value: details.templateId },
-            ],
-        });
-
-        // console.log("🔍 Dry run response for template details:", response);
-
-        if (response.Messages && response.Messages.length > 0) {
-            const message = response.Messages[0];
-
-            // Check response status
-            const statusTag = message.Tags.find(
-                (tag: { name: string }) => tag.name === "Status",
-            );
-            if (statusTag?.value !== "Success") {
-                console.error("❌ Template details status not successful");
-                return {
-                    template: null,
-                    status: "error",
-                    error: `Template not found: ${
-                        statusTag?.value || "Unknown error"
-                    }`,
-                };
-            }
-
-            try {
-                const parsedData = JSON.parse(message.Data);
-                // console.log("📋 Parsed template details:", parsedData);
-
-                if (parsedData.template) {
-                    const templateDetails: TemplateDetails = {
-                        ...parsedData.template,
-                        framework: parsedData.template.framework,
-                        description: parsedData.template.description,
-                        creatorWallet: parsedData.template.creatorWallet,
-                        repoUrl: parsedData.template.repoUrl,
-                        name: parsedData.template.name,
-                        id: parsedData.template.id,
-                        createdAt: parsedData.template.createdAt,
-                        creatorName: parsedData.template.creatorName,
-                        useCase: parsedData.template.useCase,
-                        thumbnailUrl: parsedData.template.thumbnailUrl,
-                        stats: parsedData.template.stats,
-                    };
-                    // console.log("🔍 Template details:", templateDetails);
-                    return {
-                        template: templateDetails,
-                        status: "success",
-                        error: null,
-                    };
-                }
-            } catch (parseError) {
-                console.error("❌ Error parsing template details:", parseError);
-                return {
-                    template: null,
-                    status: "error",
-                    error: "Failed to parse template details",
-                };
-            }
-        }
-
-        if (response.Error) {
-            console.error(
-                "❌ Error retrieving template details:",
-                response.Error,
-            );
-            return {
-                template: null,
-                status: "error",
-                error: response.Error,
-            };
-        }
-
-        return {
-            template: null,
-            status: "error",
-            error: "Template not found",
-        };
-    } catch (error) {
-        console.error("❌ Failed to get template details:", error);
-        throw error;
+}) {
+    const templates = staticTemplates as TemplateDashboard[];
+    const found = templates.find((t) => t.ID === details.templateId);
+    if (!found) {
+        return { template: null, status: "error", error: "Template not found" };
     }
+    return {
+        template: {
+            id: found.ID,
+            framework: found.Framework,
+            description: found.Description,
+            creatorWallet: found.CreatorWallet,
+            repoUrl: found.RepoUrl || "",
+            name: found.Name,
+            createdAt: found.CreatedAt,
+            creatorName: found.CreatorName,
+            useCase: found.UseCase,
+            thumbnailUrl: found.ThumbnailUrl,
+            demoUrl: found.DemoUrl,
+        },
+        status: "success",
+    };
 }
 
 export async function getRepoReadme(

@@ -17,16 +17,16 @@ import {
 } from "@/types";
 import { getRepoConfig } from "@/lib/getRepoconfig";
 import { SelectGroup } from "@radix-ui/react-select";
-import axios, { isAxiosError } from "axios";
+import { isAxiosError } from "axios";
 import { AlertTriangle, ChevronDown, ChevronLeft, Loader2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import RootDirectoryDrawer from "./rootdir-drawer";
-import { useWallet, useAoSigner } from "ao-wallet-kit";
+import { useWallet } from "ao-wallet-kit";
 import { toast } from "sonner";
 import DomainSelection from "./shared/domain-selection";
 import useDeploymentManager from "@/hooks/use-deployment-manager";
-import { BUILDER_BACKEND, getTime, TESTING_FETCH } from "@/lib/utils";
-import { runLua, setArnsName as setArnsNameWithProcessId } from "@/lib/ao-vars";
+import { apiRequest, extractApiError } from "@/lib/api";
+// AO operations removed — backend handles deployment records
 import { Link, useNavigate } from "react-router-dom";
 import DeploymentLogs from "./shared/deploying-logs";
 import {
@@ -41,7 +41,6 @@ import {
 import NewDeploymentCard from "@/components/shared/new-deployment-card";
 import { BuildDeploymentSetting } from "@/components/shared/build-settings";
 import { NextJsProjectWarningCard } from "@/components/skeletons";
-import {} from "@/lib/ao-vars";
 
 const ConfigureTemplateDeployment = ({ repoUrl }: { repoUrl: string }) => {
     // global state and primary hooks
@@ -49,7 +48,6 @@ const ConfigureTemplateDeployment = ({ repoUrl }: { repoUrl: string }) => {
     const { refresh, deployments } = useDeploymentManager();
     const navigate = useNavigate();
     const { connected, address: activeAddress } = useWallet();
-    const { signer, isLoading: signerLoading } = useAoSigner();
     
 
     
@@ -425,6 +423,7 @@ const ConfigureTemplateDeployment = ({ repoUrl }: { repoUrl: string }) => {
         const INITIAL_LOG_DELAY = 10000;
         let isPollingActive = true;
         let pollingIntervalId: NodeJS.Timeout | null = null;
+        let currentDeploymentId: string | null = null;
 
         const startLogPolling = async () => {
             setIsWaitingForLogs(true);
@@ -451,21 +450,17 @@ const ConfigureTemplateDeployment = ({ repoUrl }: { repoUrl: string }) => {
                     return;
                 }
 
+                if (!currentDeploymentId) return;
                 try {
-                    const response = await axios.get(
-                        `${TESTING_FETCH}/logs/${owner}/${repo}`,
-                    );
-                    if (response.status === 200) {
-                        setLogs(response.data.split("\n"));
+                    const response = await apiRequest(`/deployments/${currentDeploymentId}/log`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.log) {
+                            setLogs(data.log.split("\n"));
+                        }
                     }
                 } catch (error) {
-                    // Continue polling even on 404
-                    if (
-                        axios.isAxiosError(error) &&
-                        error.response?.status !== 404
-                    ) {
-                        console.warn("Log fetching error:", error);
-                    }
+                    // Continue polling even on errors
                 }
             }, POLLING_INTERVAL);
         };
@@ -489,124 +484,77 @@ const ConfigureTemplateDeployment = ({ repoUrl }: { repoUrl: string }) => {
                 customArnsName: customArnsName || "",
             };
 
-            const response = await axios.post<{
-                result: string;
-                finalUnderName: string;
-            }>(`${TESTING_FETCH}/deploy`, deploymentData, {
-                timeout: 60 * 60 * 1000,
-                headers: { "Content-Type": "application/json" },
+            const response = await apiRequest("/deploy", {
+                method: "POST",
+                body: JSON.stringify(deploymentData),
             });
 
-            if (response.status === 200 && response.data.result) {
-                isPollingActive = false;
-                setDeploymentSucceded(true);
-                setDeploymentComplete(true);
+            if (!response.ok) {
+                const errMsg = await extractApiError(response);
+                throw new Error(errMsg);
+            }
 
-                // Database operations
-                const dbOperations = [
-                    runLua(
-                        `db:exec[[
-                            INSERT INTO Deployments (
-                                Name,
-                                RepoUrl,
-                                Branch,
-                                InstallCMD,
-                                BuildCMD,
-                                OutputDIR,
-                                ArnsProcess
-                            ) 
-                            VALUES (
-                                '${projectName}',
-                                '${repoUrl}',
-                                '${selectedBranch}',
-                                '${buildSettings.installCommand.value}',
-                                '${buildSettings.buildCommand.value}',
-                                '${buildSettings.outPutDir.value}',
-                                ${
-                                    finalArnsProcess
-                                        ? `'${finalArnsProcess}'`
-                                        : "NULL"
-                                }
-                            );
+            const responseData = await response.json();
 
-                            UPDATE Deployments SET DeploymentId='${
-                                response.data.result
-                            }' WHERE Name='${projectName}';
+            if (responseData.deploymentId) {
+                const deploymentId = responseData.deploymentId;
+                currentDeploymentId = deploymentId;
 
-                            UPDATE Deployments SET UnderName='${
-                                response.data.finalUnderName
-                            }' WHERE Name='${projectName}';
-                        ]]`,
-                        mgProcess,
-                        undefined,
-                        signer,
-                    ),
+                // Poll deployment status until terminal
+                const TERMINAL_STATES = ["deployed", "failed"];
+                let deploymentStatus = "queued";
 
-                    
-                ];
-
-                if (activeTab === "existing" && arnsName) {
-                    const userArns = await setArnsNameWithProcessId(
-                        arnsName.processId,
-                        response.data.result,
-                        "@",
-                        signer,
-                    );
-                    // Note: History is now fetched from GraphQL (Set-Record transactions)
-                    // No need to insert into manager process database
+                while (!TERMINAL_STATES.includes(deploymentStatus)) {
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    try {
+                        const statusRes = await apiRequest(`/deployments/${deploymentId}`);
+                        if (statusRes.ok) {
+                            const statusData = await statusRes.json();
+                            deploymentStatus = statusData?.deployment?.status || statusData?.status || "queued";
+                        }
+                    } catch {
+                        // Keep polling on transient errors
+                    }
                 }
 
-                setIsFetchingLogs(() => false);
-                setAlmostDone(true);
-                await Promise.all(dbOperations);
-                // Note: History is now fetched from GraphQL (Set-Record transactions)
-                // No need to insert into manager process database
-                // History will be available in GraphQL after Set-Record transaction completes
-                // await runLua(
-                //     `db:exec[[
-                //                 INSERT INTO NewDeploymentHistory (Name, DeploymentID, AssignedUndername, Date) VALUES
-                //                 ('${projectName}', '${
-                //         response.data.result
-                //     }', '${response.data.finalUnderName}', '${getTime()}')
-                //             ]]`,
-                //     mgProcess,
-                //     undefined,
-                //     signer,
-                // );
-                // Add small delay to allow database operations to fully propagate
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                await refresh();
-                toast.success("Deployment successful");
-                navigate(`/deployment/card?repo=${projectName}`);
+                isPollingActive = false;
+
+                if (deploymentStatus === "deployed") {
+                    setDeploymentSucceded(true);
+                    setDeploymentComplete(true);
+                    setIsFetchingLogs(() => false);
+                    setAlmostDone(true);
+
+                    // If user selected an existing ArNS, update via backend
+                    if (activeTab === "existing" && arnsName) {
+                        const arnsOwner = extractOwnerName(repoUrl);
+                        const arnsRepo = extractRepoName(repoUrl);
+                        await apiRequest(`/updatereporecord/${arnsOwner}/${arnsRepo}`, {
+                            method: "POST",
+                            body: JSON.stringify({
+                                arnsProcess: arnsName.processId,
+                                deploymentId,
+                            }),
+                        });
+                    }
+
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    await refresh();
+                    toast.success("Deployment successful");
+                    navigate(`/deployment/card?repo=${projectName}`);
+                } else {
+                    throw new Error("Deployment failed — check build logs for details");
+                }
             } else {
                 throw new Error("Deployment failed: Unexpected response");
             }
         } catch (error) {
             isPollingActive = false;
-            if (axios.isAxiosError(error)) {
-                if (error.response?.status === 406) {
-                    setLogError(
-                        "Too many requests detected. Please try again later.",
-                    );
-                } else if (error.response?.status === 500) {
-                    setLogError("Build failed, please check logs");
-                } else if (error.response?.status === 429) {
-                    setLogError("Daily deployment limit over");
-                } else if (error.response?.status === 204) {
-                    setLogError("Daily deployment limit over");
-                } else if (error.response?.status === 404) {
-                    setLogError("Server down please try again later");
-                } else {
-                    setLogError("Unknown error occured please try again later");
-                }
-            } else {
-                console.error("Deployment error:", error);
-                const errorMessage =
-                    error instanceof Error
-                        ? error.message
-                        : "An unexpected error occurred";
-                setLogError(`Deployment failed: ${errorMessage}`);
-            }
+            console.error("Deployment error:", error);
+            const errorMessage = error instanceof Error
+                ? error.message
+                : "An unexpected error occurred";
+            setLogError(errorMessage);
             setDeploymentSucceded(false);
             setDeploymentComplete(false);
             setDeploymentFailed(true);

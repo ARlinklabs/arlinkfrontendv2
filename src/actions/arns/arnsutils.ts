@@ -51,9 +51,11 @@ export async function getLatestANTVersion() {
     process: new AOProcess({
       processId: ANT_REGISTRY_ID,
       //@ts-ignore
+      // @ts-ignore - SU_URL not in types but needed to override dead default
       ao: connect({
         MU_URL: "https://ur-mu.randao.net",
         CU_URL: "https://cu.ardrive.io",
+        SU_URL: "https://ur-su.randao.net",
         GRAPHQL_URL: "https://arweave.net/graphql",
         GATEWAY_URL: "https://arweave.net",
       }),
