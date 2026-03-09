@@ -13,12 +13,13 @@ import { AlertTriangle, ChevronDown, ChevronLeft, Loader2 } from "lucide-react"
 import type React from "react"
 import { useEffect, useState } from "react"
 import RootDirectoryDrawer from "./rootdir-drawer"
-import { useAddress, useAoSigner } from "ao-wallet-kit"
+import { useAddress } from "ao-wallet-kit"
 import { toast } from "sonner"
 import DomainSelection from "./shared/domain-selection"
 import useDeploymentManager from "@/hooks/use-deployment-manager"
-import { getTime, TESTING_FETCH } from "@/lib/utils"
-import { runLua, setArnsName as setArnsNameWithProcessId } from "@/lib/ao-vars"
+import { TESTING_FETCH } from "@/lib/utils"
+import { apiRequest, API_BASE, extractApiError } from "@/lib/api"
+// AO imports removed — backend handles deployment records now
 import { useNavigate } from "react-router-dom"
 import DeploymentLogs from "./shared/deploying-logs"
 import {
@@ -48,7 +49,6 @@ const ConfiguringDeploymentProject = ({
   const { refresh, deployments } = useDeploymentManager()
   const navigate = useNavigate()
   const activeAddress = useAddress()
-  const { signer, isLoading: signerLoading } = useAoSigner()
 
   const [frameWork, setFrameWork] = useState<{
     name: string
@@ -355,15 +355,6 @@ const ConfiguringDeploymentProject = ({
   const deployProject = async () => {
     if (!githubToken) return
 
-    // Get signer and validate it's available
-    if (signerLoading) {
-      return toast.error("Wallet is still connecting. Please wait a moment and try again.");
-    }
-    
-    if (!signer) {
-      return toast.error("Wallet signer not available. Please ensure your wallet is connected properly.");
-    }
-
     // Validation checks
     const validationErrors = [
       { condition: !projectName, message: "Project name is required" },
@@ -427,6 +418,7 @@ const ConfiguringDeploymentProject = ({
 
     let isPollingActive = true
     let pollingIntervalId: NodeJS.Timeout | null = null
+    let currentDeploymentId: string | null = null
 
     const stopLogPolling = (delay = 0) => {
       if (delay > 0) {
@@ -465,16 +457,18 @@ const ConfiguringDeploymentProject = ({
           return
         }
 
+        // Use /deployments/:id/log (public) once we have the deployment ID
+        if (!currentDeploymentId) return
         try {
-          const response = await axios.get(`${TESTING_FETCH}/logs/${owner}/${repo}`)
-          if (response.status === 200) {
-            setLogs(response.data.split("\n"))
+          const response = await apiRequest(`/deployments/${currentDeploymentId}/log`)
+          if (response.ok) {
+            const data = await response.json()
+            if (data.log) {
+              setLogs(data.log.split("\n"))
+            }
           }
         } catch (error) {
-          // Continue polling even on 404
-          if (axios.isAxiosError(error) && error.response?.status !== 404) {
-            console.warn("Log fetching error:", error)
-          }
+          // Continue polling even on errors
         }
       }, POLLING_INTERVAL)
     }
@@ -482,51 +476,43 @@ const ConfiguringDeploymentProject = ({
     startLogPolling()
 
     try {
-      // First, extract owner and repo from tokenizedRepoUrl
-      const urlParts = tokenizedRepoUrl.split("/")
-      const repoName = urlParts[urlParts.length - 1].replace(".git", "")
-      const owner = urlParts[urlParts.length - 2]
+      // 1. Create webhook (skip on localhost — GitHub rejects non-public URLs)
+      if (!TESTING_FETCH.includes("localhost")) {
+        const urlParts = tokenizedRepoUrl.split("/")
+        const repoName = urlParts[urlParts.length - 1].replace(".git", "")
+        const webhookOwner = urlParts[urlParts.length - 2]
 
-      // 1. Create webhook first
-      try {
-        console.log("🟠 creating webhook......")
-        // if this throws error it goes in next catch block
-        await createGitHubWebhook({
-          owner,
-          repo: repoName,
-          accessToken: githubToken,
-          webhookSecret: "laudalasun",
-        })
-        console.log("🟢 created webhook......")
-      } catch (error) {
-        console.log("🔴_Failed to create the webhook")
-        console.log(error)
-        // if the webhook is there we delete it
         try {
-          console.log("🟠 deleting the webhook......")
-          await deleteGitHubWebhook({
-            owner,
-            repo: repoName,
-            accessToken: githubToken,
-          })
-          console.log("🟢 deleted the webhook......")
-          console.log("🟠 creating webhook again......")
+          console.log("🟠 creating webhook......")
           await createGitHubWebhook({
-            owner,
+            owner: webhookOwner,
             repo: repoName,
             accessToken: githubToken,
             webhookSecret: "laudalasun",
           })
           console.log("🟢 created webhook......")
         } catch (error) {
-          console.log("🔴_Failed to delete the webhook")
-          console.log(error)
+          console.log("🔴 Failed to create the webhook:", error)
+          try {
+            await deleteGitHubWebhook({
+              owner: webhookOwner,
+              repo: repoName,
+              accessToken: githubToken,
+            })
+            await createGitHubWebhook({
+              owner: webhookOwner,
+              repo: repoName,
+              accessToken: githubToken,
+              webhookSecret: "laudalasun",
+            })
+            console.log("🟢 created webhook on retry")
+          } catch (retryError) {
+            console.log("🔴 Webhook retry failed, continuing without webhook:", retryError)
+          }
         }
       }
 
-      console.log("webhook created")
-
-      // 2. If webhook creation succeeds, proceed with deployment
+      // 2. Submit deployment
       const deploymentData = {
         repository: tokenizedRepoUrl,
         installCommand: buildSettings.installCommand.value,
@@ -543,69 +529,54 @@ const ConfiguringDeploymentProject = ({
         customArnsName: customArnsName || "",
       }
 
-      const response = await axios.post<{
-        result: string
-        finalUnderName: string
-      }>(`${TESTING_FETCH}/deploy`, deploymentData, {
-        timeout: 60 * 60 * 1000,
-        headers: { "Content-Type": "application/json" },
+      const response = await apiRequest("/deploy", {
+        method: "POST",
+        body: JSON.stringify(deploymentData),
       })
 
-      if (response.status === 200 && response.data.result) {
-        isPollingActive = false
-        setDeploymentSucceded(true)
-        setDeploymentComplete(true)
+      if (!response.ok) {
+        const errMsg = await extractApiError(response)
+        throw new Error(errMsg)
+      }
 
-        // Database operations
-        const dbOperations = [
-          runLua(
-            `db:exec[[
-              INSERT INTO Deployments (
-                Name,
-                RepoUrl,
-                Branch,
-                InstallCMD,
-                BuildCMD,
-                OutputDIR,
-                ArnsProcess
-              ) 
-              VALUES (
-                '${projectName}',
-                '${repoUrl}',
-                '${selectedBranch}',
-                '${buildSettings.installCommand.value}',
-                '${buildSettings.buildCommand.value}',
-                '${buildSettings.outPutDir.value}',
-                ${finalArnsProcess ? `'${finalArnsProcess}'` : "NULL"}
-              );
-              UPDATE Deployments SET DeploymentId='${response.data.result}' WHERE Name='${projectName}';
-              UPDATE Deployments SET UnderName='${response.data.finalUnderName}' WHERE Name='${projectName}';
-            ]]`,
-            mgProcess,
-            undefined,
-            signer,
-          ),
-          
-        ]
+      const responseData = await response.json()
 
-        if (activeTab === "existing" && arnsName) {
-          const userArns = await setArnsNameWithProcessId(arnsName.processId, response.data.result, "@", signer)
-          // Note: History is now fetched from GraphQL (Set-Record transactions)
-          // No need to insert into manager process database
+      if (responseData.deploymentId) {
+        const deploymentId = responseData.deploymentId
+        currentDeploymentId = deploymentId
+
+        // 3. Poll deployment status until terminal state
+        const TERMINAL_STATES = ["deployed", "failed"]
+        let deploymentStatus = "queued"
+
+        while (!TERMINAL_STATES.includes(deploymentStatus)) {
+          await new Promise(resolve => setTimeout(resolve, 2000))
+          try {
+            const statusRes = await apiRequest(`/deployments/${deploymentId}`)
+            if (statusRes.ok) {
+              const statusData = await statusRes.json()
+              deploymentStatus = statusData?.deployment?.status || statusData?.status || "queued"
+            }
+          } catch {
+            // Keep polling on transient errors
+          }
         }
 
-        setIsFetchingLogs(() => false)
-        setAlmostDone(true)
-        await Promise.all(dbOperations)
-        // Note: History is now fetched from GraphQL (Set-Record transactions)
-        // No need to insert into manager process database
-        // History will be available in GraphQL after Set-Record transaction completes
+        isPollingActive = false
 
-        // Add small delay to allow database operations to fully propagate
-        await new Promise(resolve => setTimeout(resolve, 2000))
-        await refresh()
-        toast.success("Deployment successful")
-        navigate(`/deployment/card?repo=${projectName}`)
+        if (deploymentStatus === "deployed") {
+          setDeploymentSucceded(true)
+          setDeploymentComplete(true)
+          setIsFetchingLogs(false)
+          setAlmostDone(true)
+
+          await new Promise(resolve => setTimeout(resolve, 2000))
+          await refresh()
+          toast.success("Deployment successful")
+          navigate(`/deployment/card?repo=${projectName}`)
+        } else {
+          throw new Error("Deployment failed — check build logs for details")
+        }
       } else {
         throw new Error("Deployment failed: Unexpected response")
       }
@@ -615,25 +586,9 @@ const ConfiguringDeploymentProject = ({
       // Stop log polling with 3-second delay on deployment failure
       stopLogPolling(FAILURE_DELAY)
 
-      if (axios.isAxiosError(error)) {
-        if (error.response?.status === 406) {
-          setLogError("Too many requests detected. Please try again later.")
-        } else if (error.response?.status === 500) {
-          setLogError("Build failed, please check logs")
-        } else if (error.response?.status === 429) {
-          setLogError("Daily deployment limit over")
-        } else if (error.response?.status === 204) {
-          setLogError("Daily deployment limit over")
-        } else if (error.response?.status === 404) {
-          setLogError("Server down please try again later")
-        } else {
-          setLogError("Unknown error occured please try again later")
-        }
-      } else {
-        console.error("Deployment error:", error)
-        const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred"
-        setLogError(`Deployment failed: ${errorMessage}`)
-      }
+      console.error("Deployment error:", error)
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred"
+      setLogError(errorMessage)
 
       setDeploymentSucceded(false)
       setDeploymentComplete(false)

@@ -7,6 +7,7 @@ import { useWalletState } from "@/hooks/use-wallet-state";
 import { useWAuthData, useWallet } from "ao-wallet-kit";
 import ProfileModal from "@/components/shared/profile-modal";
 import LoginModal from "@/components/shared/login-modal";
+import { clearToken } from "@/lib/api";
 
 export default function Navbar() {
     const { isConnected, address, connect, disconnect } = useWalletState();
@@ -34,6 +35,7 @@ export default function Navbar() {
     };
     const disconnectWallet = async () => {
         setDisconnectingToWallet(true);
+        clearToken();
         await disconnect();
         setDisconnectingToWallet(false);
         window.location.reload();
@@ -73,10 +75,6 @@ export default function Navbar() {
             url: `/deployment?repo=${extractRepoName(repo || "")}`,
         },
         {
-            name: "Analytics",
-            url: `/deployment/Analytics?repo=${extractRepoName(repo || "")}`,
-
-        },{
             name : "Branch Previews",
             url : `/deployment/branch-previews?repo=${extractRepoName(repo || "")}`,
         },{

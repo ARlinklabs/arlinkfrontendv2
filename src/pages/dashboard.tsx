@@ -10,6 +10,7 @@ import useDeploymentManager from "@/hooks/use-deployment-manager";
 import { useWallet } from "ao-wallet-kit";
 
 import type { TDeployment } from "@/types";
+import { extractGithubPath } from "./utilts";
 import {
     Select,
     SelectContent,
@@ -45,20 +46,28 @@ const Dashboardcomp = () => {
     }, [walletAddress, walletType]);
 
     const formatProjectData = (deployments: TDeployment[]) => {
-        return deployments.map((dep: TDeployment) => ({
-            arnsProcess: dep.ArnsProcess,
-            id: dep.ID,
-            name: dep.Name,
-            url: dep.RepoUrl,
-            repo: dep.RepoUrl.split("/").slice(-2).join("/"),
-            repoUrl: dep.RepoUrl,
-            link: `/deployments/${dep.Name}`,
-            createdAt: dep.ID,
-            branch: dep.Branch,
-            outputDir: dep.OutputDIR,
-            deploymentId: dep.DeploymentId,
-            UnderName: dep.UnderName,
-        }));
+        return deployments.map((dep: TDeployment) => {
+            let repo = "";
+            try {
+                repo = dep.RepoUrl ? extractGithubPath(dep.RepoUrl) : "";
+            } catch {
+                repo = dep.Name || "";
+            }
+            return {
+                arnsProcess: dep.ArnsProcess,
+                id: dep.ID,
+                name: dep.Name || "",
+                url: dep.RepoUrl || "",
+                repo,
+                repoUrl: dep.RepoUrl || "",
+                link: `/deployments/${dep.Name}`,
+                createdAt: dep.ID,
+                branch: dep.Branch || "",
+                outputDir: dep.OutputDIR || "",
+                deploymentId: dep.DeploymentId || "",
+                UnderName: dep.UnderName || "",
+            };
+        });
     };
 
     const projects = useMemo(

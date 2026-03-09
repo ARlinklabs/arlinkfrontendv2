@@ -11,9 +11,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
-import { useAoSigner } from "ao-wallet-kit";
 import { useGlobalState } from "@/store/useGlobalState";
-import { runLua } from "@/lib/ao-vars";
+import { updateProjectConfig } from "@/lib/api";
 import { toast } from "sonner";
 import useDeploymentManager from "@/hooks/use-deployment-manager";
 import type { TDeployment } from "@/types";
@@ -28,6 +27,7 @@ import {
 import { Input } from "@/components/ui/input";
 import axios, { isAxiosError } from "axios";
 import { Skeleton } from "@/components/ui/skeleton";
+import { extractGithubPath, sanitizeRepoUrl } from "@/pages/utilts";
 
 interface DeploymentComponentProps {
     deployment: TDeployment;
@@ -36,7 +36,6 @@ interface DeploymentComponentProps {
 const ConfigureProject = ({ deployment }: DeploymentComponentProps) => {
     const globalState = useGlobalState();
     const { refresh } = useDeploymentManager();
-    const { signer, isLoading: signerLoading } = useAoSigner();
 
     const [isEditing, setIsEditing] = useState(false);
     const [editedConfig, setEditedConfig] = useState({
@@ -51,7 +50,7 @@ const ConfigureProject = ({ deployment }: DeploymentComponentProps) => {
 
     // handlers
     const handleSaveConfig = async () => {
-        if (!globalState.managerProcess || !deployment) return;
+        if (!deployment) return;
         const { installCommand, buildCommand, outputDir } = editedConfig;
         if (
             !installCommand ||
@@ -66,22 +65,18 @@ const ConfigureProject = ({ deployment }: DeploymentComponentProps) => {
         }
         setSavingChanges(true);
         try {
-            const query = `
-              db:exec[[
-              UPDATE Deployments 
-                SET InstallCMD = '${installCommand}',
-                BuildCMD = '${buildCommand}',
-                OutputDIR = '${outputDir}',
-                Branch = '${selectedBranch}'
-              WHERE Name = '${deployment.Name}'
-            ]]
-            `;
-            
-            const res = await runLua(query, globalState.managerProcess, undefined, signer);
-            if (res.Error) {
-                toast.error(res.Error);
-                return;
-            }
+            const parts = deployment.RepoUrl.replace(/\.git$/, "")
+                .split("/")
+                .filter(Boolean);
+            const owner = parts[parts.length - 2];
+            const repo = parts[parts.length - 1];
+
+            await updateProjectConfig(owner, repo, {
+                installCommand,
+                buildCommand,
+                outputDir,
+                branch: selectedBranch,
+            });
 
             await refresh();
             setIsEditing(false);
@@ -97,10 +92,8 @@ const ConfigureProject = ({ deployment }: DeploymentComponentProps) => {
     async function handleFetchBranches() {
         console.log("Fetching branches....");
         if (!deployment.RepoUrl) return;
-        const [owner, repo] = deployment.RepoUrl.replace(
-            "https://github.com/",
-            "",
-        ).split("/");
+        const githubPath = extractGithubPath(deployment.RepoUrl);
+        const [owner, repo] = githubPath.split("/");
 
         console.log("inside if condititon....");
         try {
@@ -193,7 +186,7 @@ const ConfigureProject = ({ deployment }: DeploymentComponentProps) => {
                             <GithubIcon className="w-5 h-5 text-neutral-600" />
                         }
                         label="GitHub Repository"
-                        value={deployment.RepoUrl}
+                        value={sanitizeRepoUrl(deployment.RepoUrl)}
                         readOnly
                     />
                     {globalState.githubToken ? (

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ExternalLink, MoveUpRight, GitBranch, GitCommit } from "lucide-react";
 import { TDeployment } from "@/types";
+import { extractGithubPath, sanitizeRepoUrl } from "@/pages/utilts";
 
 interface DeploymentCardProps {
     deployment: TDeployment;
@@ -110,7 +111,7 @@ const DeploymentCard = ({ deployment }: DeploymentCardProps) => {
 
                     {/* GitHub Link */}
                     <a
-                        href={`${deployment.RepoUrl}`}
+                        href={sanitizeRepoUrl(deployment.RepoUrl)}
                         target="_blank"
                         rel="noreferrer"
                         className="flex w-fit gap-2 pr-4 p-[7px] items-center md:mt-0 mt-8 font-light hover:bg-neutral-900 border-neutral-700/50 border rounded-full"
@@ -121,11 +122,7 @@ const DeploymentCard = ({ deployment }: DeploymentCardProps) => {
                             alt="github-logo"
                         />
                         <span className="font-medium text-neutral-400">
-                            {deployment?.RepoUrl?.replace(
-                                "https://github.com/",
-                                "",
-                            )}
-                            {/* arlink/dumdumtower */}
+                            {deployment?.RepoUrl ? extractGithubPath(deployment.RepoUrl) : ""}
                         </span>
                     </a>
                 </div>

@@ -1,5 +1,4 @@
-import { useGlobalState } from "@/store/useGlobalState";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import Layout from "@/layouts/layout";
 import {
@@ -10,24 +9,24 @@ import {
 } from "@/components/ui/accordion";
 import { Loader2 } from "lucide-react";
 import { Logs } from "@/components/ui/logs";
-import axios from "axios";
-import { runLua } from "@/lib/ao-vars";
-import { TESTING_FETCH } from "@/lib/utils";
+import { apiRequest } from "@/lib/api";
 import { toast } from "sonner";
-import type { TDeployment } from "@/types";
-import { useAoSigner } from "ao-wallet-kit";
+import useDeploymentManager from "@/hooks/use-deployment-manager";
+import { extractGithubPath } from "../utilts";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const DeploymentLogs = () => {
     // hooks and global state
-    const { deployments } = useGlobalState();
-    const globalState = useGlobalState();
+    const { deployments, hasFetchedOnce } = useDeploymentManager();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const { signer, isLoading: signerLoading } = useAoSigner();
 
     // repo and deployment variable
     const repo = searchParams.get("repo");
-    const [deployment, setDeployment] = useState<TDeployment | null>(null);
+    const deployment = useMemo(
+        () => deployments.find((d) => d.Name === repo),
+        [deployments, repo],
+    );
 
     // states
     const [buildOutput, setBuildOutput] = useState<string[]>([]);
@@ -38,7 +37,7 @@ const DeploymentLogs = () => {
     // loading states
     const [isFetchingLogs, setIsFetchingLogs] = useState<boolean>(false);
 
-    // Deployment existence check
+    // Only redirect after initial fetch has completed
     useEffect(() => {
         if (!repo) {
             toast.error("No repository specified");
@@ -46,60 +45,24 @@ const DeploymentLogs = () => {
             return;
         }
 
-        const foundDeployment = deployments.find((d) => d.Name === repo);
-        if (!foundDeployment) {
+        if (hasFetchedOnce && !deployment) {
             toast.error("Deployment not found");
             navigate("/dashboard");
-            return;
         }
+    }, [repo, deployment, hasFetchedOnce, navigate]);
 
-        setDeployment(foundDeployment);
-    }, [repo, deployments, navigate]);
-
-    // useEffect
+    // Fetch logs from backend
     useEffect(() => {
         if (!deployment) return;
-        const owner = deployment?.RepoUrl.split("/").reverse()[1];
-        const folderName = deployment?.RepoUrl.replace(/\.git|\/$/, "")
-            .split("/")
-            .pop();
-        const fetchLogsFromDB = async () => {
-            if (globalState.managerProcess && signer && !signerLoading) {
-                try {
-                    const result = await runLua(
-                        `
-        		          local res = db:exec([[
-        		            SELECT Logs FROM DeploymentLogs
-        		            WHERE DeploymentName = '${deployment.Name}'
-        		          ]])
-        		          return res[1] and res[1].Logs or ''
-        		        `,
-                        globalState.managerProcess,
-                        undefined,
-                        signer,
-                    );
+        const githubPath = extractGithubPath(deployment.RepoUrl);
+        const [owner, folderName] = githubPath.split("/");
 
-                    console.log({
-                        buildOutput: result,
-                    });
-
-                    // if (result && typeof result === "string") {
-                    // 	setBuildOutput(result);
-                    // }
-                } catch (error) {
-                    console.error("Error fetching logs from database:", error);
-                }
-            }
-        };
-
-        // Then try to get latest logs from backend
         const fetchLatestLogs = async () => {
             setIsFetchingLogs(true);
             try {
-                const res = await axios.get(
-                    `${TESTING_FETCH}/logs/${owner}/${folderName}`,
-                );
-                const rawLogsData = res.data.replaceAll(/\\|\||\-/g, "");
+                const res = await apiRequest(`/logs/${owner}/${folderName}`);
+                if (!res.ok) throw new Error("Failed to fetch logs");
+                const rawLogsData = (await res.text()).replaceAll(/\\|\||\-/g, "");
 
                 const trimmedLogs = rawLogsData.split("\n").reduce(
                     (
@@ -117,50 +80,39 @@ const DeploymentLogs = () => {
                     },
                     { started: false, logs: [] as string[] },
                 );
-                console.log({
-                    trimmedLogs: res,
-                });
                 setBuildOutput(trimmedLogs.logs);
-                const safeLogsData = trimmedLogs.logs.join("\n");
-
-                // Update logs in the database
-                if (globalState.managerProcess && signer && !signerLoading) {
-                    await runLua(
-                        `
-							db:exec([[
-							INSERT OR REPLACE INTO DeploymentLogs (DeploymentName, Logs)
-							VALUES ('${deployment.Name}', '${safeLogsData.replace(/'/g, "''")}')
-							]])
-          				`,
-                        globalState.managerProcess,
-                        undefined,
-                        signer,
-                    );
-                }
             } catch (error) {
                 console.error("Error fetching latest logs:", error);
-                // If fetching latest logs fails, we'll keep using the database logs
-                // that were already set by fetchLogsFromDB
                 setLogError(
-                    "Failed to fetch latest build logs. Showing last known logs.",
+                    "Failed to fetch latest build logs.",
                 );
             } finally {
                 setIsFetchingLogs(false);
             }
         };
 
-        // Only run when we have a signer
-        if (signer && !signerLoading) {
-            fetchLogsFromDB();
-            fetchLatestLogs();
-        }
-    }, [deployment, globalState.managerProcess, signer, signerLoading]);
+        fetchLatestLogs();
+    }, [deployment]);
 
-    // Loading state while searching for deployment
+    // Skeleton while waiting for initial fetch
     if (!deployment) {
         return (
             <Layout>
-                <div className="text-xl">Searching for deployment...</div>
+                <div className="w-full px-4 py-4 md:px-[40px]">
+                    <div className="rounded-lg mt-6">
+                        <Skeleton className="h-9 w-52 bg-neutral-800 mb-4" />
+                        <div className="rounded-lg bg-arlink-bg-secondary-color border overflow-hidden">
+                            <div className="p-4 flex items-center justify-between">
+                                <Skeleton className="h-5 w-24 bg-neutral-800" />
+                            </div>
+                            <div className="p-4 space-y-2">
+                                {[...Array(8)].map((_, i) => (
+                                    <Skeleton key={i} className="h-4 w-full bg-neutral-800/50" style={{ width: `${60 + Math.random() * 40}%` }} />
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </Layout>
         );
     }

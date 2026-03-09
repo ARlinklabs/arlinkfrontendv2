@@ -199,11 +199,12 @@ export const extractGithubPath = (url: string): string => {
     // Normalize the URL by trimming whitespace
     const normalizedUrl = url.trim();
     
-    // Handle different GitHub URL formats
+    // Handle different GitHub URL formats (including tokenized URLs like https://token@github.com/...)
     const githubPatterns = [
-        /^https?:\/\/github\.com\/([^\/]+)\/([^\/]+)/,  // https://github.com/owner/repo
-        /^git@github\.com:([^\/]+)\/([^\/]+)/,          // git@github.com:owner/repo
-        /^github\.com\/([^\/]+)\/([^\/]+)/              // github.com/owner/repo
+        /^https?:\/\/[^@]*@github\.com\/([^\/]+)\/([^\/]+)/,  // https://token@github.com/owner/repo
+        /^https?:\/\/github\.com\/([^\/]+)\/([^\/]+)/,        // https://github.com/owner/repo
+        /^git@github\.com:([^\/]+)\/([^\/]+)/,                // git@github.com:owner/repo
+        /^github\.com\/([^\/]+)\/([^\/]+)/                    // github.com/owner/repo
     ];
 
     for (const pattern of githubPatterns) {
@@ -241,6 +242,18 @@ export function extractOwnerName(url: string): string {
 export function createTokenizedRepoUrl(repoUrl: string, token: string): string {
     const [, , , username, repo] = repoUrl.split("/");
     return `https://${token}@github.com/${username}/${repo}.git`;
+}
+
+/** Strip embedded tokens from GitHub URLs for display.
+ *  e.g. https://ghp_xxx@github.com/owner/repo.git → https://github.com/owner/repo */
+export function sanitizeRepoUrl(url: string): string {
+    if (!url) return url;
+    try {
+        const path = extractGithubPath(url);
+        return `https://github.com/${path}`;
+    } catch {
+        return url;
+    }
 }
 
 export const detectFrameworkImage = (

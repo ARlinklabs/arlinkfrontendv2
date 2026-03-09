@@ -11,7 +11,7 @@ import {
     ARIO_TESTNET_PROCESS_ID
 
 } from "@ar.io/sdk";
-import { connect, dryrun } from "@permaweb/aoconnect";
+import { connect } from "@permaweb/aoconnect";
 import Arweave from "arweave";
 import { lowerCaseDomain } from "../../lib/utils";
 import { createAntStateForOwner, getLatestANTVersion, sleep } from "./arnsutils";
@@ -31,6 +31,7 @@ const AO_CONFIG = {
     MODE: "legacy",
     MU_URL: "https://ur-mu.randao.net",
     CU_URL: "https://cu.ardrive.io",
+    SU_URL: "https://ur-su.randao.net",
     GRAPHQL_URL: "https://arweave.net/graphql",
     GATEWAY_URL: "https://arweave.net"
 };
@@ -54,7 +55,9 @@ export async function checkBalance(walletAddress: string): Promise<{
     const DECIMALS = 6;
 
     try {
-        const balanceResponse = await dryrun({
+        // @ts-ignore
+        const ao = connect(AO_CONFIG);
+        const balanceResponse = await ao.dryrun({
             process: TOKEN_ID,
             tags: [
                 { name: 'Action', value: 'Balance' },

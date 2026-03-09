@@ -24,12 +24,13 @@ import { BranchPreviewsFullSkeleton } from "@/components/skeletons"
 import { toast } from "sonner"
 import type { TDeployment, ArnsName } from "@/types"
 import { useAddress } from "ao-wallet-kit"
-import { setArnsUnderName } from "@/lib/ao-vars"
-import { handleFetchExistingArnsName } from "../utilts"
+// ArNS operations now handled by backend API
+import { handleFetchExistingArnsName, extractGithubPath } from "../utilts"
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList, CommandGroup } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Check, ChevronsUpDown, Loader2 } from "lucide-react"
-import { TESTING_FETCH } from "@/lib/utils";
+import { extractApiError, apiRequest } from "@/lib/api";
+import useDeploymentManager from "@/hooks/use-deployment-manager";
 
 interface BranchData {
   id: string
@@ -64,8 +65,9 @@ export default function BranchPreviews() {
   const projectName = searchParams.get("repo")
   const { deployments } = useGlobalState()
   const [deployment, setDeployment] = useState<TDeployment | null>(null)
+  const { hasFetchedOnce } = useDeploymentManager()
 
-  // Deployment existence check
+  // Deployment existence check — only redirect after initial fetch completes
   useEffect(() => {
     if (!projectName) {
       toast.error("No repository specified")
@@ -74,13 +76,13 @@ export default function BranchPreviews() {
     }
 
     const foundDeployment = deployments.find((d) => d.Name === projectName)
-    if (!foundDeployment) {
+    if (foundDeployment) {
+      setDeployment(foundDeployment)
+    } else if (hasFetchedOnce) {
       toast.error("Deployment not found")
       navigate("/dashboard")
-      return
     }
-    setDeployment(foundDeployment)
-  }, [projectName, deployments, navigate])
+  }, [projectName, deployments, hasFetchedOnce, navigate])
 
   // Branch deployment states
   const [isCheckingBranchStatus, setIsCheckingBranchStatus] = useState(false)
@@ -265,12 +267,9 @@ export default function BranchPreviews() {
     if (!deployment) return
 
     try {
-      const owner = deployment.RepoUrl.split("/").reverse()[1]
-      const repoName = deployment.RepoUrl.replace(/\.git|\/$/, "")
-        .split("/")
-        .pop()
+      const [owner, repoName] = extractGithubPath(deployment.RepoUrl).split("/")
 
-      const response = await fetch(`${TESTING_FETCH}/config/${owner}/${repoName}`)
+      const response = await apiRequest(`/config/${owner}/${repoName}`)
 
       if (response.ok) {
         const config = await response.json()
@@ -312,10 +311,7 @@ export default function BranchPreviews() {
 
     setIsLoadingGitHubBranches(true)
     try {
-      const owner = deployment.RepoUrl.split("/").reverse()[1]
-      const repoName = deployment.RepoUrl.replace(/\.git|\/$/, "")
-        .split("/")
-        .pop()
+      const [owner, repoName] = extractGithubPath(deployment.RepoUrl).split("/")
 
       // This would typically use GitHub API, but for now we'll simulate
       // In a real implementation, you'd need GitHub token and proper API call
@@ -339,12 +335,9 @@ export default function BranchPreviews() {
 
     setIsUpdatingBranchConfig(true)
     try {
-      const owner = deployment.RepoUrl.split("/").reverse()[1]
-      const repoName = deployment.RepoUrl.replace(/\.git|\/$/, "")
-        .split("/")
-        .pop()
+      const [owner, repoName] = extractGithubPath(deployment.RepoUrl).split("/")
 
-      const response = await fetch(`${TESTING_FETCH}/branch-preview/${owner}/${repoName}/branch/${branchName}`, {
+      const response = await apiRequest(`/branch-preview/${owner}/${repoName}/branch/${branchName}`, {
         method: "DELETE",
       })
 
@@ -358,7 +351,8 @@ export default function BranchPreviews() {
         })
         toast.success(`Stopped tracking branch: ${branchName}`)
       } else {
-        toast.error("Failed to stop tracking branch")
+        const errMsg = await extractApiError(response)
+        toast.error(errMsg)
       }
     } catch (error) {
       console.error("Error stopping branch tracking:", error)
@@ -374,18 +368,12 @@ export default function BranchPreviews() {
 
     setIsUpdatingBranchConfig(true)
     try {
-      const owner = deployment.RepoUrl.split("/").reverse()[1]
-      const repoName = deployment.RepoUrl.replace(/\.git|\/$/, "")
-        .split("/")
-        .pop()
+      const [owner, repoName] = extractGithubPath(deployment.RepoUrl).split("/")
 
       const updatedBranches = [...new Set([...branchConfig.selectedBranches, ...branchNames])]
 
-      const response = await fetch(`${TESTING_FETCH}/branch-preview/${owner}/${repoName}/settings`, {
+      const response = await apiRequest(`/branch-preview/${owner}/${repoName}/settings`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({
           enabled: true,
           allowedBranches: updatedBranches,
@@ -402,7 +390,8 @@ export default function BranchPreviews() {
         toast.success(`Added ${branchNames.length} branch(es) to tracking`)
         setIsManageBranchesModalOpen(false)
       } else {
-        toast.error("Failed to add branches to tracking")
+        const errMsg = await extractApiError(response)
+        toast.error(errMsg)
       }
     } catch (error) {
       console.error("Error adding branches to tracking:", error)
@@ -576,7 +565,7 @@ export default function BranchPreviews() {
   if (!deployment) {
     return (
       <div className="py-10 w-full px-4 md:px-[40px]">
-        <div className="text-xl">Searching for deployment...</div>
+        <BranchPreviewsFullSkeleton />
       </div>
     )
   }
@@ -795,7 +784,7 @@ export default function BranchPreviews() {
                                 <h3 className="font-medium text-neutral-100">{branch.name}</h3>
                                 {deployment && (
                                   <span className="text-xs text-neutral-500">
-                                    {deployment.RepoUrl.split("/").slice(-2).join("/")}
+                                    {extractGithubPath(deployment.RepoUrl)}
                                   </span>
                                 )}
                               </div>
@@ -1171,17 +1160,28 @@ export default function BranchPreviews() {
                     return
                   }
 
-                  const txId = await setArnsUnderName(selectedArns.processId, deploymentId, underName)
+                  const ghPath = extractGithubPath(deployment.RepoUrl)
+                  const [owner, repoName] = ghPath.split("/")
 
-                  if (txId) {
+                  const res = await apiRequest(`/updatereporecord/${owner}/${repoName}`, {
+                    method: "POST",
+                    body: JSON.stringify({
+                      arnsProcess: selectedArns.processId,
+                      deploymentId,
+                      undername: underName,
+                    }),
+                  })
+
+                  if (res.ok) {
                     const finalUrl = `https://${underName}_${selectedArns.name.replace(".arweave", "")}.ar.io`
                     toast.success(
-                      `ARNS assigned! Your site will be available at ${finalUrl}. Transaction ID: ${txId}`,
+                      `ARNS assigned! Your site will be available at ${finalUrl}.`,
                       { duration: 8000 },
                     )
                     setIsArnsModalOpen(false)
                   } else {
-                    toast.error("Failed to assign ARNS. Please try again.")
+                    const errMsg = await extractApiError(res)
+                    toast.error(errMsg)
                   }
                 } catch (error) {
                   console.error("Error assigning ARNS:", error)

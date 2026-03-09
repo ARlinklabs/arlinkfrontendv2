@@ -29,16 +29,16 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { BUILDER_BACKEND, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { extractApiError, apiRequest } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useGlobalState } from "@/store/useGlobalState";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { runLua, setArnsName as setArnsNameWithProcessId } from "@/lib/ao-vars";
+// AO imports removed — ArNS is now handled by the backend
 import { useEffect, useRef, useState } from "react";
 import useDeploymentManager from "@/hooks/use-deployment-manager";
-import axios, { isAxiosError } from "axios";
 
 import {
     extractOwnerName,
@@ -64,7 +64,7 @@ import type { TDeployment } from "@/types";
 export default function DeploymentSetting() {
     // global states
     const [searchParams] = useSearchParams();
-    const { refresh } = useDeploymentManager();
+    const { refresh, hasFetchedOnce } = useDeploymentManager();
     const repo = searchParams.get("repo");
     const navigate = useNavigate();
     const globalState = useGlobalState();
@@ -106,7 +106,7 @@ export default function DeploymentSetting() {
     const [isOpen, setIsOpen] = useState(false);
     const [updatingArns, setUpdatingArns] = useState<boolean>(false);
 
-    // Deployment existence check
+    // Find deployment from global state
     useEffect(() => {
         if (!repo) {
             toast.error("No repository specified");
@@ -115,14 +115,13 @@ export default function DeploymentSetting() {
         }
 
         const foundDeployment = globalState.deployments.find((d) => d.Name === repo);
-        if (!foundDeployment) {
+        if (foundDeployment) {
+            setDeployment(foundDeployment);
+        } else if (hasFetchedOnce) {
             toast.error("Deployment not found");
             navigate("/dashboard");
-            return;
         }
-
-        setDeployment(foundDeployment);
-    }, [repo, globalState.deployments, navigate]);
+    }, [repo, globalState.deployments, hasFetchedOnce, navigate]);
 
     async function deleteDeployment() {
         setIsDeleting(true);
@@ -197,35 +196,27 @@ export default function DeploymentSetting() {
                 toast.error("select an arns name");
                 return;
             }
-            
-            if (!signer || signerLoading) {
-                toast.error("Please connect your wallet to update ArNS");
-                return;
-            }
-            
-            if (deployment && arnsName) {
-                const txid = await setArnsNameWithProcessId(
-                    arnsName.processId,
-                    deployment.DeploymentId,
-                    "@",
-                    signer,
-                );
-                setTransactionId(txid);
 
-                await runLua(
-                    `db:exec[[
-                        UPDATE Deployments 
-                        SET ArnsProcess = '${arnsName.processId}'
-                        WHERE Name = '${deployment.Name}'
-                    ]]`,
-                    globalState.managerProcess,
-                    undefined,
-                    signer,
-                );
-               
+            if (deployment) {
+                // ArNS update is now handled via the backend
+                const ownerName = extractOwnerName(deployment.RepoUrl);
+                const repoName = extractRepoName(deployment.RepoUrl);
+                const res = await apiRequest(`/updatereporecord/${ownerName}/${repoName}`, {
+                    method: "POST",
+                    body: JSON.stringify({ txid: deployment.DeploymentId }),
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setTransactionId(data.data?.txid || deployment.DeploymentId);
+                    toast.success("ArNS update initiated");
+                } else {
+                    const errMsg = await extractApiError(res);
+                    toast.error(errMsg);
+                }
             }
         } catch (error) {
             console.log(error);
+            toast.error("Failed to update ArNS");
         } finally {
             setUpdatingArns(false);
         }
@@ -237,11 +228,19 @@ export default function DeploymentSetting() {
         }
     }, [transactionId]);
 
-    // Loading state while searching for deployment
+    // Skeleton while waiting for initial fetch
     if (!deployment) {
         return (
             <div className="flex flex-col z-0 md:py-8 md:flex-row w-full px-4 md:px-[40px] bg-random min-h-[80vh]">
-                <div className="text-xl">Searching for deployment...</div>
+                <div className="w-full md:w-48 md:p-4 space-y-2">
+                    <Skeleton className="h-9 w-full bg-neutral-800" />
+                    <Skeleton className="h-9 w-full bg-neutral-800" />
+                </div>
+                <div className="flex-1 md:px-4 md:py-4 mt-4 md:mt-0 space-y-4">
+                    <Skeleton className="h-8 w-40 bg-neutral-800" />
+                    <Skeleton className="h-4 w-72 bg-neutral-800/50" />
+                    <Skeleton className="h-10 w-32 bg-neutral-800 mt-4" />
+                </div>
             </div>
         );
     }

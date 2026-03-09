@@ -1,7 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { connect } from "@permaweb/aoconnect";
 import { ANT, AOProcess, ARIO, ARIO_MAINNET_PROCESS_ID } from "@ar.io/sdk/web";
+import { connect } from "@permaweb/aoconnect";
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
@@ -38,7 +38,10 @@ export const BUILDER_BACKEND =
         ? "http://localhost:3050"
         : "https://vmi2322729.contaboserver.net");
 
-export const TESTING_FETCH = "https://vmi2322729.contaboserver.net";
+export const TESTING_FETCH =
+    import.meta.env.VITE_ENV === "test"
+        ? "http://localhost:3050"
+        : "https://vmi2322729.contaboserver.net";
 
 export function getTime() {
     const now = new Date();
@@ -52,64 +55,20 @@ export function getTime() {
     return `${year}-${month}-${date} ${hours}:${minutes}:${seconds}`;
 }
 
-export async function setUndername(
-    antProcess: string,
-    manifestId: string,
-    undername: string,
-    signer?: any,
-) {
-    const ao = connect({
-        CU_URL: "https://cu.ardrive.io",
-        MU_URL: "https://ur-mu.randao.net",
-        MODE: "legacy",
-    });
-    const msgtags = [
-        { name: "Action", value: "Set-Record" },
-        { name: "Sub-Domain", value: undername },
-        { name: "Transaction-Id", value: manifestId },
-        { name: "TTL-Seconds", value: "900" },
-    ];
-    try {
-        // Import prepareAoSigner at the top of the file if needed
-        const { prepareAoSigner } = await import("./ao-vars");
-        const messageOptions: any = {
-            process: antProcess,
-            tags: msgtags,
-            data: "",
-        };
-
-        if (signer) {
-            const preparedSigner = prepareAoSigner(signer);
-            if (preparedSigner) {
-                messageOptions.signer = preparedSigner;
-            }
-        }
-
-        const result = await ao.message(messageOptions);
-        console.log("set arns message officially sent out ", result);
-        return result;
-    } catch (e) {
-        console.error(e);
-        return null;
-    }
-}
 
 export async function getPrimaryname(walletaddy: string, signer?: any) {
     try {
-        // Use provided signer, or fall back to window.arweaveWallet if available
         const activeSigner = signer || (typeof window !== 'undefined' ? window.arweaveWallet : null);
         if (!activeSigner) {
             console.warn('Wallet not ready for getPrimaryname');
             return null;
         }
 
-        // Add timeout to prevent hanging
         const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('getPrimaryname timeout')), 10000); // 10 second timeout
+            setTimeout(() => reject(new Error('getPrimaryname timeout')), 10000);
         });
 
         const primaryNamePromise = (async () => {
-            // step 1 init ario
             const ario = ARIO.init({
                 process: new AOProcess({
                     processId: ARIO_MAINNET_PROCESS_ID,
@@ -124,29 +83,24 @@ export async function getPrimaryname(walletaddy: string, signer?: any) {
                 signer: activeSigner,
             });
 
-            // step 2 get primary name from wallet
             const nameResponse = await ario.getPrimaryName({
                 address: walletaddy,
             });
 
-            // Check if name exists
             if (!nameResponse?.name) {
                 throw new Error("No primary name found");
             }
 
             const primaryname = nameResponse.name;
 
-            // step 3 get process id from primaryname
             const recordResponse = await ario.getArNSRecord({ name: primaryname });
 
-            // Check if record exists and has processId
             if (!recordResponse?.processId) {
                 throw new Error("No process ID found");
             }
 
             const pid = recordResponse.processId;
 
-            // step 4 get logo from process id
             const ant = ANT.init({
                 signer: activeSigner,
                 processId: pid,
@@ -158,11 +112,9 @@ export async function getPrimaryname(walletaddy: string, signer?: any) {
             return { primaryname, logo };
         })();
 
-        // Race between the actual operation and timeout
         return await Promise.race([primaryNamePromise, timeoutPromise]);
     } catch (error) {
         console.error("Error in getPrimaryname:", error);
-        // Don't throw error to prevent blocking UI
         return null;
     }
 }
