@@ -16,7 +16,7 @@ const DeploymentCard = ({ deployment }: DeploymentCardProps) => {
                     {deployment.UnderName ? (
                         <>
                             <iframe
-                                src={`https://${deployment.UnderName}_arlink.arweave.net/`}
+                                src={`https://${deployment.UnderName}_arlink.ardrive.net/`}
                                 className="w-full border border-neutral-700 z-20 h-[330px] relative rounded-sm"
                                 title="Deployment Preview"
                                 scrolling="no"
@@ -42,17 +42,17 @@ const DeploymentCard = ({ deployment }: DeploymentCardProps) => {
                                 Deployment url
                             </p>
                             <Link
-                                to={`https://arweave.net/${deployment.DeploymentId}`}
+                                to={`https://ardrive.net/${deployment.DeploymentId}`}
                                 target="_blank"
                                 className="text-md hover:underline flex items-center"
                             >
                                 {deployment.DeploymentId
-                                    ? `https://arweave.net/${deployment.DeploymentId.slice(
+                                    ? `https://ardrive.net/${deployment.DeploymentId.slice(
                                           0,
                                           20,
                                       )}...`
                                     : deployment?.DeploymentId
-                                    ? `https://arweave.net/${deployment.DeploymentId}`
+                                    ? `https://ardrive.net/${deployment.DeploymentId}`
                                     : "Not available"}
                                 <ExternalLink className="w-4 h-4 ml-2" />
                             </Link>
@@ -65,11 +65,11 @@ const DeploymentCard = ({ deployment }: DeploymentCardProps) => {
                             </p>
                             <div className="flex text-md items-center space-x-2">
                                 <Link
-                                    to={`https://${deployment.UnderName}_arlink.arweave.net`}
+                                    to={`https://${deployment.UnderName}_arlink.ardrive.net`}
                                     target="_blank"
                                     className="text-sm hover:underline flex items-center"
                                 >
-                                    {`${deployment.UnderName}_arlink.arweave.net`}
+                                    {`${deployment.UnderName}_arlink.ardrive.net`}
                                     <MoveUpRight className="w-4 h-4 ml-2" />
                                 </Link>
                             </div>

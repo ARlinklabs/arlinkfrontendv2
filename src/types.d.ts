@@ -237,6 +237,7 @@ export type TDeployment = {
     Branch: string;
     BuildCMD: string;
     OutputDIR: string;
+    Framework: string;
     ArnsProcess: string;
     DeploymentId: string;
     DeploymentHash: string;
@@ -258,6 +259,8 @@ export interface Project {
     createdAt: number;
     branch: string;
     outputDir: string;
+    buildCommand: string;
+    framework: string;
     deploymentId: string;
     UnderName: string;
 }

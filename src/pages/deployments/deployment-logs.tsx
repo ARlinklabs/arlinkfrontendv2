@@ -51,16 +51,16 @@ const DeploymentLogs = () => {
         }
     }, [repo, deployment, hasFetchedOnce, navigate]);
 
-    // Fetch logs from backend
+    // Fetch logs from backend (use deployment.Name = projectName for API path)
     useEffect(() => {
         if (!deployment) return;
         const githubPath = extractGithubPath(deployment.RepoUrl);
-        const [owner, folderName] = githubPath.split("/");
+        const owner = githubPath.split("/")[0];
 
         const fetchLatestLogs = async () => {
             setIsFetchingLogs(true);
             try {
-                const res = await apiRequest(`/logs/${owner}/${folderName}`);
+                const res = await apiRequest(`/logs/${owner}/${deployment.Name}`);
                 if (!res.ok) throw new Error("Failed to fetch logs");
                 const rawLogsData = (await res.text()).replaceAll(/\\|\||\-/g, "");
 

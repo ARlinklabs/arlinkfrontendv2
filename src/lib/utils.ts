@@ -76,8 +76,8 @@ export async function getPrimaryname(walletaddy: string, signer?: any) {
                     ao: connect({
                         MU_URL: "https://ur-mu.randao.net",
                         CU_URL: "https://cu.ardrive.io",
-                        GRAPHQL_URL: "https://arweave.net/graphql",
-                        GATEWAY_URL: "https://arweave.net",
+                        GRAPHQL_URL: "https://ardrive.net/graphql",
+                        GATEWAY_URL: "https://ardrive.net",
                     }),
                 }),
                 signer: activeSigner,

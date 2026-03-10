@@ -36,7 +36,7 @@ const Projects = () => {
             image: "velocity.png",
             description:
                 "Velocity is a decentralized social hub on AO, Connect, share, and thrive in the decentralized social space with Velocity",
-            link: "https://velocity_arlink.arweave.net/",
+            link: "https://velocity_arlink.ardrive.net/",
         },
     ];
 

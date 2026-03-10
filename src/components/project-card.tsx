@@ -3,7 +3,6 @@ import { Card } from "@/components/ui/card";
 import {
     detectFrameworkImage,
     extractOwnerName,
-    extractRepoName,
 } from "@/pages/utilts";
 import type { Project } from "@/types";
 import {
@@ -50,7 +49,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
         e.stopPropagation();
         if (project.UnderName) {
             navigator.clipboard.writeText(
-                `${project.UnderName}_arlink.arweave.net`,
+                `${project.UnderName}_arlink.ardrive.net`,
             );
         }
         toast.success("Copied to clipboard!");
@@ -72,7 +71,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
 
         try {
             const ownerName = extractOwnerName(project.repoUrl);
-            const repoProjectName = extractRepoName(project.repoUrl);
+            const repoProjectName = project.name; // projectName for API paths
                    // technical debt need to fix error handling here 
 
              await deleteFromServer({
@@ -108,10 +107,10 @@ export function ProjectCard({ project }: ProjectCardProps) {
                         <div className="md:w-12 w-10 flex items-center justify-center md:h-12 h-10 bg-neutral-800/70 border border-neutral-800 rounded-lg">
                             <img
                                 src={`/logos/${
-                                    detectFrameworkImage(project.outputDir).svg
+                                    detectFrameworkImage(project.outputDir, project.buildCommand, project.framework).svg
                                 }`}
                                 alt={`${
-                                    detectFrameworkImage(project.outputDir).name
+                                    detectFrameworkImage(project.outputDir, project.buildCommand, project.framework).name
                                 } logo`}
                                 className="md:w-8 md:h-8 w-6 h-6"
                             />
@@ -125,7 +124,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
 
                             {project.UnderName ? (
                                 <a
-                                    href={`https://${project.UnderName}_arlink.arweave.net`}
+                                    href={`https://${project.UnderName}_arlink.ardrive.net`}
                                     className="md:text-xs text-[10px] text-nowrap block text-neutral-500 hover:underline hover:text-neutral-400 transition-colors"
                                     target="_blank"
                                     rel="noreferrer"
@@ -136,7 +135,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
                                               12,
                                           )}...`
                                         : project.UnderName.toLowerCase()}
-                                    _arlink.arweave.net
+                                    _arlink.ardrive.net
                                 </a>
                             ) : (
                                 <a
@@ -274,7 +273,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
                 <div className="flex md:text-xs text-[10px] mt-3 items-center gap-2 translate-x-1">
                     <span className="text-neutral-600">Framework: </span>
                     <span className="font-medium text-neutral-600 group-hover:text-neutral-500">
-                        {detectFrameworkImage(project.outputDir).name}
+                        {detectFrameworkImage(project.outputDir, project.buildCommand, project.framework).name}
                     </span>
                 </div>
             </Card>

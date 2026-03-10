@@ -3,20 +3,48 @@ import { Zap, Globe, ChevronRight, ExternalLink } from "lucide-react";
 import ReactConfetti from "react-confetti";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import TwitterShareButton from "@/components/ui/twitter-share-button";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { getProjects, mapConfigToDeployment } from "@/lib/api";
+import type { TDeployment } from "@/types";
 
 export default function DeploymentCard({}) {
     const navigate = useNavigate();
     // hooks and stores
-    const { deployments, isRefreshing, walletAddress } = useDeploymentManager();
+    const { deployments, isRefreshing, walletAddress, refresh } = useDeploymentManager();
     const [searchParmas] = useSearchParams();
     const [showNotFound, setShowNotFound] = useState<boolean>(false);
+    const [fetchedDeployment, setFetchedDeployment] = useState<TDeployment | null>(null);
 
     // constants
     const repo = searchParmas.get("repo");
-    const deployment = deployments.find((project) => project.Name === repo);
+    const localDeployment = useMemo(
+        () => deployments.find((project) => project.Name === repo),
+        [deployments, repo],
+    );
+    const deployment = localDeployment || fetchedDeployment;
 
-    console.log(deployments);
+    // If not found locally, query the backend directly by projectName
+    useEffect(() => {
+        if (localDeployment || !repo || isRefreshing) return;
+
+        let cancelled = false;
+        (async () => {
+            try {
+                const { projects } = await getProjects();
+                const match = projects.find(
+                    (p) => (p.projectName || p.repoName) === repo,
+                );
+                if (match && !cancelled) {
+                    setFetchedDeployment(mapConfigToDeployment(match));
+                    // Also refresh global state so other pages pick it up
+                    refresh();
+                }
+            } catch {
+                // non-fatal
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [repo, localDeployment, isRefreshing]);
 
     if (!deployment?.UnderName && deployment)
         navigate("/deployment?repo=" + deployment?.Name);
@@ -103,7 +131,7 @@ export default function DeploymentCard({}) {
                     <h3 className="text-lg flex items-center gap-4  font-semibold mb-4 text-neutral-100">
                         <span>{deployment.Name}</span>
                         <Link
-                            to={`https://${deployment.UnderName}_arlink.arweave.net`}
+                            to={`https://${deployment.UnderName}_arlink.ardrive.net`}
                             target="_blank"
                             className="text-sm group text-neutral-300 transition-all hover:underline flex items-center"
                         >
@@ -116,7 +144,7 @@ export default function DeploymentCard({}) {
                     </h3>
                     <div className="bg-neutral-900 block border-2 border-neutral-800 h-[400px] rounded-lg overflow-hidden">
                         <iframe
-                            src={`https://${deployment.UnderName}_arlink.arweave.net`}
+                            src={`https://${deployment.UnderName}_arlink.ardrive.net`}
                             className="w-full h-full"
                             title={`${deployment.Name} Preview`}
                             scrolling="no"

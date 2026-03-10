@@ -9,6 +9,7 @@ export type Store = {
     deployments: TDeployment[];
     githubToken: string | null;
     lastDeploymentsFetch: number;
+    cachedUsername: string | null;
     setWalletAddress: (address: string | null) => void;
     setManagerProcess: (managerProcess: string) => void;
     setDeployments: (deployments: TDeployment[]) => void;
@@ -17,6 +18,7 @@ export type Store = {
     safeUpdateDeployments: (newDeployments: TDeployment[], fallbackWalletAddress?: string) => void;
     getDeploymentByName: (name: string) => TDeployment | undefined;
     setGithubToken: (token: string | null) => void;
+    setCachedUsername: (username: string | null) => void;
     clearCache: () => void;
     clearWalletData: () => void;
 };
@@ -29,7 +31,8 @@ export const useGlobalState = create<Store>()(
             deployments: [],
             githubToken: null,
             lastDeploymentsFetch: 0,
-            
+            cachedUsername: null,
+
             setWalletAddress: (address: string | null) => {
                 const currentAddress = get().walletAddress;
                 
@@ -98,26 +101,31 @@ export const useGlobalState = create<Store>()(
                     console.warn('Cannot merge deployments without wallet address');
                     return;
                 }
-                
+
                 const currentDeployments = get().deployments;
                 const merged = [...currentDeployments];
-                
+                let changed = false;
+
                 newDeployments.forEach(newDep => {
                     const existingIndex = merged.findIndex(dep => dep.Name === newDep.Name);
                     if (existingIndex !== -1) {
-                        merged[existingIndex] = { ...merged[existingIndex], ...newDep };
+                        // Only mark as changed if the data actually differs
+                        const existing = merged[existingIndex];
+                        const isDifferent = JSON.stringify(existing) !== JSON.stringify({ ...existing, ...newDep });
+                        if (isDifferent) {
+                            merged[existingIndex] = { ...existing, ...newDep };
+                            changed = true;
+                        }
                     } else {
                         merged.push(newDep);
+                        changed = true;
                     }
                 });
-                
-                console.log(`Merged deployments for wallet ${currentWallet}:`, { 
-                    current: currentDeployments.length, 
-                    new: newDeployments.length, 
-                    merged: merged.length 
-                });
-                
-                set({ 
+
+                // Skip state update if nothing actually changed
+                if (!changed) return;
+
+                set({
                     deployments: merged,
                     lastDeploymentsFetch: Date.now()
                 });
@@ -172,6 +180,7 @@ export const useGlobalState = create<Store>()(
             },
             
             setGithubToken: (token: string | null) => set({ githubToken: token }),
+            setCachedUsername: (username: string | null) => set({ cachedUsername: username }),
             
             clearCache: () => {
                 const currentWallet = get().walletAddress;
@@ -184,11 +193,14 @@ export const useGlobalState = create<Store>()(
             
             clearWalletData: () => {
                 console.log('Clearing all wallet data');
-                set({ 
+                set({
                     walletAddress: null,
                     managerProcess: "",
                     deployments: [],
-                    lastDeploymentsFetch: 0
+                    lastDeploymentsFetch: 0,
+                    // NOTE: cachedUsername is NOT cleared here because WalletStateSync
+                    // calls this on every page reload (connected is briefly false).
+                    // It's cleared explicitly in disconnect handlers instead.
                 });
             }
         }),
@@ -200,7 +212,8 @@ export const useGlobalState = create<Store>()(
                 deployments: state.deployments,
                 githubToken: state.githubToken,
                 lastDeploymentsFetch: state.lastDeploymentsFetch,
-                managerProcess: state.managerProcess
+                managerProcess: state.managerProcess,
+                cachedUsername: state.cachedUsername,
             }),
             version: 2,
             migrate: (persistedState: any, version: number) => {

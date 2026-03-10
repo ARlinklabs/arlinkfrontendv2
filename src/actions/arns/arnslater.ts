@@ -32,8 +32,8 @@ const AO_CONFIG = {
     MU_URL: "https://ur-mu.randao.net",
     CU_URL: "https://cu.ardrive.io",
     SU_URL: "https://ur-su.randao.net",
-    GRAPHQL_URL: "https://arweave.net/graphql",
-    GATEWAY_URL: "https://arweave.net"
+    GRAPHQL_URL: "https://ardrive.net/graphql",
+    GATEWAY_URL: "https://ardrive.net"
 };
 
 // Registry and process IDs based on environment

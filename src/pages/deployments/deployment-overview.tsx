@@ -74,11 +74,10 @@ export default function DeploymentOverview({
         }
     })();
 
-    // Extract owner/repo from RepoUrl (handles tokenized URLs)
-    const extractRepoInfo = (repoUrl: string) => {
+    // Extract owner from RepoUrl; use deployment.Name as projectName for API paths
+    const extractOwner = (repoUrl: string) => {
         const path = extractGithubPath(repoUrl);
-        const [owner, repoName] = path.split("/");
-        return { owner, repoName };
+        return path.split("/")[0];
     };
 
     // Fetch deployment config from backend
@@ -88,9 +87,9 @@ export default function DeploymentOverview({
         const fetchDeploymentUrl = async () => {
             try {
                 setIsFetchingProject(true);
-                const { owner, repoName } = extractRepoInfo(deployment.RepoUrl);
+                const owner = extractOwner(deployment.RepoUrl);
 
-                const config = await getProjectConfig(owner, repoName);
+                const config = await getProjectConfig(owner, deployment.Name);
 
                 const newDeploymentUrl = config.url;
                 const arnsUnderName = config.arnsUnderName;
@@ -134,11 +133,11 @@ export default function DeploymentOverview({
     // Fetch build logs from backend
     useEffect(() => {
         if (!deployment?.RepoUrl) return;
-        const { owner, repoName } = extractRepoInfo(deployment.RepoUrl);
+        const owner = extractOwner(deployment.RepoUrl);
 
         const fetchLatestLogs = async () => {
             try {
-                const res = await apiRequest(`/logs/${owner}/${repoName}`);
+                const res = await apiRequest(`/logs/${owner}/${deployment.Name}`);
                 if (!res.ok) return;
                 const rawLogsData = (await res.text()).replaceAll(
                     /\\|\||\-/g,
@@ -175,11 +174,11 @@ export default function DeploymentOverview({
     // Poll logs during redeployment
     useEffect(() => {
         if (!deployment?.RepoUrl) return;
+        const owner = extractOwner(deployment.RepoUrl);
         const interval = setInterval(async () => {
-            const { owner, repoName } = extractRepoInfo(deployment.RepoUrl);
             if (!redeploying) return clearInterval(interval);
             try {
-                const res = await apiRequest(`/logs/${owner}/${repoName}`);
+                const res = await apiRequest(`/logs/${owner}/${deployment.Name}`);
                 if (!res.ok) return;
                 const rawLogsData = (await res.text()).replaceAll(
                     /\\|\||\-/g,
@@ -224,8 +223,8 @@ export default function DeploymentOverview({
         try {
             // ArNS update is now handled by the backend during deploy
             // This button can trigger a manual ARNS re-point via backend
-            const { owner, repoName } = extractRepoInfo(deployment.RepoUrl);
-            const res = await apiRequest(`/updatereporecord/${owner}/${repoName}`, {
+            const owner = extractOwner(deployment.RepoUrl);
+            const res = await apiRequest(`/updatereporecord/${owner}/${deployment.Name}`, {
                 method: "POST",
                 body: JSON.stringify({ txid: deploymentUrl }),
             });

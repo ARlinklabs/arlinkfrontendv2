@@ -9,6 +9,11 @@ import {
     Check,
     ChevronsUpDown,
     ExternalLink,
+    Plus,
+    X,
+    Key,
+    Eye,
+    EyeOff,
 } from "lucide-react";
 import {
     AlertDialog,
@@ -30,7 +35,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { extractApiError, apiRequest } from "@/lib/api";
+import { extractApiError, apiRequest, getEnvVars, setEnvVar, deleteEnvVar } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useGlobalState } from "@/store/useGlobalState";
@@ -42,7 +47,6 @@ import useDeploymentManager from "@/hooks/use-deployment-manager";
 
 import {
     extractOwnerName,
-    extractRepoName,
     handleFetchExistingArnsName,
 } from "../utilts";
 import { useAddress, useAoSigner } from "ao-wallet-kit";
@@ -71,7 +75,7 @@ export default function DeploymentSetting() {
     const [deployment, setDeployment] = useState<TDeployment | null>(null);
 
     // setting states
-    const [activeTab, setActiveTab] = useState("delete");
+    const [activeTab, setActiveTab] = useState("env-vars");
     const [showSidebar, setShowSidebar] = useState(true);
     const [, setError] = useState<string>("");
 
@@ -83,6 +87,15 @@ export default function DeploymentSetting() {
         setActiveTab(tab);
         setShowSidebar(false);
     };
+
+    // env vars state
+    const [envVars, setEnvVars] = useState<Record<string, string>>({});
+    const [envVarsLoading, setEnvVarsLoading] = useState(false);
+    const [newEnvKey, setNewEnvKey] = useState("");
+    const [newEnvValue, setNewEnvValue] = useState("");
+    const [addingEnvVar, setAddingEnvVar] = useState(false);
+    const [deletingEnvKey, setDeletingEnvKey] = useState<string | null>(null);
+    const [showValues, setShowValues] = useState(false);
 
     // arns data
     const activeAddress = useAddress();
@@ -138,8 +151,7 @@ export default function DeploymentSetting() {
 
         try {
             const ownerName = extractOwnerName(deployment.RepoUrl);
-            // technical debt need to fix error handling here 
-            const repoProjectName = extractRepoName(deployment.RepoUrl);
+            const repoProjectName = deployment.Name;
                 await deleteFromServer({
                 ownerName,
                 repoProjectName,
@@ -189,6 +201,60 @@ export default function DeploymentSetting() {
         handleFetchArns();
     }, []);
 
+    // --- Env Vars ---
+    const fetchEnvVars = async () => {
+        if (!deployment) return;
+        const ownerName = extractOwnerName(deployment.RepoUrl);
+        setEnvVarsLoading(true);
+        try {
+            const data = await getEnvVars(ownerName, deployment.Name);
+            setEnvVars(data.envVars || {});
+        } catch (err) {
+            // Non-fatal — user may not have env vars or may lack permissions
+            console.warn("Could not load env vars:", err);
+        } finally {
+            setEnvVarsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (deployment && activeTab === "env-vars") {
+            fetchEnvVars();
+        }
+    }, [deployment, activeTab]);
+
+    const handleAddEnvVar = async () => {
+        if (!deployment || !newEnvKey.trim()) return;
+        const ownerName = extractOwnerName(deployment.RepoUrl);
+        setAddingEnvVar(true);
+        try {
+            const result = await setEnvVar(ownerName, deployment.Name, newEnvKey.trim(), newEnvValue);
+            toast.success(`Environment variable ${result.action}`);
+            setNewEnvKey("");
+            setNewEnvValue("");
+            await fetchEnvVars();
+        } catch (err: any) {
+            toast.error(err.message || "Failed to add environment variable");
+        } finally {
+            setAddingEnvVar(false);
+        }
+    };
+
+    const handleDeleteEnvVar = async (key: string) => {
+        if (!deployment) return;
+        const ownerName = extractOwnerName(deployment.RepoUrl);
+        setDeletingEnvKey(key);
+        try {
+            await deleteEnvVar(ownerName, deployment.Name, key);
+            toast.success(`Removed ${key}`);
+            await fetchEnvVars();
+        } catch (err: any) {
+            toast.error(err.message || "Failed to delete environment variable");
+        } finally {
+            setDeletingEnvKey(null);
+        }
+    };
+
     const hanldeUpdateArns = async () => {
         try {
             setUpdatingArns(true);
@@ -200,8 +266,7 @@ export default function DeploymentSetting() {
             if (deployment) {
                 // ArNS update is now handled via the backend
                 const ownerName = extractOwnerName(deployment.RepoUrl);
-                const repoName = extractRepoName(deployment.RepoUrl);
-                const res = await apiRequest(`/updatereporecord/${ownerName}/${repoName}`, {
+                const res = await apiRequest(`/updatereporecord/${ownerName}/${deployment.Name}`, {
                     method: "POST",
                     body: JSON.stringify({ txid: deployment.DeploymentId }),
                 });
@@ -299,7 +364,7 @@ export default function DeploymentSetting() {
                 )}
             >
                 <nav className="space-y-1">
-                    {["delete", "configure-arns"].map((tab) => (
+                    {["env-vars", "configure-arns", "delete"].map((tab) => (
                         <button
                             key={tab}
                             onClick={() => handleTabClick(tab)}
@@ -316,7 +381,10 @@ export default function DeploymentSetting() {
                             {tab === "configure-arns" && (
                                 <RefreshCw className="mr-2 h-4 w-4" />
                             )}
-                            {tab.charAt(0).toUpperCase() +
+                            {tab === "env-vars" && (
+                                <Key className="mr-2 h-4 w-4" />
+                            )}
+                            {tab === "env-vars" ? "Environment Variables" : tab.charAt(0).toUpperCase() +
                                 tab.slice(1).replace("-", " ")}
                         </button>
                     ))}
@@ -342,6 +410,99 @@ export default function DeploymentSetting() {
                 </div>
 
 
+
+                {activeTab === "env-vars" && (
+                    <div className="space-y-6">
+                        <div className="space-y-2">
+                            <h2 className="text-2xl md:text-3xl font-bold text-neutral-100">
+                                Environment Variables
+                            </h2>
+                            <p className="text-sm text-neutral-400">
+                                Manage environment variables injected during builds. Values are encrypted at rest.
+                            </p>
+                        </div>
+
+                        {/* Add new env var */}
+                        <div className="flex flex-col sm:flex-row gap-2">
+                            <Input
+                                placeholder="KEY_NAME"
+                                value={newEnvKey}
+                                onChange={(e) => setNewEnvKey(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ""))}
+                                className="bg-neutral-900 border-neutral-800 text-neutral-100 font-mono text-sm sm:w-1/3"
+                            />
+                            <Input
+                                placeholder="value"
+                                type={showValues ? "text" : "password"}
+                                value={newEnvValue}
+                                onChange={(e) => setNewEnvValue(e.target.value)}
+                                className="bg-neutral-900 border-neutral-800 text-neutral-100 font-mono text-sm flex-1"
+                            />
+                            <Button
+                                onClick={handleAddEnvVar}
+                                disabled={addingEnvVar || !newEnvKey.trim()}
+                                className="bg-neutral-800 text-neutral-100 hover:bg-neutral-700"
+                            >
+                                {addingEnvVar ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Plus className="h-4 w-4" />
+                                )}
+                                <span className="ml-1">Add</span>
+                            </Button>
+                        </div>
+
+                        {/* Toggle visibility */}
+                        <button
+                            onClick={() => setShowValues(!showValues)}
+                            className="flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-300 transition-colors"
+                        >
+                            {showValues ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                            {showValues ? "Hide values" : "Show values"}
+                        </button>
+
+                        {/* Env vars list */}
+                        {envVarsLoading ? (
+                            <div className="space-y-2">
+                                {[1, 2, 3].map((i) => (
+                                    <Skeleton key={i} className="h-10 w-full bg-neutral-800" />
+                                ))}
+                            </div>
+                        ) : Object.keys(envVars).length === 0 ? (
+                            <div className="text-sm text-neutral-500 py-4">
+                                No environment variables configured.
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                {Object.entries(envVars).map(([key, value]) => (
+                                    <div
+                                        key={key}
+                                        className="flex items-center gap-2 px-3 py-2 rounded-md bg-neutral-900 border border-neutral-800"
+                                    >
+                                        <span className="font-mono text-sm text-neutral-100 w-1/3 truncate">
+                                            {key}
+                                        </span>
+                                        <span className="font-mono text-sm text-neutral-400 flex-1 truncate">
+                                            {showValues ? value : "••••••••"}
+                                        </span>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleDeleteEnvVar(key)}
+                                            disabled={deletingEnvKey === key}
+                                            className="text-neutral-500 hover:text-red-400 hover:bg-transparent p-1 h-auto"
+                                        >
+                                            {deletingEnvKey === key ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <X className="h-4 w-4" />
+                                            )}
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {activeTab === "delete" && (
                     <>

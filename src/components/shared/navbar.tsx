@@ -1,6 +1,5 @@
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { extractRepoName } from "@/pages/utilts";
 import { getPrimaryname } from "@/lib/utils";
 import { UserIcon } from "lucide-react";
 import { useWalletState } from "@/hooks/use-wallet-state";
@@ -8,11 +7,13 @@ import { useWAuthData, useWallet } from "ao-wallet-kit";
 import ProfileModal from "@/components/shared/profile-modal";
 import LoginModal from "@/components/shared/login-modal";
 import { clearToken } from "@/lib/api";
+import { useGlobalState } from "@/store/useGlobalState";
 
 export default function Navbar() {
     const { isConnected, address, connect, disconnect } = useWalletState();
     const { email, username } = useWAuthData();
     const { isWAuth } = useWallet();
+    const { cachedUsername, setCachedUsername } = useGlobalState();
 
     //@ts-ignore
     const [isNewDeployment, setIsNewDeployment] = useState(false);
@@ -36,6 +37,7 @@ export default function Navbar() {
     const disconnectWallet = async () => {
         setDisconnectingToWallet(true);
         clearToken();
+        setCachedUsername(null);
         await disconnect();
         setDisconnectingToWallet(false);
         window.location.reload();
@@ -72,23 +74,23 @@ export default function Navbar() {
     const deployPageNavlinks = [
         {
             name: "Overview",
-            url: `/deployment?repo=${extractRepoName(repo || "")}`,
+            url: `/deployment?repo=${repo || ""}`,
         },
         {
             name : "Branch Previews",
-            url : `/deployment/branch-previews?repo=${extractRepoName(repo || "")}`,
+            url : `/deployment/branch-previews?repo=${repo || ""}`,
         },{
             name: "History",
-            url: `/deployment/history?repo=${extractRepoName(repo || "")}`,
+            url: `/deployment/history?repo=${repo || ""}`,
         },
         {
             name: "Logs",
-            url: `/deployment/logs?repo=${extractRepoName(repo || "")}`,
+            url: `/deployment/logs?repo=${repo || ""}`,
         },
 
         {
             name: "Settings",
-            url: `/deployment/settings?repo=${extractRepoName(repo || "")}`,
+            url: `/deployment/settings?repo=${repo || ""}`,
         },
     ];
 
@@ -144,13 +146,19 @@ export default function Navbar() {
         };
     }, [address, isConnected]);
 
-    // For wauth users, show GitHub username (including from cache). For others, show primary name or sliced address
-    // Check username first (even if isWAuth is temporarily false during reconnection)
-    const displayName = username 
-        ? username 
-        : (primaryName || address?.slice(0, 8) || "anonymous");
+    // Sync WAuth username to persistent cache whenever it becomes available
+    useEffect(() => {
+        if (username && username !== cachedUsername) {
+            setCachedUsername(username);
+        }
+    }, [username, cachedUsername, setCachedUsername]);
 
-    const avatarUrl = primaryLogo ? `https://arweave.net/${primaryLogo}` : "";
+    // Use cached username immediately (survives page reloads / race conditions),
+    // then prefer live username once WAuth hydrates.
+    const displayName = username || cachedUsername
+        || primaryName || address?.slice(0, 8) || "anonymous";
+
+    const avatarUrl = primaryLogo ? `https://ardrive.net/${primaryLogo}` : "";
 
     return (
         <nav className="bg-[#0D0D0D]/80 arlink-navbar z-50 sticky top-0 backdrop-blur-lg border-b-2 border-neutral-800 box-border w-full">

@@ -88,6 +88,23 @@ const useCases: Category[] = [
     },
 ];
 
+/** Normalize a template Framework string to a framework id for matching */
+function normalizeFrameworkId(framework: string): string {
+    const lower = framework.toLowerCase().trim();
+    // Direct matches
+    if (lower === "next.js" || lower === "nextjs") return "nextjs";
+    if (lower === "gatsby") return "gatsby";
+    if (lower === "svelte") return "svelte";
+    if (lower === "angular") return "angular";
+    if (lower === "solid.js" || lower === "solidjs") return "solidjs";
+    // "React + Vite", "React", "react" → react
+    if (lower.startsWith("react")) return "react";
+    // "vite" (standalone, not "React + Vite" which was caught above)
+    if (lower === "vite") return "vite";
+    // "static" or anything else
+    return lower.replace(/[^a-z0-9]/g, "");
+}
+
 export default function TemplateSelector({
     isLoading,
 }: {
@@ -107,7 +124,7 @@ export default function TemplateSelector({
             const matchesFramework =
                 selectedFrameworks.length === 0 ||
                 selectedFrameworks.includes(
-                    template.Framework.toLowerCase().split(".").join(""),
+                    normalizeFrameworkId(template.Framework),
                 );
             const matchesUseCase =
                 selectedUseCases.length === 0 ||
@@ -323,10 +340,8 @@ const TemplateCard = ({ template }: { template: TemplateDashboard }) => {
                         frameworks.find(
                             (f) =>
                                 f.id ===
-                                template.Framework?.toLowerCase()
-                                    .split(".")
-                                    .join(""),
-                        )?.icon
+                                normalizeFrameworkId(template.Framework || ""),
+                        )?.icon || <FileCode className="w-4 h-4 text-neutral-400" />
                     }
                 </span>
             </div>

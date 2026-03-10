@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useGlobalState } from "@/store/useGlobalState";
 import { useWalletState } from "./use-wallet-state";
 import {
     getProjects,
     mapConfigToDeployment,
     ensureSession,
+    claimProjects,
 } from "@/lib/api";
 import type { TDeployment } from "@/types";
 import type { DeploymentRecord } from "@/types";
@@ -14,6 +15,12 @@ export type GetDemploymentHistoryReturnType = {
     history: DeploymentRecord[];
     error: any;
 };
+
+// Module-level guard so only one refresh() runs at a time across all hook instances
+// (the hook is used in dashboard + every ProjectCard, so without this each instance
+// independently fires refresh() on mount → N duplicate API calls)
+let _globalRefreshing = false;
+let _globalRefreshPromise: Promise<void> | null = null;
 
 export default function useDeploymentManager() {
     const setManagerProcess = useGlobalState(
@@ -26,13 +33,13 @@ export default function useDeploymentManager() {
     const globalWalletAddress = useGlobalState((state) => state.walletAddress);
     const managerProcess = useGlobalState((state) => state.managerProcess);
     const deployments = useGlobalState((state) => state.deployments);
+    const githubToken = useGlobalState((state) => state.githubToken);
 
     const { isConnected: connected, address } = useWalletState();
 
     const walletAddress = address || globalWalletAddress;
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [hasFetchedOnce, setHasFetchedOnce] = useState(false);
-    const isRefreshingRef = useRef(false);
 
     // When wallet connects, mark as ready (no AO process needed anymore)
     useEffect(() => {
@@ -51,22 +58,51 @@ export default function useDeploymentManager() {
         }
     }, [managerProcess, address, connected]);
 
-    async function refresh(isRetry = false) {
-        if (isRefreshingRef.current || !address || !connected || isRefreshing)
-            return;
+    // Run claim when githubToken becomes available (may happen later than initial load,
+    // e.g. WAuth-GitHub login gives a wallet but NOT a GitHub OAuth token — that token
+    // only arrives when the user does the separate GitHub sign-in on the deploy page)
+    useEffect(() => {
+        if (!githubToken || !connected || !address) return;
+        const hasClaimed = localStorage.getItem("arlink_claimed");
+        if (hasClaimed) return;
 
-        isRefreshingRef.current = true;
+        (async () => {
+            try {
+                const authenticated = await ensureSession();
+                if (!authenticated) return;
+                console.log("[claim] running /projects/claim");
+                const result = await claimProjects(githubToken);
+                console.log("[claim] done:", result);
+                localStorage.setItem("arlink_claimed", "1");
+                // Refresh deployments to pick up newly claimed projects
+                refresh();
+            } catch (claimErr) {
+                console.log("[claim] failed:", claimErr);
+            }
+        })();
+    }, [githubToken, connected, address]);
+
+    async function refresh() {
+        if (!address || !connected) return;
+
+        // If a refresh is already in progress (from any hook instance), wait for it
+        if (_globalRefreshing && _globalRefreshPromise) {
+            await _globalRefreshPromise;
+            setHasFetchedOnce(true);
+            return;
+        }
+
+        _globalRefreshing = true;
         setIsRefreshing(true);
 
-        try {
-            // Ensure we have a valid session token before making authenticated calls
-            const authenticated = await ensureSession();
-            if (!authenticated) {
-                console.warn("Could not create session — authenticated endpoints will fail");
-            }
+        _globalRefreshPromise = (async () => {
+            try {
+                const authenticated = await ensureSession();
+                if (!authenticated) {
+                    console.warn("Could not create session — authenticated endpoints will fail");
+                    return;
+                }
 
-            // Use GET /projects to list all projects for the logged-in wallet
-            if (authenticated) {
                 try {
                     const { projects } = await getProjects();
                     const validDeployments = projects.map(mapConfigToDeployment);
@@ -74,15 +110,17 @@ export default function useDeploymentManager() {
                 } catch (err) {
                     console.warn("Failed to fetch projects:", err);
                 }
+            } catch (error) {
+                console.error("Failed to refresh deployments:", error);
+            } finally {
+                _globalRefreshing = false;
+                _globalRefreshPromise = null;
             }
+        })();
 
-            setHasFetchedOnce(true);
-        } catch (error) {
-            console.error("Failed to refresh deployments:", error);
-        } finally {
-            setIsRefreshing(false);
-            isRefreshingRef.current = false;
-        }
+        await _globalRefreshPromise;
+        setHasFetchedOnce(true);
+        setIsRefreshing(false);
     }
 
     return {
@@ -90,7 +128,7 @@ export default function useDeploymentManager() {
         deployments,
         isRefreshing,
         hasFetchedOnce,
-        refresh: () => refresh(false),
+        refresh,
         walletAddress,
     };
 }

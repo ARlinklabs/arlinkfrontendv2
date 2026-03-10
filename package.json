@@ -39,7 +39,7 @@
         "@tanstack/react-query": "^5.83.0",
         "@tanstack/react-virtual": "^3.11.0",
         "@types/react-syntax-highlighter": "^15.5.13",
-        "ao-wallet-kit": "^1.0.1",
+        "ao-wallet-kit": "^1.0.2",
         "arbundles": "0.11.2",
         "arweave": "^1.15.5",
         "arweave-indexer": "^1.1.0",

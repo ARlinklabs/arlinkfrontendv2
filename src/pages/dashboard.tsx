@@ -64,6 +64,8 @@ const Dashboardcomp = () => {
                 createdAt: dep.ID,
                 branch: dep.Branch || "",
                 outputDir: dep.OutputDIR || "",
+                buildCommand: dep.BuildCMD || "",
+                framework: dep.Framework || "",
                 deploymentId: dep.DeploymentId || "",
                 UnderName: dep.UnderName || "",
             };
