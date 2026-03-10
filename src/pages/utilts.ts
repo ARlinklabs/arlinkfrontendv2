@@ -256,57 +256,73 @@ export function sanitizeRepoUrl(url: string): string {
     }
 }
 
+/** Map a known framework identifier string to display name + logo SVG */
+const FRAMEWORK_MAP: Record<string, { name: string; svg: string }> = {
+    react: { name: "React", svg: "react.svg" },
+    next: { name: "Next.js", svg: "nextjs.svg" },
+    vite: { name: "Vite", svg: "vite.svg" },
+    gatsby: { name: "Gatsby", svg: "gatsby.svg" },
+    "create-react-app": { name: "Create React App", svg: "react.svg" },
+    deno: { name: "Deno", svg: "deno.svg" },
+    svelte: { name: "Svelte", svg: "unknown.svg" },
+    sveltekit: { name: "SvelteKit", svg: "unknown.svg" },
+    astro: { name: "Astro", svg: "unknown.svg" },
+    solid: { name: "Solid", svg: "unknown.svg" },
+    angular: { name: "Angular", svg: "unknown.svg" },
+    vue: { name: "Vue", svg: "unknown.svg" },
+    nuxt: { name: "Nuxt", svg: "unknown.svg" },
+};
+
+/** Get framework display info from a known framework string. Returns null if unknown. */
+export const getFrameworkImage = (
+    framework: string,
+): { name: string; svg: string; dir: string } | null => {
+    if (!framework) return null;
+    const entry = FRAMEWORK_MAP[framework.toLowerCase()];
+    if (entry) return { ...entry, dir: "" };
+    return null;
+};
+
 export const detectFrameworkImage = (
     outputDir: string,
+    buildCommand?: string,
+    framework?: string,
 ): {
     name: string;
     svg: string;
     dir: string;
 } => {
-    switch (outputDir.toLowerCase()) {
-        case ".next":
-            return {
-                dir: ".next",
-                name: "Next.js",
-                svg: "nextjs.svg",
-            };
-        case "./out":
-            return {
-                dir: "./out",
-                name: "Next.js",
-                svg: "nextjs.svg",
-            };
-        case "./build":
-            return {
-                dir: "./build",
-                name: "Create React App",
-                svg: "react.svg",
-            };
-        case "public":
-            return {
-                dir: "public",
-                name: "Gatsby",
-                svg: "gatsby.svg",
-            };
-        case "./public":
-            return {
-                dir: "./public",
-                name: "Gatsby",
-                svg: "gatsby.svg",
-            };
-        case "./dist":
-            return {
-                dir: "./dist",
-                name: "Vite",
-                svg: "vite.svg",
-            };
-        default:
-            return {
-                dir: "unknown",
-                name: "Unknown",
-                svg: "unknown.svg",
-            };
+    // 0. If backend provides a framework string, use it directly
+    if (framework) {
+        const known = getFrameworkImage(framework);
+        if (known) return { ...known, dir: outputDir };
     }
+
+    // 1. Try output dir
+    const normalized = (outputDir || "").toLowerCase().replace(/^\.\//, "").trim();
+    switch (normalized) {
+        case ".next":
+        case "out":
+            return { dir: outputDir, name: "Next.js", svg: "nextjs.svg" };
+        case "build":
+            return { dir: outputDir, name: "Create React App", svg: "react.svg" };
+        case "public":
+            return { dir: outputDir, name: "Gatsby", svg: "gatsby.svg" };
+        case "dist":
+            return { dir: outputDir, name: "Vite", svg: "vite.svg" };
+    }
+
+    // 2. Fall back to build command heuristics
+    const cmd = (buildCommand || "").toLowerCase();
+    if (cmd) {
+        if (cmd.includes("next")) return { dir: outputDir, name: "Next.js", svg: "nextjs.svg" };
+        if (cmd.includes("gatsby")) return { dir: outputDir, name: "Gatsby", svg: "gatsby.svg" };
+        if (cmd.includes("vite") || cmd.includes("tsc")) return { dir: outputDir, name: "Vite", svg: "vite.svg" };
+        if (cmd.includes("react-scripts")) return { dir: outputDir, name: "Create React App", svg: "react.svg" };
+        if (cmd.includes("build")) return { dir: outputDir, name: "Vite", svg: "vite.svg" };
+    }
+
+    return { dir: outputDir, name: "Unknown", svg: "unknown.svg" };
 };
 
 export const handleFetchLogs = async ({
@@ -332,7 +348,7 @@ export const handleFetchLogs = async ({
     if (!projectName || !repoUrl) return;
 
     const owner = protocolLand ? walletAddress : extractOwnerName(repoUrl);
-    const repo = protocolLand ? repoUrl : extractRepoName(repoUrl);
+    const repo = protocolLand ? repoUrl : projectName;
     const startTime = Date.now();
     const waitTime = 6000000;
     let intervalId: NodeJS.Timeout | null = null;

@@ -143,7 +143,7 @@ const EnableBranchDeployments = ({ deployment, onComplete }: EnableBranchDeploym
         setIsLoading(true);
         try {
             const response = await fetch(
-                `https://vmi2322729.contaboserver.net/branch-preview/${owner}/${repoNameFromUrl}/settings`,
+                `https://vmi2322729.contaboserver.net/branch-preview/${owner}/${repoName}/settings`,
                 {
                     method: 'POST',
                     headers: {

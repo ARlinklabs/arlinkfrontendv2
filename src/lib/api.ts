@@ -183,6 +183,7 @@ export interface BackendProjectConfig {
     id: number;
     owner: string;
     repoName: string;
+    projectName: string;
     repository: string;
     branch: string;
     installCommand: string;
@@ -199,20 +200,24 @@ export interface BackendProjectConfig {
     maxDailyDeploys: number;
     deployCount: number;
     lastBuiltCommit: string;
+    framework: string;
     createdAt: string;
     updatedAt: string;
 }
 
-/** Map backend project config to the TDeployment shape the frontend expects */
+/** Map backend project config to the TDeployment shape the frontend expects.
+ *  Name = projectName (the user-chosen identity, used in all API paths).
+ *  RepoUrl = the GitHub repository URL (used for git operations and display links). */
 export function mapConfigToDeployment(config: BackendProjectConfig): TDeployment {
     return {
         ID: config.id,
-        Name: config.repoName || "",
+        Name: config.projectName || config.repoName || "",
         RepoUrl: config.repository || "",
         Branch: config.branch || "",
         InstallCMD: config.installCommand || "",
         BuildCMD: config.buildCommand || "",
         OutputDIR: config.outputDir || "",
+        Framework: config.framework || "",
         DeploymentId: config.url || "",
         ArnsProcess: "",
         DeploymentHash: "",
@@ -251,6 +256,7 @@ export async function updateProjectConfig(
         outputDir?: string;
         branch?: string;
         subDirectory?: string;
+        framework?: string;
     },
 ): Promise<BackendProjectConfig> {
     const res = await apiRequest(`/config/${owner}/${repo}`, {
@@ -343,12 +349,14 @@ export async function submitDeploy(params: {
     subDirectory?: string;
     walletAddress?: string;
     repoName?: string;
+    projectName?: string;
     protocolLand?: boolean;
     isPreviewDeployment?: boolean;
     previewBranch?: string;
     usesEnv?: boolean;
     envVars?: Record<string, string>;
     githubToken?: string | null;
+    framework?: string;
 }) {
     const res = await apiRequest("/deploy", {
         method: "POST",
@@ -401,6 +409,8 @@ export async function createConfig(params: {
     outputDir: string;
     subDirectory?: string;
     walletAddress?: string;
+    projectName?: string;
+    framework?: string;
 }) {
     const res = await apiRequest("/createconfig", {
         method: "POST",
@@ -492,4 +502,139 @@ export async function getBillingUsage() {
     if (!res.ok) throw new Error(await extractApiError(res));
     const data = await res.json();
     return data.data;
+}
+
+// --- Project Claiming (Onboarding) ---
+
+/** Claim old projects to the logged-in wallet using a GitHub OAuth token. Session auth required. */
+export async function claimProjects(githubToken: string): Promise<{
+    claimed: number;
+    walletAddress: string;
+    githubUsername: string;
+    projects: BackendProjectConfig[];
+    total: number;
+}> {
+    const res = await apiRequest("/projects/claim", {
+        method: "POST",
+        body: JSON.stringify({ githubToken }),
+    });
+    if (!res.ok) throw new Error(await extractApiError(res));
+    const data = await res.json();
+    return data.data;
+}
+
+// --- Environment Variables ---
+
+/** List env vars (values are masked). Wallet auth required. */
+export async function getEnvVars(
+    owner: string,
+    repo: string,
+): Promise<{ envVars: Record<string, string>; count: number }> {
+    const res = await apiRequest(`/env-vars/${owner}/${repo}`);
+    if (!res.ok) throw new Error(await extractApiError(res));
+    const data = await res.json();
+    return data.data;
+}
+
+/** Add or update a single env var. Wallet auth required. */
+export async function setEnvVar(
+    owner: string,
+    repo: string,
+    key: string,
+    value: string,
+): Promise<{ action: "added" | "updated" }> {
+    const res = await apiRequest(`/env-vars/${owner}/${repo}`, {
+        method: "POST",
+        body: JSON.stringify({ key, value }),
+    });
+    if (!res.ok) throw new Error(await extractApiError(res));
+    const data = await res.json();
+    return data.data;
+}
+
+/** Replace ALL env vars. Keys not included are deleted. Wallet auth required. */
+export async function bulkReplaceEnvVars(
+    owner: string,
+    repo: string,
+    envVars: Record<string, string>,
+): Promise<void> {
+    const res = await apiRequest(`/env-vars/${owner}/${repo}`, {
+        method: "PUT",
+        body: JSON.stringify({ envVars }),
+    });
+    if (!res.ok) throw new Error(await extractApiError(res));
+}
+
+/** Delete a single env var. Wallet auth required. */
+export async function deleteEnvVar(
+    owner: string,
+    repo: string,
+    key: string,
+): Promise<void> {
+    const res = await apiRequest(`/env-vars/${owner}/${repo}/${encodeURIComponent(key)}`, {
+        method: "DELETE",
+    });
+    if (!res.ok) throw new Error(await extractApiError(res));
+}
+
+// --- GitHub App ---
+
+/** Check if the Arlink GitHub App is installed. Uses the GitHub OAuth token (not Arlink session). */
+export async function checkGitHubApp(githubAccessToken: string): Promise<{
+    installed: boolean;
+    username: string;
+}> {
+    const res = await fetch(`${API_BASE}/check-github-app`, {
+        headers: { Authorization: `Bearer ${githubAccessToken}` },
+    });
+    if (!res.ok) throw new Error(await extractApiError(res));
+    return res.json();
+}
+
+// --- Branch Previews ---
+
+/** Get branch preview config + current deployments. Public. */
+export async function getBranchPreview(owner: string, repo: string) {
+    const res = await apiRequest(`/branch-preview/${owner}/${repo}`);
+    if (!res.ok) throw new Error(await extractApiError(res));
+    return res.json();
+}
+
+/** Update branch preview settings. Public. */
+export async function updateBranchPreviewSettings(
+    owner: string,
+    repo: string,
+    settings: {
+        enabled: boolean;
+        allowedBranches: string[];
+        deployImmediately?: string[];
+    },
+) {
+    const res = await apiRequest(`/branch-preview/${owner}/${repo}/settings`, {
+        method: "POST",
+        body: JSON.stringify(settings),
+    });
+    if (!res.ok) throw new Error(await extractApiError(res));
+    return res.json();
+}
+
+/** Get branch preview deployments. Public. */
+export async function getBranchPreviewDeployments(owner: string, repo: string) {
+    const res = await apiRequest(`/branch-preview/${owner}/${repo}/deployments`);
+    if (!res.ok) throw new Error(await extractApiError(res));
+    return res.json();
+}
+
+/** Delete a branch preview. Public. */
+export async function deleteBranchPreview(
+    owner: string,
+    repo: string,
+    branchName: string,
+) {
+    const res = await apiRequest(
+        `/branch-preview/${owner}/${repo}/branch/${encodeURIComponent(branchName)}`,
+        { method: "DELETE" },
+    );
+    if (!res.ok) throw new Error(await extractApiError(res));
+    return res.json();
 }

@@ -96,8 +96,8 @@ importers:
         specifier: ^15.5.13
         version: 15.5.13
       ao-wallet-kit:
-        specifier: ^1.0.1
-        version: 1.0.1(arweave@1.15.5)(bufferutil@4.0.9)(pocketbase@0.26.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(rollup@4.28.1)(typescript@5.7.2)(utf-8-validate@5.0.10)(vite@5.4.11(@types/node@20.17.10))(zod@3.24.1)
+        specifier: ^1.0.2
+        version: 1.0.2(arweave@1.15.5)(bufferutil@4.0.9)(pocketbase@0.26.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(rollup@4.28.1)(typescript@5.7.2)(utf-8-validate@5.0.10)(vite@5.4.11(@types/node@20.17.10))(zod@3.24.1)
       arbundles:
         specifier: 0.11.2
         version: 0.11.2(arweave@1.15.5)(bufferutil@4.0.9)(utf-8-validate@5.0.10)
@@ -2639,8 +2639,8 @@ packages:
     resolution: {integrity: sha512-KMReFUr0B4t+D+OBkjR3KYqvocp2XaSzO55UcB6mgQMd3KbcE+mWTyvVV7D/zsdEbNnV6acZUutkiHQXvTr1Rw==}
     engines: {node: '>= 8'}
 
-  ao-wallet-kit@1.0.1:
-    resolution: {integrity: sha512-bjT6Pj/AmI5NweQ7Nucm3sewa9rvkXGu73rWqXlyJnktCezyocAsFOxind8825xiLCfWSFSw7J72XkgaEP+EDA==}
+  ao-wallet-kit@1.0.2:
+    resolution: {integrity: sha512-qs6XfCvB3kGubNh6ou5y9W7ecU3vL/UZKrZxy6ndrS8C7GBDFrY6qw5t3rroYsBWhq1o3i7JB5ud/TFNMjpvAA==}
     peerDependencies:
       react: '>=17.0.0'
       react-dom: '>=17.0.0'
@@ -8930,7 +8930,7 @@ snapshots:
       normalize-path: 3.0.0
       picomatch: 2.3.1
 
-  ao-wallet-kit@1.0.1(arweave@1.15.5)(bufferutil@4.0.9)(pocketbase@0.26.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(rollup@4.28.1)(typescript@5.7.2)(utf-8-validate@5.0.10)(vite@5.4.11(@types/node@20.17.10))(zod@3.24.1):
+  ao-wallet-kit@1.0.2(arweave@1.15.5)(bufferutil@4.0.9)(pocketbase@0.26.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(rollup@4.28.1)(typescript@5.7.2)(utf-8-validate@5.0.10)(vite@5.4.11(@types/node@20.17.10))(zod@3.24.1):
     dependencies:
       '@permaweb/aoconnect': 0.0.62
       '@wauth/sdk': 0.0.19(bufferutil@4.0.9)(pocketbase@0.26.2)(rollup@4.28.1)(utf-8-validate@5.0.10)(vite@5.4.11(@types/node@20.17.10))

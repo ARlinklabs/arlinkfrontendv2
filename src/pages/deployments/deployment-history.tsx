@@ -209,12 +209,11 @@ export default function DeploymentHistory() {
             hasFetchedRef.current = true;
             setLoadingDeploymentHistory(true);
             try {
-                // Extract owner/repo from RepoUrl
+                // Extract owner from RepoUrl; use Name (= projectName) for API path
                 const parts = foundDeployment.RepoUrl.replace(/\.git$/, "").split("/").filter(Boolean);
                 const owner = parts[parts.length - 2];
-                const repo = parts[parts.length - 1];
 
-                const result = await getDeploymentHistoryAPI(owner, repo);
+                const result = await getDeploymentHistoryAPI(owner, foundDeployment.Name);
 
                 // Map backend history to DeploymentRecord format
                 const historyArray: DeploymentRecord[] = (result.deployments || [])
@@ -392,9 +391,8 @@ const DeploymentHistoryCard = ({
             // Rollback via backend — update the repo record to point at the old TX
             const parts = currentDeployment.RepoUrl.replace(/\.git$/, "").split("/").filter(Boolean);
             const owner = parts[parts.length - 2];
-            const repo = parts[parts.length - 1];
 
-            const res = await apiRequest(`/updatereporecord/${owner}/${repo}`, {
+            const res = await apiRequest(`/updatereporecord/${owner}/${currentDeployment.Name}`, {
                 method: "POST",
                 body: JSON.stringify({ txid: deploymentID }),
             });
@@ -483,13 +481,13 @@ const DeploymentHistoryCard = ({
                             <div className="flex-center gap-2">
                                 <span className="text-white">Live</span>{" "}
                                 <Link
-                                    to={`https://${currentDeployment?.UnderName}_arlink.arweave.net`}
+                                    to={`https://${currentDeployment?.UnderName}_arlink.ardrive.net`}
                                     className="hover:underline"
                                     target="_blank"
                                 >
                                     https://
                                     {currentDeployment?.UnderName}
-                                    _arlink.arweave.net
+                                    _arlink.ardrive.net
                                 </Link>
                                 <button
                                     type="button"
@@ -614,7 +612,7 @@ const DeploymentHistoryCard = ({
                             <Github size={20} /> Github
                         </Link>
                         <Link
-                            to={`https://arweave.net/${deployment.DeploymentID}`}
+                            to={`https://ardrive.net/${deployment.DeploymentID}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center hover:underline cursor-pointer gap-2"
@@ -693,9 +691,8 @@ const ArnsTabSelector = ({
         try {
             const parts = currentDeployment.RepoUrl.replace(/\.git$/, "").split("/").filter(Boolean);
             const owner = parts[parts.length - 2];
-            const repo = parts[parts.length - 1];
 
-            const res = await apiRequest(`/updatereporecord/${owner}/${repo}`, {
+            const res = await apiRequest(`/updatereporecord/${owner}/${currentDeployment.Name}`, {
                 method: "POST",
                 body: JSON.stringify({
                     arnsProcess: selectedArns.processId,
@@ -752,9 +749,8 @@ const ArnsTabSelector = ({
         try {
             const parts = currentDeployment.RepoUrl.replace(/\.git$/, "").split("/").filter(Boolean);
             const owner = parts[parts.length - 2];
-            const repo = parts[parts.length - 1];
 
-            const res = await apiRequest(`/updatereporecord/${owner}/${repo}`, {
+            const res = await apiRequest(`/updatereporecord/${owner}/${currentDeployment.Name}`, {
                 method: "POST",
                 body: JSON.stringify({
                     arnsProcess: selectedArns.processId,

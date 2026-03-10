@@ -69,9 +69,12 @@ const ConfigureProject = ({ deployment }: DeploymentComponentProps) => {
                 .split("/")
                 .filter(Boolean);
             const owner = parts[parts.length - 2];
-            const repo = parts[parts.length - 1];
 
-            await updateProjectConfig(owner, repo, {
+            console.log("[UPDATE CONFIG] owner:", owner)
+            console.log("[UPDATE CONFIG] deployment.Name (used as repo):", deployment.Name)
+            console.log("[UPDATE CONFIG] updates:", { installCommand, buildCommand, outputDir, branch: selectedBranch })
+
+            await updateProjectConfig(owner, deployment.Name, {
                 installCommand,
                 buildCommand,
                 outputDir,

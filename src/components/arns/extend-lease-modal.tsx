@@ -147,7 +147,7 @@ export function ExtendLeaseModal({
     };
 
     const handleBuyTokens = () => {
-        window.open("https://botega.arweave.net/#/swap?from=xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10&to=qNvAoz0TgcH7DMg8BCVn8jF32QH5L6T29VjHxhHqqGE", "_blank");
+        window.open("https://botega.ardrive.net/#/swap?from=xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10&to=qNvAoz0TgcH7DMg8BCVn8jF32QH5L6T29VjHxhHqqGE", "_blank");
     };
 
     const handleSubmit = async () => {

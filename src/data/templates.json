@@ -8,8 +8,8 @@
     "UseCase": "evm",
     "CreatorName": "Arlink",
     "CreatorWallet": "fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY",
-    "DemoUrl": "https://based-starter_arlink.arweave.net/",
-    "ThumbnailUrl": "https://so7xj7ecwurw3pmqt57jsqmaq6jzjesicrurpiw4gvqiqmyg3smq.arweave.net/k790_IK1I229kJ9-mUGAh5OUkkgUaRei3DVgiDMG3Jk",
+    "DemoUrl": "https://based-starter_arlink.ardrive.net/",
+    "ThumbnailUrl": "https://so7xj7ecwurw3pmqt57jsqmaq6jzjesicrurpiw4gvqiqmyg3smq.ardrive.net/k790_IK1I229kJ9-mUGAh5OUkkgUaRei3DVgiDMG3Jk",
     "CreatedAt": "2025-02-27T10:45:39.000Z",
     "Stars": 0
   },
@@ -22,8 +22,8 @@
     "UseCase": "Arweave",
     "CreatorName": "Patrick Skinner",
     "CreatorWallet": "fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY",
-    "DemoUrl": "https://monadapp-arweavedeployed_arlink.arweave.net/",
-    "ThumbnailUrl": "https://nfmai2qya3rh3gj2bi3gtlpnqser74dzxunxnichlojqdtbup6iq.arweave.net/aVgEahgG4n2ZOgo2aa3thIkf8Hm9G3agR1uTAcw0f5E",
+    "DemoUrl": "https://monadapp-arweavedeployed_arlink.ardrive.net/",
+    "ThumbnailUrl": "https://nfmai2qya3rh3gj2bi3gtlpnqser74dzxunxnichlojqdtbup6iq.ardrive.net/aVgEahgG4n2ZOgo2aa3thIkf8Hm9G3agR1uTAcw0f5E",
     "CreatedAt": "2025-02-27T09:56:08.000Z",
     "Stars": 0
   },
@@ -36,8 +36,8 @@
     "UseCase": "Arweave",
     "CreatorName": "Patrick Skinner",
     "CreatorWallet": "fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY",
-    "DemoUrl": "https://zerotoarweave-starterkit_arlink.arweave.net/",
-    "ThumbnailUrl": "https://arweave.net/Iodraq9lSkvwvWKdHmKIs54STnKkCNK-YuS5c4avAyE",
+    "DemoUrl": "https://zerotoarweave-starterkit_arlink.ardrive.net/",
+    "ThumbnailUrl": "https://ardrive.net/Iodraq9lSkvwvWKdHmKIs54STnKkCNK-YuS5c4avAyE",
     "CreatedAt": "2025-02-15T19:00:32.000Z",
     "Stars": 0
   },
@@ -64,7 +64,7 @@
     "UseCase": "polygon",
     "CreatorName": "Swader",
     "CreatorWallet": "fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY",
-    "DemoUrl": "https://quickie_arlink.arweave.net/",
+    "DemoUrl": "https://quickie_arlink.ardrive.net/",
     "ThumbnailUrl": "https://i.ibb.co/8gVs3NHt/Screenshot-2025-02-12-at-6-15-13-PM.png",
     "CreatedAt": "2025-02-12T14:16:48.000Z",
     "Stars": 0
@@ -78,7 +78,7 @@
     "UseCase": "Arweave",
     "CreatorName": "Arlink",
     "CreatorWallet": "fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY",
-    "DemoUrl": "https://nextjs-starter_arlink.arweave.net",
+    "DemoUrl": "https://nextjs-starter_arlink.ardrive.net",
     "ThumbnailUrl": "https://i.ibb.co/4nLBBzLz/Screenshot-2025-02-04-at-8-52-00-PM.png",
     "CreatedAt": "2025-02-04T17:29:23.000Z",
     "Stars": 0
@@ -92,7 +92,7 @@
     "UseCase": "Arweave",
     "CreatorName": "Arlink",
     "CreatorWallet": "fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY",
-    "DemoUrl": "https://react-ts-starter_arlink.arweave.net",
+    "DemoUrl": "https://react-ts-starter_arlink.ardrive.net",
     "ThumbnailUrl": "https://i.ibb.co/kgttczv0/image.png",
     "CreatedAt": "2025-02-04T17:29:23.000Z",
     "Stars": 0
@@ -106,7 +106,7 @@
     "UseCase": "Arweave",
     "CreatorName": "Arlink",
     "CreatorWallet": "fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY",
-    "DemoUrl": "https://gatsby-starter_arlink.arweave.net",
+    "DemoUrl": "https://gatsby-starter_arlink.ardrive.net",
     "ThumbnailUrl": "https://i.ibb.co/F4LqL6MF/image.png",
     "CreatedAt": "2025-02-04T17:29:23.000Z",
     "Stars": 0
@@ -120,7 +120,7 @@
     "UseCase": "Blog",
     "CreatorName": "Arlink",
     "CreatorWallet": "fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY",
-    "DemoUrl": "https://arlink-blog-starter_arlink.arweave.net",
+    "DemoUrl": "https://arlink-blog-starter_arlink.ardrive.net",
     "ThumbnailUrl": "https://i.ibb.co/mC4YVrhH/image.png",
     "CreatedAt": "2025-02-04T17:29:23.000Z",
     "Stars": 0
@@ -134,7 +134,7 @@
     "UseCase": "Portfolio",
     "CreatorName": "Arlink",
     "CreatorWallet": "fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY",
-    "DemoUrl": "https://arlinklabs-portfolio-template_arlink.arweave.net",
+    "DemoUrl": "https://arlinklabs-portfolio-template_arlink.ardrive.net",
     "ThumbnailUrl": "https://i.ibb.co/zHbM0PXs/image.png",
     "CreatedAt": "2025-02-04T17:29:23.000Z",
     "Stars": 0

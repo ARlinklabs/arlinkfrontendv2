@@ -17,6 +17,7 @@ export const Nav = () => {
     const { email } = useWAuthData();
     const { isWAuth } = useWallet();
     const clearWalletData = useGlobalState(state => state.clearWalletData);
+    const setCachedUsername = useGlobalState(state => state.setCachedUsername);
     const [openSideBar, setOpenSideBar] = useState<boolean>(false);
     const [loading, setLoading] = useState<boolean>(false);
     const [disconnecting, setDisconnecting] = useState<boolean>(false);
@@ -51,6 +52,7 @@ export const Nav = () => {
     const disConnect = async () => {
         setDisconnecting(true);
         try {
+            setCachedUsername(null);
             clearWalletData();
             await disconnect();
         } finally {
@@ -96,7 +98,7 @@ export const Nav = () => {
         };
     }, [address, connected]);
 
-    const avatarUrl = primaryLogo ? `https://arweave.net/${primaryLogo}` : "";
+    const avatarUrl = primaryLogo ? `https://ardrive.net/${primaryLogo}` : "";
 
     return (
         <>

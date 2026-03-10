@@ -133,7 +133,7 @@ export default function BranchPreviews() {
       hasDeployment: true,
       isMainBranch: true,
       commit: deployment.DeploymentId,
-      url: deployment.UnderName ? `${deployment.UnderName}_arlink.arweave.net` : null,
+      url: deployment.UnderName ? `${deployment.UnderName}_arlink.ardrive.net` : null,
     })
 
     // Add configured branches with real deployment data
@@ -154,7 +154,7 @@ export default function BranchPreviews() {
           isMainBranch: false,
           deploymentStatus: deploymentData.status,
           commit: deploymentData.commit,
-          url: deploymentData.undername ? `${deploymentData.undername}_arlink.arweave.net` : deploymentData.url || null,
+          url: deploymentData.undername ? `${deploymentData.undername}_arlink.ardrive.net` : deploymentData.url || null,
         })
       } else {
         branches.push({
@@ -267,9 +267,9 @@ export default function BranchPreviews() {
     if (!deployment) return
 
     try {
-      const [owner, repoName] = extractGithubPath(deployment.RepoUrl).split("/")
+      const owner = extractGithubPath(deployment.RepoUrl).split("/")[0]
 
-      const response = await apiRequest(`/config/${owner}/${repoName}`)
+      const response = await apiRequest(`/config/${owner}/${deployment.Name}`)
 
       if (response.ok) {
         const config = await response.json()
@@ -335,9 +335,9 @@ export default function BranchPreviews() {
 
     setIsUpdatingBranchConfig(true)
     try {
-      const [owner, repoName] = extractGithubPath(deployment.RepoUrl).split("/")
+      const owner = extractGithubPath(deployment.RepoUrl).split("/")[0]
 
-      const response = await apiRequest(`/branch-preview/${owner}/${repoName}/branch/${branchName}`, {
+      const response = await apiRequest(`/branch-preview/${owner}/${deployment.Name}/branch/${branchName}`, {
         method: "DELETE",
       })
 
@@ -368,11 +368,11 @@ export default function BranchPreviews() {
 
     setIsUpdatingBranchConfig(true)
     try {
-      const [owner, repoName] = extractGithubPath(deployment.RepoUrl).split("/")
+      const owner = extractGithubPath(deployment.RepoUrl).split("/")[0]
 
       const updatedBranches = [...new Set([...branchConfig.selectedBranches, ...branchNames])]
 
-      const response = await apiRequest(`/branch-preview/${owner}/${repoName}/settings`, {
+      const response = await apiRequest(`/branch-preview/${owner}/${deployment.Name}/settings`, {
         method: "POST",
         body: JSON.stringify({
           enabled: true,
@@ -1161,9 +1161,9 @@ export default function BranchPreviews() {
                   }
 
                   const ghPath = extractGithubPath(deployment.RepoUrl)
-                  const [owner, repoName] = ghPath.split("/")
+                  const owner = ghPath.split("/")[0]
 
-                  const res = await apiRequest(`/updatereporecord/${owner}/${repoName}`, {
+                  const res = await apiRequest(`/updatereporecord/${owner}/${deployment.Name}`, {
                     method: "POST",
                     body: JSON.stringify({
                       arnsProcess: selectedArns.processId,

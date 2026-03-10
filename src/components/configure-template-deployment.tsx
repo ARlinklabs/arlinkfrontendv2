@@ -399,16 +399,13 @@ const ConfigureTemplateDeployment = ({ repoUrl }: { repoUrl: string }) => {
 
         let finalArnsProcess = arnsProcess;
 
+        // Compute the effective project name NOW (not via async setState).
+        const effectiveProjectName = customArnsName || projectName;
+
         // Handle ARNS process
         if (activeTab === "existing" && arnsName?.name) {
-            setCustomArnsName("");
             finalArnsProcess = arnsName.processId;
         } else if (activeTab === "arlink") {
-            if (!customArnsName) {
-                setCustomArnsName((prev) =>
-                    prev.length === 0 ? projectName : prev,
-                );
-            }
             setArnsName(undefined);
             finalArnsProcess = null;
         }
@@ -477,11 +474,13 @@ const ConfigureTemplateDeployment = ({ repoUrl }: { repoUrl: string }) => {
                     : `./${buildSettings.outPutDir.value}`,
                 subDirectory: rootDirectory,
                 protocolLand: false,
-                repoName: customArnsName,
+                repoName: effectiveProjectName,
+                projectName: effectiveProjectName,
                 branch: selectedBranch,
                 githubToken,
                 walletAddress: activeAddress,
-                customArnsName: customArnsName || "",
+                customArnsName: effectiveProjectName,
+                framework: frameWork.name !== "unknown" ? frameWork.name.toLowerCase() : undefined,
             };
 
             const response = await apiRequest("/deploy", {
@@ -495,6 +494,9 @@ const ConfigureTemplateDeployment = ({ repoUrl }: { repoUrl: string }) => {
             }
 
             const responseData = await response.json();
+
+            // Backend returns the actual projectName it created (may be slugified)
+            const serverProjectName = responseData.projectName || effectiveProjectName;
 
             if (responseData.deploymentId) {
                 const deploymentId = responseData.deploymentId;
@@ -528,8 +530,7 @@ const ConfigureTemplateDeployment = ({ repoUrl }: { repoUrl: string }) => {
                     // If user selected an existing ArNS, update via backend
                     if (activeTab === "existing" && arnsName) {
                         const arnsOwner = extractOwnerName(repoUrl);
-                        const arnsRepo = extractRepoName(repoUrl);
-                        await apiRequest(`/updatereporecord/${arnsOwner}/${arnsRepo}`, {
+                        await apiRequest(`/updatereporecord/${arnsOwner}/${serverProjectName}`, {
                             method: "POST",
                             body: JSON.stringify({
                                 arnsProcess: arnsName.processId,
@@ -541,7 +542,7 @@ const ConfigureTemplateDeployment = ({ repoUrl }: { repoUrl: string }) => {
                     await new Promise(resolve => setTimeout(resolve, 2000));
                     await refresh();
                     toast.success("Deployment successful");
-                    navigate(`/deployment/card?repo=${projectName}`);
+                    navigate(`/deployment/card?repo=${serverProjectName}`);
                 } else {
                     throw new Error("Deployment failed — check build logs for details");
                 }

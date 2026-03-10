@@ -394,14 +394,18 @@ const ConfiguringDeploymentProject = ({
 
     let finalArnsProcess = arnsProcess
 
+    // Use projectName (the user-editable input) as the primary name.
+    // customArnsName only overrides when the user explicitly typed a custom domain.
+    const effectiveProjectName = projectName || customArnsName
+
+    console.log("[DEPLOY] projectName:", projectName)
+    console.log("[DEPLOY] customArnsName:", customArnsName)
+    console.log("[DEPLOY] effectiveProjectName:", effectiveProjectName)
+
     // Handle ARNS process
     if (activeTab === "existing" && arnsName?.name) {
-      setCustomArnsName("")
       finalArnsProcess = arnsName.processId
     } else if (activeTab === "arlink") {
-      if (!customArnsName) {
-        setCustomArnsName((prev) => (prev.length === 0 ? projectName : prev))
-      }
       setArnsName(undefined)
       finalArnsProcess = null
     }
@@ -522,12 +526,16 @@ const ConfiguringDeploymentProject = ({
           : `./${buildSettings.outPutDir.value}`,
         subDirectory: rootDirectory,
         protocolLand: false,
-        repoName: customArnsName,
+        repoName: repo,
+        projectName: effectiveProjectName,
         branch: selectedBranch,
         githubToken,
         walletAddress: activeAddress,
-        customArnsName: customArnsName || "",
+        customArnsName: effectiveProjectName,
+        framework: frameWork.name !== "unknown" ? frameWork.name.toLowerCase() : undefined,
       }
+
+      console.log("[DEPLOY] Full payload being sent to /deploy:", JSON.stringify(deploymentData, null, 2))
 
       const response = await apiRequest("/deploy", {
         method: "POST",
@@ -540,6 +548,9 @@ const ConfiguringDeploymentProject = ({
       }
 
       const responseData = await response.json()
+
+      // Backend returns the actual projectName it created (may be slugified)
+      const serverProjectName = responseData.projectName || effectiveProjectName
 
       if (responseData.deploymentId) {
         const deploymentId = responseData.deploymentId
@@ -573,7 +584,7 @@ const ConfiguringDeploymentProject = ({
           await new Promise(resolve => setTimeout(resolve, 2000))
           await refresh()
           toast.success("Deployment successful")
-          navigate(`/deployment/card?repo=${projectName}`)
+          navigate(`/deployment/card?repo=${serverProjectName}`)
         } else {
           throw new Error("Deployment failed — check build logs for details")
         }

@@ -55,7 +55,7 @@ export default function NewDeploymentCard({
                                           customArnsName.length === 0
                                               ? projectName.toLowerCase()
                                               : customArnsName.toLowerCase()
-                                      }.arlink.arweave.net`
+                                      }.arlink.ardrive.net`
                                     : `${projectName}.${arnsName?.name}`}
                             </div>
                         </div>
