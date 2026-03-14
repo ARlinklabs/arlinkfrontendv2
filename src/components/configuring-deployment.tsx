@@ -210,7 +210,7 @@ const ConfiguringDeploymentProject = ({
     } else {
       configState.buildSettings = {
         buildCommand: deno ? config.buildCommand : "npm run build",
-        installCommand: deno ? "npm --version" : "pnpm install",
+        installCommand: deno ? "none" : "pnpm install",
         outPutDir: config.outputDir
           ? config.outputDir === ".next"
             ? "./out"
@@ -517,13 +517,19 @@ const ConfiguringDeploymentProject = ({
       }
 
       // 2. Submit deployment
+      const isStaticSite = buildSettings.installCommand.value === "none" && buildSettings.buildCommand.value === "none"
+      const rawOutputDir = buildSettings.outPutDir.value
+      const outputDir = isStaticSite
+        ? rawOutputDir // static sites: send "." as-is
+        : rawOutputDir.startsWith("./")
+          ? rawOutputDir
+          : `./${rawOutputDir}`
+
       const deploymentData = {
         repository: tokenizedRepoUrl,
         installCommand: buildSettings.installCommand.value,
         buildCommand: buildSettings.buildCommand.value,
-        outputDir: buildSettings.outPutDir.value.startsWith("./")
-          ? buildSettings.outPutDir.value
-          : `./${buildSettings.outPutDir.value}`,
+        outputDir,
         subDirectory: rootDirectory,
         protocolLand: false,
         repoName: repo,
@@ -532,7 +538,7 @@ const ConfiguringDeploymentProject = ({
         githubToken,
         walletAddress: activeAddress,
         customArnsName: effectiveProjectName,
-        framework: frameWork.name !== "unknown" ? frameWork.name.toLowerCase() : undefined,
+        framework: isStaticSite ? "static" : (frameWork.name !== "unknown" ? frameWork.name.toLowerCase() : undefined),
       }
 
       console.log("[DEPLOY] Full payload being sent to /deploy:", JSON.stringify(deploymentData, null, 2))

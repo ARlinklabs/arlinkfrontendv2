@@ -195,8 +195,8 @@ export async function getRepoConfig(
             return {
                 repoName: repo,
                 framework: "unknown",
-                installCommand: "npm --version",
-                buildCommand: "npm --version",
+                installCommand: "none",
+                buildCommand: "none",
                 outputDir: ".",
                 error: true,
                 errorType: "static",

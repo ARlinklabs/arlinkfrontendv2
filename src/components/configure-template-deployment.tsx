@@ -465,13 +465,19 @@ const ConfigureTemplateDeployment = ({ repoUrl }: { repoUrl: string }) => {
         startLogPolling();
 
         try {
+            const isStaticSite = buildSettings.installCommand.value === "none" && buildSettings.buildCommand.value === "none";
+            const rawOutputDir = buildSettings.outPutDir.value;
+            const outputDir = isStaticSite
+                ? rawOutputDir
+                : rawOutputDir.startsWith("./")
+                    ? rawOutputDir
+                    : `./${rawOutputDir}`;
+
             const deploymentData = {
                 repository: tokenizedRepoUrl,
                 installCommand: buildSettings.installCommand.value,
                 buildCommand: buildSettings.buildCommand.value,
-                outputDir: buildSettings.outPutDir.value.startsWith("./")
-                    ? buildSettings.outPutDir.value
-                    : `./${buildSettings.outPutDir.value}`,
+                outputDir,
                 subDirectory: rootDirectory,
                 protocolLand: false,
                 repoName: effectiveProjectName,
@@ -480,7 +486,7 @@ const ConfigureTemplateDeployment = ({ repoUrl }: { repoUrl: string }) => {
                 githubToken,
                 walletAddress: activeAddress,
                 customArnsName: effectiveProjectName,
-                framework: frameWork.name !== "unknown" ? frameWork.name.toLowerCase() : undefined,
+                framework: isStaticSite ? "static" : (frameWork.name !== "unknown" ? frameWork.name.toLowerCase() : undefined),
             };
 
             const response = await apiRequest("/deploy", {
