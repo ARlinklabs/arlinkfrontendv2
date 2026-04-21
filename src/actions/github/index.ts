@@ -10,7 +10,7 @@ export async function initiateGitHubAuth() {
     const BASE_URL =
         import.meta.env.VITE_ENV === "test"
             ? "http://localhost:3000"
-            : "https://arlink.ar.io";
+            : "https://arlink.ardrive.net";
 
     const redirectUri = `${BASE_URL}/deploy`;
     const authUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${redirectUri}&scope=repo,read:org,repo:status,read:user,admin:repo_hook`;
